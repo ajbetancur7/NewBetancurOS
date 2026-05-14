@@ -1,0 +1,7 @@
+{
+  "name": "betancur-os",
+  "version": "1.0.0",
+  "description": "Betancur Family Operating System",
+  "private": true,
+  "engines": { "node": "18.x" }
+}

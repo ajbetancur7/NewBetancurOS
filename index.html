@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Betancur OS">
+<title>Betancur Operating System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:"Inter",-apple-system,sans-serif;background:#3A3D46;color:#FFFFFF}
+button,input,textarea,select{font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;color:#FFFFFF}
+button{cursor:pointer;background:transparent;border:none}
+input,textarea{color:#FFFFFF;background:transparent}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
+::-webkit-scrollbar{display:none}
+:root{--bg:#3A3D46;--bg-dark:#2A2D35;--border:#55586A;--gold:#E8BC50;--white:#FFFFFF;--green:#4CAF82;--red:#E24B4A;--purple:#C47AE8;--blue:#7B9EE8;--gd:#2A2D35}
+#app{height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:40px 32px}
+.splash-brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;text-align:center;margin-bottom:8px}
+.splash-line{width:40px;height:2px;background:var(--gold);margin:10px auto;border-radius:2px}
+.splash-sub{font-size:11px;font-weight:600;color:var(--white);opacity:0.6;letter-spacing:0.15em;text-transform:uppercase;text-align:center;margin-bottom:48px}
+.btn-primary{background:var(--gold);border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;color:var(--gd);width:100%}
+.btn-secondary{background:transparent;border:2px solid var(--white);border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:var(--white);width:100%}
+.splash-btns{width:100%;display:flex;flex-direction:column;gap:12px}
+#auth-screen{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:999;overflow-y:auto}
+.auth-header{padding:16px 20px;border-bottom:0.5px solid var(--gold);display:flex;justify-content:space-between;align-items:center}
+.auth-back{font-size:14px;font-weight:700;color:var(--white)}
+.auth-step{font-size:12px;font-weight:700;color:var(--gold)}
+.auth-body{padding:28px 24px;display:flex;flex-direction:column;gap:14px;flex:1}
+.auth-title{font-size:22px;font-weight:700;color:var(--white)}
+.auth-subtitle{font-size:13px;color:var(--white);opacity:0.5;margin-top:4px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.06em}
+.field-input{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px 15px;font-size:15px;color:var(--white);width:100%}
+.field-input:focus{border-color:var(--gold)}
+.role-opt{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-top:8px}
+.role-opt.sel{background:var(--gold);border-color:var(--gold)}
+.role-opt.sel .r-name,.role-opt.sel .r-desc{color:var(--gd)}
+.r-name{font-size:14px;font-weight:700;color:var(--white)}
+.r-desc{font-size:11px;color:var(--white);opacity:0.4;margin-top:2px}
+.auth-error{background:rgba(226,75,74,0.15);border:1px solid var(--red);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);display:none}
+.auth-link{text-align:center;font-size:13px;color:var(--white);opacity:0.5}
+.auth-link span{color:var(--gold);font-weight:700;opacity:1;cursor:pointer}
+#setup-screen{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:998;overflow-y:auto}
+.setup-header{padding:16px 20px;border-bottom:0.5px solid var(--gold);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.setup-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.setup-prog{display:flex;justify-content:space-between;align-items:flex-start}
+.sp-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.sp-c{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.sp-done{background:var(--green);color:var(--white)}
+.sp-act{background:var(--gold);color:var(--gd)}
+.sp-off{background:var(--bg-dark);border:1px solid var(--border);color:var(--white);opacity:0.4}
+.sp-lbl{font-size:7px;font-weight:700;text-align:center}
+.sp-lbl-d{color:var(--green)}
+.sp-lbl-a{color:var(--gold)}
+.sp-lbl-o{color:var(--white);opacity:0.4}
+.setup-nav{display:flex;gap:10px;margin-top:8px}
+.s-row{background:var(--bg-dark);border:0.5px solid var(--green);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.s-row-o{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;opacity:0.6}
+.s-row-a{background:var(--bg-dark);border:0.5px solid var(--gold);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.s-row-name{font-size:13px;font-weight:600;color:var(--white)}
+.s-row-sub{font-size:10px;color:var(--gold);margin-top:2px}
+.add-row{background:var(--bg-dark);border:1.5px dashed var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.add-plus{font-size:18px;color:var(--white);opacity:0.3;font-weight:700}
+.add-text{font-size:13px;color:var(--white);opacity:0.3}
+#babysitter-app{display:none;flex-direction:column;height:100vh;background:var(--bg)}
+.sitter-header{padding:14px 16px;border-bottom:0.5px solid var(--gold)}
+.sitter-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+#main-app{display:none;flex-direction:column;height:100vh;overflow:hidden}
+.top-bar{padding:10px 16px;border-bottom:0.5px solid var(--gold);background:var(--bg);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:100}
+.menu-btn{background:transparent;border:1.5px solid var(--white);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--white)}
+.os-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase}
+.user-pill{display:inline-flex;align-items:center;gap:5px;border-radius:12px;padding:4px 10px 4px 7px}
+.u-dot{width:7px;height:7px;border-radius:50%}
+.u-name{font-size:9px;font-weight:700}
+#drawer{position:fixed;top:0;left:0;width:260px;height:100%;background:var(--bg-dark);z-index:500;transform:translateX(-100%);transition:transform 0.3s ease;display:flex;flex-direction:column;border-right:1.5px solid var(--gold)}
+#drawer.open{transform:translateX(0)}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:499;display:none}
+#overlay.show{display:block}
+.drawer-header{padding:48px 20px 16px;border-bottom:0.5px solid var(--border)}
+.drawer-os{font-size:9px;font-weight:700;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase}
+.drawer-uname{font-size:16px;font-weight:700;color:var(--white);margin-top:5px}
+.drawer-urole{font-size:11px;color:var(--gold);margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:14px;padding:13px 20px;cursor:pointer;border-left:3px solid transparent}
+.nav-item.active{border-left:3px solid var(--gold);background:rgba(232,188,80,0.08)}
+.nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+.nav-label{font-size:14px;font-weight:600;color:var(--white)}
+.nav-item.active .nav-label{color:var(--gold)}
+.drawer-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border)}
+.logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
+#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.section{padding:14px;display:none;flex-direction:column;gap:10px;min-height:100%}
+.section.active{display:flex}
+.sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
+.card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
+.card-title{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px}
+.card-main{font-size:14px;font-weight:600;color:var(--white)}
+.card-sub{font-size:11px;color:var(--white);opacity:0.8;margin-top:2px}
+.mini-card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:9px 11px;background:transparent}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.add-item-row{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1.5px dashed var(--gold);border-radius:10px;cursor:pointer}
+.add-item-text{font-size:13px;color:var(--white);opacity:0.4}
+.add-item-plus{font-size:18px;color:var(--gold);font-weight:700;line-height:1}
+.tag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.tag-gold{background:var(--gold);color:var(--gd)}
+.tag-green{background:var(--green);color:var(--white)}
+.tag-red{background:var(--red);color:var(--white)}
+.tag-gray{background:var(--border);color:var(--white)}
+.tag-outline{border:0.5px solid var(--white);color:var(--white);background:transparent}
+.tag-purple{background:var(--purple);color:var(--white)}
+.tag-blue{background:var(--blue);color:var(--white)}
+.btn-gold{background:var(--gold);border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;color:var(--gd);width:100%}
+.btn-white{background:transparent;border:1.5px solid var(--white);border-radius:10px;padding:12px;font-size:13px;font-weight:700;color:var(--white);width:100%}
+.btn-gold-sm{background:var(--gold);border:none;border-radius:7px;padding:4px 10px;font-size:9px;font-weight:700;color:var(--gd)}
+.btn-white-sm{background:transparent;border:1.5px solid var(--white);border-radius:7px;padding:3px 9px;font-size:9px;font-weight:700;color:var(--white)}
+.btn-gold-outline{background:transparent;border:1.5px solid var(--gold);border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:var(--gold);width:100%}
+.btn-red-outline{background:transparent;border:1.5px solid var(--red);border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:var(--red);width:100%}
+.del-x{font-size:14px;color:var(--red);cursor:pointer;opacity:0.75;flex-shrink:0;padding:0 3px}
+.jcard{background:var(--gold);border-radius:10px;padding:11px 13px}
+.jlabel{font-size:9px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.jtext{font-size:12px;font-weight:600;color:var(--gd);line-height:1.45}
+.jcta{font-size:11px;font-weight:700;color:var(--gd);margin-top:6px;text-decoration:underline;cursor:pointer}
+.jbadge{background:var(--gd);color:var(--gold);font-size:9px;font-weight:700;border-radius:7px;padding:2px 8px}
+.pulse-strip{display:flex;gap:7px;margin-top:10px}
+.pulse-person{flex:1;background:var(--bg-dark);border-radius:9px;padding:7px 9px}
+.pulse-name{font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.06em}
+.pulse-status{font-size:10px;color:var(--white);font-weight:500;margin-top:2px}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.dot-g{background:var(--green)}.dot-a{background:var(--gold)}.dot-gr{background:#7A7D88}
+.gfab{background:var(--bg-dark);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.gfab-text{font-size:12px;font-weight:700;color:var(--gold);flex:1}
+.gfab-count{background:var(--gold);color:var(--gd);font-size:10px;font-weight:700;border-radius:8px;padding:2px 8px}
+.step-row{display:flex;align-items:center;gap:5px;margin-top:8px;flex-wrap:wrap}
+.sc{font-size:9px;font-weight:600;padding:2px 8px;border-radius:7px}
+.sc-done{background:var(--gold);color:var(--gd)}.sc-next{border:1px solid var(--gold);color:var(--gold);background:transparent}.sc-pend{border:0.5px solid var(--border);color:var(--white);opacity:0.4;background:transparent}
+.sarr{font-size:10px;color:var(--gold)}
+.check-btn{background:transparent;border:1.5px solid var(--white);border-radius:7px;padding:3px 10px;font-size:9px;font-weight:700;color:var(--white)}
+.ri{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.ri:last-child{border-bottom:none}
+.rdot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.rdot-g{background:var(--green)}.rdot-r{background:var(--red)}
+.rtext{font-size:12px;color:var(--white);font-weight:500;flex:1}
+.rtime{font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap}
+.streak-row{display:flex;gap:5px;margin-top:8px}
+.sday{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.slbl{font-size:8px;color:var(--gold);font-weight:700}
+.sdotc{width:15px;height:15px;border-radius:50%}
+.s-hit{background:var(--gold)}.s-miss{background:transparent;border:1px solid var(--border)}.s-today{background:transparent;border:2px solid var(--white)}.s-rest{background:var(--bg-dark);border:1px solid var(--border)}
+.feed-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)}
+.feed-row:last-child{border-bottom:none}
+.fwho{font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap}
+.fwhat{font-size:11px;color:var(--white);flex:1}
+.fwhen{font-size:10px;color:var(--white);opacity:0.5;white-space:nowrap}
+.room-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.room-tile{border:0.5px solid var(--border);border-radius:10px;padding:11px 12px 9px;cursor:pointer;position:relative;overflow:hidden}
+.room-tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.rt-done::before{background:var(--green)}.rt-prog::before{background:var(--gold)}.rt-empty::before{background:var(--border)}
+.rt-name{font-size:12px;font-weight:700;color:var(--white);padding-left:3px}
+.rt-status{font-size:10px;font-weight:600;margin-top:3px;padding-left:3px}
+.rts-done{color:var(--green)}.rts-prog{color:var(--gold)}.rts-empty{color:var(--white);opacity:0.4}
+.rt-count{font-size:9px;color:var(--white);opacity:0.5;margin-top:2px;padding-left:3px}
+.rt-arr{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--gold);opacity:0.6}
+.chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;margin-top:1px}
+.chk.checked{background:var(--green);border-color:var(--green)}
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.task-item:last-child{border-bottom:none}
+.task-item.td{opacity:0.5}
+.t-name{font-size:13px;font-weight:600;color:var(--white);flex:1}
+.t-name.stk{text-decoration:line-through}
+.t-meta{font-size:10px;color:var(--gold);margin-top:2px}
+.bill-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:0.5px solid var(--border);border-radius:9px;margin-bottom:6px}
+.bill-paid{border-left:3px solid var(--green);opacity:0.6}
+.bill-soon{border-left:3px solid var(--gold)}
+.bill-ov{border-left:3px solid var(--red)}
+.bill-man{border-left:3px solid var(--white)}
+.bill-auto{border-left:3px solid var(--border)}
+.binfo{flex:1;min-width:0}
+.bname{font-size:12px;font-weight:600;color:var(--white)}
+.bname-stk{text-decoration:line-through;opacity:0.5}
+.bmeta{font-size:9px;color:var(--gold);margin-top:1px}
+.bmeta-r{font-size:9px;color:var(--red);margin-top:1px}
+.bright{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.bamt{font-size:12px;font-weight:700;color:var(--white)}
+.bamt-g{color:var(--green)}
+.autotag{font-size:7px;font-weight:700;background:var(--gold);color:var(--gd);border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle}
+.locktag{font-size:7px;font-weight:700;background:var(--border);color:var(--white);border-radius:4px;padding:1px 5px}
+.pb-bg{background:var(--bg-dark);border-radius:4px;height:6px;width:100%;margin:5px 0 4px}
+.pb{background:var(--gold);border-radius:4px;height:6px}
+.pb-g{background:var(--green);border-radius:4px;height:6px}
+.slabel{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em}
+.sval{font-size:17px;font-weight:700;color:var(--white);margin:3px 0}
+.ssub{font-size:10px;color:var(--white);opacity:0.7}
+.sval-g{color:var(--green)}
+.top-tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg);flex-shrink:0}
+.ttab{flex:1;text-align:center;padding:10px 4px;font-size:10px;font-weight:700;color:var(--white);opacity:0.4;border-bottom:2px solid transparent;cursor:pointer}
+.ttab.on{color:var(--gold);opacity:1;border-bottom:2px solid var(--gold)}
+.ssec{display:none;flex-direction:column;gap:9px;padding:12px 14px}
+.ssec.active{display:flex}
+.supp-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.supp-row:last-child{border-bottom:none}
+.schk{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer}
+.schk.taken{background:var(--green);border-color:var(--green)}
+.lock-badge{display:inline-flex;align-items:center;gap:4px;background:var(--bg-dark);border:1px solid var(--border);border-radius:7px;padding:3px 8px}
+.preg-bg{background:var(--bg-dark);border-radius:6px;height:8px;width:100%;margin:6px 0 3px}
+.preg-bar{background:var(--gold);border-radius:6px;height:8px}
+.appt-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.appt-row:last-child{border-bottom:none}
+.adb{background:var(--gold);border-radius:7px;padding:4px 8px;text-align:center;flex-shrink:0;min-width:38px}
+.adb-g{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:7px;padding:4px 8px;text-align:center;flex-shrink:0;min-width:38px}
+.adb-mo{font-size:8px;font-weight:700;color:var(--gd)}
+.adb-day{font-size:14px;font-weight:700;color:var(--gd)}
+.adb-mo-w{color:var(--white)}.adb-day-w{color:var(--white)}
+.mrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.mrow:last-child{border-bottom:none}
+.mdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sched-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:0.5px solid var(--border);border-radius:9px}
+.si-num{font-size:11px;font-weight:700;color:var(--gold);width:18px;flex-shrink:0;margin-top:1px}
+.si-chk{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;margin-top:1px}
+.si-chk.done{background:var(--green);border-color:var(--green)}
+.si-text{font-size:13px;font-weight:500;color:var(--white);flex:1;line-height:1.3}
+.si-text.stk{text-decoration:line-through;opacity:0.5}
+.si-time{font-size:10px;color:var(--gold);margin-top:2px}
+.meet-card{border:0.5px solid var(--border);border-radius:10px;padding:11px 13px;background:transparent;margin-bottom:8px}
+.meet-title{font-size:14px;font-weight:700;color:var(--white)}
+.meet-meta{font-size:10px;color:var(--gold);margin-top:2px}
+.meet-notes{font-size:11px;color:var(--white);opacity:0.7;margin-top:6px;line-height:1.4}
+.meet-ah{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin:8px 0 5px}
+.ai{display:flex;align-items:center;gap:8px;padding:5px 0}
+.meet-btns{display:flex;gap:6px;margin-top:9px}
+.pet-card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
+.pet-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.pet-name{font-size:15px;font-weight:700;color:var(--white)}
+.pet-sub{font-size:10px;color:var(--gold);margin-top:1px}
+.pet-task{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.pet-task:last-child{border-bottom:none}
+.ptdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ptname{font-size:12px;font-weight:600;color:var(--white);flex:1}
+.ptsub{font-size:9px;margin-top:1px}
+.sv-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.sv-row:last-child{border-bottom:none}
+.sdb{background:var(--gold);border-radius:6px;padding:3px 7px;text-align:center;flex-shrink:0;min-width:34px}
+.sdb-g{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:6px;padding:3px 7px;text-align:center;flex-shrink:0;min-width:34px}
+.sdb-mo{font-size:7px;font-weight:700;color:var(--gd)}.sdb-day{font-size:12px;font-weight:700;color:var(--gd)}
+.sdb-mo-w{color:var(--white)}.sdb-day-w{color:var(--white)}
+.biz-card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:11px 13px;background:transparent;margin-bottom:10px}
+.biz-name{font-size:16px;font-weight:700;color:var(--white)}
+.biz-type{font-size:10px;color:var(--gold);margin-top:2px}
+.biz-stats{display:flex;gap:8px;margin-top:9px}
+.biz-stat{flex:1;background:var(--bg-dark);border-radius:7px;padding:7px 9px}
+.bstat-lbl{font-size:8px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em}
+.bstat-val{font-size:14px;font-weight:700;color:var(--white);margin-top:2px}
+.biz-tabs{display:flex;gap:6px;margin-top:10px}
+.biz-tab{flex:1;background:var(--bg-dark);border:0.5px solid var(--border);border-radius:7px;padding:6px 4px;font-size:9px;font-weight:700;color:var(--white);text-align:center;cursor:pointer}
+.biz-tab.on{background:var(--gold);color:var(--gd);border-color:var(--gold)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi-c{background:var(--bg-dark);border-radius:9px;padding:9px 11px}
+.kpi-lbl{font-size:9px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em}
+.kpi-val{font-size:16px;font-weight:700;color:var(--white);margin:3px 0}
+.kpi-tr{font-size:10px}
+.kpi-g{color:var(--green)}.kpi-o{color:var(--gold)}
+.team-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.team-row:last-child{border-bottom:none}
+.t-av{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:var(--gd)}
+.u-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)}
+.u-row:last-child{border-bottom:none}
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700}
+.u-info{flex:1}
+.u-name-t{font-size:13px;font-weight:700;color:var(--white)}
+.u-role-t{font-size:10px;color:var(--gold);margin-top:1px}
+.u-last{font-size:9px;color:var(--white);opacity:0.4;margin-top:1px}
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:800;display:none;align-items:flex-end}
+#modal-overlay.show{display:flex}
+.bottom-sheet{background:var(--bg);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto;border-top:1.5px solid var(--gold)}
+.sheet-title{font-size:17px;font-weight:700;color:var(--white);margin-bottom:16px}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+#jarvis-modal{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;flex-direction:column}
+.jm-header{padding:14px 16px;border-bottom:0.5px solid var(--gold);display:flex;justify-content:space-between;align-items:center}
+.jm-title{font-size:14px;font-weight:700;color:var(--gold)}
+.jm-close{font-size:24px;color:var(--white);font-weight:300;background:transparent;border:none;cursor:pointer;line-height:1}
+.jm-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.jm-user{align-self:flex-end;background:var(--bg-dark);border-radius:12px 12px 2px 12px;padding:10px 13px;max-width:80%;font-size:13px;color:var(--white);line-height:1.4}
+.jm-ai{align-self:flex-start;background:var(--gold);border-radius:12px 12px 12px 2px;padding:10px 13px;max-width:85%;font-size:13px;color:var(--gd);line-height:1.5;font-weight:500}
+.jm-input-row{padding:14px;border-top:0.5px solid var(--border);display:flex;gap:10px}
+.jm-input{flex:1;background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:14px;color:var(--white)}
+.jm-send{background:var(--gold);border:none;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;color:var(--gd)}
+#error-toast,#success-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;z-index:1100;display:none;text-align:center;max-width:90%;pointer-events:none}
+#error-toast{background:var(--red);color:var(--white)}
+#success-toast{background:var(--green);color:var(--white)}
+#offline-banner{position:fixed;top:0;left:0;right:0;background:var(--gold);color:var(--gd);padding:8px 16px;font-size:12px;font-weight:700;text-align:center;z-index:1050;display:none}
+.recipe-card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent;margin-bottom:8px}
+.r-name{font-size:14px;font-weight:700;color:var(--white)}
+.r-meta{font-size:10px;color:var(--gold);margin-top:2px}
+.r-desc{font-size:11px;color:var(--white);opacity:0.7;margin-top:5px;line-height:1.4}
+.grocery-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)}
+.grocery-item:last-child{border-bottom:none}
+.g-chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer}
+.g-chk.checked{background:var(--green);border-color:var(--green)}
+.g-name{font-size:13px;color:var(--white);font-weight:500;flex:1}
+.g-name.stk{text-decoration:line-through;opacity:0.5}
+.loading-spinner{width:24px;height:24px;border:2px solid var(--border);border-top:2px solid var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(min-width:501px){#app{border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="offline-banner">You're offline — changes will sync when you reconnect</div>
+<div id="error-toast"></div>
+<div id="success-toast"></div>
+<div id="splash">
+  <div class="splash-brand">BETANCUR</div>
+  <div class="splash-line"></div>
+  <div class="splash-sub">Operating System</div>
+  <div class="splash-btns">
+    <button class="btn-primary" onclick="showAuth('signin')">Sign In</button>
+    <button class="btn-secondary" onclick="showAuth('signup')">Create Account</button>
+  </div>
+</div>
+<div id="auth-screen">
+  <div class="auth-header">
+    <button class="auth-back" onclick="backToSplash()">&#8249; Back</button>
+    <span class="auth-step" id="auth-step-label"></span>
+  </div>
+  <div class="auth-body" id="auth-body"></div>
+</div>
+<div id="setup-screen">
+  <div class="setup-header">
+    <span style="font-size:13px;font-weight:700;color:var(--gold)" id="setup-title-label">First Time Setup</span>
+    <span style="font-size:11px;color:var(--white);opacity:0.5" id="setup-step-num">Step 1 of 7</span>
+  </div>
+  <div id="setup-body" class="setup-body"></div>
+</div>
+<div id="babysitter-app">
+  <div class="sitter-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--white)" id="sitter-greeting">Hi there!</div>
+        <div style="font-size:11px;color:var(--gold);margin-top:2px" id="sitter-date"></div>
+      </div>
+      <div id="sitter-pill"></div>
+    </div>
+  </div>
+  <div class="sitter-body" id="sitter-body"></div>
+</div>
+<div id="main-app">
+  <div id="overlay" onclick="closeDrawer()"></div>
+  <div id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-os">Betancur OS</div>
+      <div class="drawer-uname" id="drawer-user-name"></div>
+      <div class="drawer-urole" id="drawer-user-role"></div>
+    </div>
+    <div id="drawer-nav"></div>
+    <div class="drawer-footer">
+      <div style="font-size:10px;color:var(--gold);opacity:0.5">&#8592; Swipe left to close</div>
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="menu-btn" onclick="openDrawer()">&#9776; Menu</button>
+      <span class="os-title">Betancur OS</span>
+    </div>
+    <div id="top-user-pill"></div>
+  </div>
+  <div id="jarvis-modal">
+    <div class="jm-header">
+      <span class="jm-title">&#10022; Jarvis</span>
+      <button class="jm-close" onclick="closeJarvis()">&#215;</button>
+    </div>
+    <div class="jm-msgs" id="jarvis-messages"></div>
+    <div class="jm-input-row">
+      <input class="jm-input" id="jarvis-input" placeholder="Ask Jarvis anything..." onkeydown="if(event.key==='Enter')sendJarvis()">
+      <button class="jm-send" onclick="sendJarvis()">Send</button>
+    </div>
+  </div>
+  <div id="modal-overlay" onclick="closeModal()">
+    <div class="bottom-sheet" id="modal-content" onclick="event.stopPropagation()"></div>
+  </div>
+  <div id="page-container">
+    <div class="section active" id="section-home">
+      <div style="padding:2px 0 6px">
+        <div style="font-size:22px;font-weight:700;color:var(--white)" id="home-greeting">Good morning</div>
+        <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
+        <div class="pulse-strip" id="pulse-strip"></div>
+      </div>
+      <div class="jcard" id="home-jarvis">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="jlabel">Jarvis</span><span class="jbadge" id="jarvis-alert-count"></span>
+        </div>
+        <div class="jtext" id="jarvis-home-text">Loading your day...</div>
+        <div class="jcta" onclick="openJarvis()">Ask Jarvis anything &#8594;</div>
+      </div>
+      <div class="gfab" onclick="navigate('grocery')">
+        <span class="gfab-text">&#128722; Grocery List</span>
+        <span class="gfab-count" id="grocery-count">0 items</span>
+      </div>
+      <div class="sec-label">Chores</div><div id="home-chores"></div>
+      <div class="sec-label">Today's Tasks</div><div class="card" id="home-tasks"></div>
+      <div class="sec-label">Health Streak</div><div class="card" id="home-streak"></div>
+      <div class="sec-label">Budget</div><div class="grid2" id="home-budget"></div>
+      <div class="sec-label">Activity</div><div class="card" id="home-activity"></div>
+      <div class="sec-label">Reminders</div><div class="card" id="home-reminders"></div>
+    </div>
+    <div class="section" id="section-chores">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Chores</span>
+        <button class="btn-gold-sm" onclick="showAddChore()">+ Add</button>
+      </div>
+      <div id="chores-status-strip" style="display:flex;gap:12px"></div>
+      <div id="chores-room-detail" style="display:none"></div>
+      <div class="room-grid" id="room-grid"></div>
+    </div>
+    <div class="section" id="section-budget">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Budget</span>
+        <span style="font-size:11px;color:var(--gold);font-weight:600" id="budget-month-label"></span>
+      </div>
+      <div class="grid2" id="budget-summary"></div>
+      <div id="budget-progress"></div>
+      <div class="sec-label">By Category</div><div class="card" id="budget-categories"></div>
+      <div class="sec-label">Tithe &#8212; Sundays</div><div class="card" id="tithe-tracker"></div>
+      <div class="sec-label">Savings Goals</div>
+      <div id="savings-section"></div>
+      <button class="btn-gold-outline" onclick="showAddSavings()">+ Add Savings Goal</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <span style="font-size:16px;font-weight:700;color:var(--white)">Bills</span>
+        <button class="btn-gold-sm" onclick="showAddBill()">+ Add Bill</button>
+      </div>
+      <div id="bills-list"></div>
+    </div>
+    <div class="section" id="section-health" style="padding:0">
+      <div class="top-tabs" id="health-tabs">
+        <div class="ttab on" onclick="switchHealthTab('workouts')">Workouts</div>
+        <div class="ttab" onclick="switchHealthTab('supps')">Supps</div>
+        <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
+        <div class="ttab" onclick="switchHealthTab('diana')">Diana</div>
+      </div>
+      <div id="health-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
+    </div>
+    <div class="section" id="section-business">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Business</span>
+        <button class="btn-gold-sm" onclick="showAddBusiness()">+ Add</button>
+      </div>
+      <div id="business-list"></div>
+    </div>
+    <div class="section" id="section-life" style="padding:0">
+      <div class="top-tabs" id="life-tabs">
+        <div class="ttab on" onclick="switchLifeTab('pets')">Pets</div>
+        <div class="ttab" onclick="switchLifeTab('vehicles')">Vehicles</div>
+        <div class="ttab" onclick="switchLifeTab('recipes')">Recipes</div>
+      </div>
+      <div id="life-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
+    </div>
+    <div class="section" id="section-minutes">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Meeting Minutes</span>
+        <button class="btn-gold-sm" onclick="showAddMeeting()">+ New</button>
+      </div>
+      <div class="jcard"><div class="jlabel">Jarvis &#8212; Open Actions</div><div class="jtext" id="minutes-jarvis-text">Checking open action items...</div></div>
+      <div id="meetings-filter" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="meetings-list"></div>
+    </div>
+    <div class="section" id="section-schedule">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Schedule</span>
+        <div id="sched-user-pill"></div>
+      </div>
+      <div class="card" id="schedule-week-banner"></div>
+      <div class="jcard" id="schedule-jarvis"></div>
+      <div id="schedule-tab-row" style="display:flex;gap:7px"></div>
+      <div id="schedule-my-list"></div>
+      <div class="add-item-row" onclick="showAddScheduleItem()">
+        <span class="add-item-plus">+</span>
+        <span class="add-item-text">Add to my list...</span>
+      </div>
+      <div class="sec-label" id="other-sched-label"></div>
+      <div id="other-schedule-list"></div>
+    </div>
+    <div class="section" id="section-grocery">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Grocery List</span>
+        <button class="btn-gold-sm" onclick="showAddGrocery()">+ Add</button>
+      </div>
+      <div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext" id="grocery-jarvis-text">Based on your recipes and usual items, here are suggestions for this week.</div></div>
+      <div class="card" id="grocery-list"></div>
+    </div>
+    <div class="section" id="section-users">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:18px;font-weight:700;color:var(--white)">Users</span>
+        <button class="btn-gold-sm" onclick="showInviteUser()">+ Invite</button>
+      </div>
+      <div class="sec-label">Admins</div><div class="card" id="admin-users-list"></div>
+      <div class="sec-label">Other Users</div><div class="card" id="other-users-list"></div>
+      <div class="sec-label">Role Permissions</div><div class="card" id="role-permissions"></div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,diana_schedule:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
+function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
+function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+function uid4(){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);});}
+window.addEventListener('online',()=>{S.isOnline=true;document.getElementById('offline-banner').style.display='none';});
+window.addEventListener('offline',()=>{S.isOnline=false;document.getElementById('offline-banner').style.display='block';});
+const sb=(()=>{
+  const h={'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json'};
+  const ah=()=>{const t=localStorage.getItem('bos_token');return t?{...h,'Authorization':'Bearer '+t}:h;};
+  const req=async(method,path,body)=>{if(!navigator.onLine)throw new Error('BOS-SYNC-002');const opts={method,headers:ah()};if(body)opts.body=JSON.stringify(body);const r=await fetch(SUPABASE_URL+'/rest/v1'+path,opts);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||'HTTP '+r.status);}const txt=await r.text();return txt?JSON.parse(txt):[];};
+  return{
+    auth:{
+      signUp:async(email,pw,meta)=>{const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:h,body:JSON.stringify({email,password:pw,data:meta})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d;},
+      signIn:async(email,pw)=>{const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:h,body:JSON.stringify({email,password:pw})});const d=await r.json();if(d.error)throw new Error(d.error_description||d.error);localStorage.setItem('bos_token',d.access_token);localStorage.setItem('bos_refresh',d.refresh_token);return d;},
+      signOut:async()=>{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:ah()}).catch(()=>{});localStorage.removeItem('bos_token');localStorage.removeItem('bos_refresh');},
+      getUser:async()=>{const t=localStorage.getItem('bos_token');if(!t)return null;const r=await fetch(SUPABASE_URL+'/auth/v1/user',{headers:ah()});if(!r.ok)return null;return r.json();},
+      refresh:async()=>{const rt=localStorage.getItem('bos_refresh');if(!rt)return null;const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:h,body:JSON.stringify({refresh_token:rt})});const d=await r.json();if(d.access_token){localStorage.setItem('bos_token',d.access_token);localStorage.setItem('bos_refresh',d.refresh_token);}return d;}
+    },
+    from:(table)=>({
+      select:(cols='*')=>({eq:(col,val)=>req('GET',`/${table}?select=${cols}&${col}=eq.${encodeURIComponent(val)}&order=created_at.desc`),all:()=>req('GET',`/${table}?select=${cols}`)}),
+      insert:(data)=>req('POST',`/${table}?Prefer=return%3Drepresentation`,Array.isArray(data)?data:[data]),
+      update:(data)=>({eq:(col,val)=>req('PATCH',`/${table}?${col}=eq.${encodeURIComponent(val)}`,data)}),
+      delete:()=>({eq:(col,val)=>req('DELETE',`/${table}?${col}=eq.${encodeURIComponent(val)}`)})
+    })
+  };
+})();
+S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
+async function safeSave(type,id,data){try{if(type==='UPDATE_CHORE')await sb.from('chores').update(data).eq('id',id);else if(type==='UPDATE_BILL')await sb.from('bills').update(data).eq('id',id);else if(type==='UPDATE_GROCERY')await sb.from('grocery_items').update(data).eq('id',id);}catch(e){if(e.message==='BOS-SYNC-002'){S.offlineQueue.push({type,id,data,ts:Date.now()});localStorage.setItem('bos_queue',JSON.stringify(S.offlineQueue));}else showError(e.message||'BOS-SYNC-001');}}
+function logActivity(action,section,item){if(!S.household)return;sb.from('activity_feed').insert({household_id:S.household.id,user_id:S.profile?.id,action,section,item_name:item}).catch(()=>{});}
+
+// AUTH
+function backToSplash(){document.getElementById('auth-screen').style.display='none';document.getElementById('splash').style.display='flex';}
+function showAuth(mode){S.authMode=mode;document.getElementById('splash').style.display='none';document.getElementById('auth-screen').style.display='flex';mode==='signin'?renderSignIn():renderSignUp(1);}
+function renderSignIn(){
+  document.getElementById('auth-step-label').textContent='Sign In';
+  document.getElementById('auth-body').innerHTML=`<div class="auth-title">Welcome back</div><div class="auth-subtitle">Sign in to Betancur OS</div><div class="auth-error" id="auth-error"></div><div class="field-group"><div class="field-label">Username</div><input class="field-input" id="si-email" type="text" placeholder="e.g. aj_betancur" autocomplete="username"></div><div class="field-group"><div class="field-label">Password</div><input class="field-input" id="si-pass" type="password" placeholder="Your password..." autocomplete="current-password"></div><button class="btn-primary" onclick="doSignIn()" style="margin-top:8px">Sign In</button><div class="auth-link" style="margin-top:8px">No account? <span onclick="renderSignUp(1)">Create one</span></div>`;
+}
+function renderSignUp(step){
+  if(step===1){
+    document.getElementById('auth-step-label').textContent='Step 1 of 2';
+    document.getElementById('auth-body').innerHTML=`<div class="auth-title">Create account</div><div class="auth-subtitle">Choose a username and password</div><div class="auth-error" id="auth-error"></div><div class="field-group"><div class="field-label">Your Name</div><input class="field-input" id="su-name" placeholder="First and last name..."></div><div class="field-group"><div class="field-label">Username</div><input class="field-input" id="su-email" type="text" placeholder="e.g. aj_betancur (no spaces)"></div><div class="field-group"><div class="field-label">Password</div><input class="field-input" id="su-pass" type="password" placeholder="At least 6 characters..."></div><div class="field-group"><div class="field-label">Confirm Password</div><input class="field-input" id="su-pass2" type="password" placeholder="Repeat password..."></div><button class="btn-primary" onclick="validateStep1()" style="margin-top:8px">Next &#8594;</button><div class="auth-link" style="margin-top:8px">Have account? <span onclick="renderSignIn()">Sign in</span></div>`;
+  }else{
+    document.getElementById('auth-step-label').textContent='Step 2 of 2';
+    const roles=[['admin','Admin','Full access · Household owner'],['babysitter','Babysitter',"Diana's needs · Chores only"],['mom','Mom','Family view · Future phase'],['custom','Custom','Admin defines access']];
+    document.getElementById('auth-body').innerHTML=`<div class="auth-title">Who are you?</div><div class="auth-subtitle">Sets what you see in the app</div><div class="auth-error" id="auth-error"></div>${roles.map(([v,n,d])=>`<div class="role-opt ${S.selectedRole===v?'sel':''}" onclick="selectRole('${v}')" style="margin-top:8px;${v==='custom'?'border-color:var(--blue)':''}"><div><div class="r-name" style="${v==='custom'?'color:var(--blue)':''}">${n}</div><div class="r-desc" style="${v==='custom'?'color:var(--blue);opacity:0.8':''}">${d}</div></div>${S.selectedRole===v?'<span style="font-size:18px;color:var(--gd);font-weight:700">&#10003;</span>':''}</div>`).join('')}<div style="display:flex;gap:10px;margin-top:14px"><button class="btn-white" onclick="renderSignUp(1)" style="flex:1">&#8249; Back</button><button class="btn-primary" onclick="doSignUp()" style="flex:2">Create Account &#8594;</button></div>`;
+  }
+}
+function selectRole(r){S.selectedRole=r;renderSignUp(2);}
+function validateStep1(){
+  const n=document.getElementById('su-name')?.value?.trim(),raw=document.getElementById('su-email')?.value?.trim(),p=document.getElementById('su-pass')?.value,p2=document.getElementById('su-pass2')?.value;
+  if(!n||!raw||!p){showAuthError('BOS-DATA-001');return;}
+  if(p!==p2){showAuthError('BOS-USER-002');return;}
+  if(p.length<6){showAuthError('Password must be at least 6 characters');return;}
+  if(/\s/.test(raw)){showAuthError('Username cannot contain spaces. Use underscores.');return;}
+  const email=raw.includes('@')?raw:raw.toLowerCase()+'@betancur.local';
+  localStorage.setItem('bos_su_tmp',JSON.stringify({name:n,email,username:raw.toLowerCase(),pass:p}));renderSignUp(2);
+}
+async function doSignIn(){
+  const raw=document.getElementById('si-email')?.value?.trim(),pass=document.getElementById('si-pass')?.value;
+  if(!raw||!pass){showAuthError('BOS-DATA-001');return;}
+  const email=raw.includes('@')?raw:raw.toLowerCase().replace(/\s+/g,'_')+'@betancur.local';
+  const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Signing in...';btn.disabled=true;}
+  try{await sb.auth.signIn(email,pass);await loadProfile();}
+  catch(e){showAuthError(e.message?.toLowerCase().includes('invalid')?'BOS-AUTH-001':e.message);if(btn){btn.textContent='Sign In';btn.disabled=false;}}
+}
+async function doSignUp(){
+  const tmp=JSON.parse(localStorage.getItem('bos_su_tmp')||'{}');
+  if(!tmp.email){showAuthError('BOS-DATA-001');return;}
+  const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Creating...';btn.disabled=true;}
+  try{
+    const d=await sb.auth.signUp(tmp.email,tmp.pass,{name:tmp.name,role:S.selectedRole});
+    if(d.user){if(d.session){localStorage.setItem('bos_token',d.session.access_token);localStorage.setItem('bos_refresh',d.session.refresh_token);}S.user=d.user;localStorage.removeItem('bos_su_tmp');await createProfile(tmp.name,S.selectedRole);}
+    else{showSuccess('Check your email to confirm, then sign in.');}
+  }catch(e){showAuthError(e.message?.includes('already')?'BOS-USER-001':e.message);if(btn){btn.textContent='Create Account →';btn.disabled=false;}}
+}
+function showAuthError(c){const el=document.getElementById('auth-error');if(!el)return;el.textContent=ERRORS[c]||c;el.style.display='block';}
+async function createProfile(name,role){
+  let hh=null;
+  try{const r=await sb.from('households').select('*').all();hh=r?.[0]||null;}catch(e){}
+  if(!hh){const r=await sb.from('households').insert({name:'Betancur Family',address:'Tallahassee, FL',timezone:'America/New_York'});hh=Array.isArray(r)?r[0]:r;}
+  const color=role==='admin'?'#E8BC50':role==='babysitter'?'#55586A':'#C47AE8';
+  await sb.from('user_profiles').insert({id:S.user.id,household_id:hh.id,username:name.toLowerCase().replace(/\s+/g,'_'),name,role,avatar_color:color});
+  S.household=hh;await loadProfile();
+}
+async function loadProfile(){
+  const user=await sb.auth.getUser();if(!user){showAuth('signin');return;}
+  S.user=user;
+  const profiles=await sb.from('user_profiles').select('*').eq('id',user.id).catch(()=>[]);
+  if(!profiles?.length){document.getElementById('auth-screen').style.display='none';await createProfile(user.email?.split('@')[0]||'User','admin');return;}
+  S.profile=profiles[0];
+  const hh=await sb.from('households').select('*').eq('id',S.profile.household_id).catch(()=>[]);
+  S.household=hh?.[0]||null;
+  document.getElementById('auth-screen').style.display='none';document.getElementById('setup-screen').style.display='none';
+  if(S.profile.role==='babysitter'){launchSitter();}
+  else if(!localStorage.getItem('bos_setup_'+S.user.id)&&S.profile.role==='admin'){launchSetup();}
+  else{launchApp();}
+}
+async function logout(){await sb.auth.signOut().catch(()=>{});S.user=null;S.profile=null;S.household=null;['main-app','babysitter-app','setup-screen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('splash').style.display='flex';}
+
+// SETUP WIZARD
+let setupRooms=['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office','Kitchen','Living Room','Dining Room','Laundry','Backyard / Chickens','Front Yard','Garage / Airbnb'];
+function launchSetup(){document.getElementById('splash').style.display='none';document.getElementById('setup-screen').style.display='flex';renderStep(1);}
+function renderStep(n){
+  S.setupStep=n;document.getElementById('setup-step-num').textContent='Step '+n+' of 7';
+  const titles=['','Household','Family','Rooms','Budget','Pets & Vehicles','Business','Invite'];
+  document.getElementById('setup-title-label').textContent=titles[n];
+  document.getElementById('setup-body').innerHTML=buildProg(n)+buildStepContent(n);
+}
+function buildProg(cur){const steps=['Home','Family','Rooms','Budget','Pets','Biz','Invite'];return '<div class="setup-prog">'+steps.map((s,i)=>{const n=i+1,c=n<cur?'sp-done':n===cur?'sp-act':'sp-off',l=n<cur?'sp-lbl-d':n===cur?'sp-lbl-a':'sp-lbl-o';return'<div class="sp-item"><div class="sp-c '+c+'">'+(n<cur?'&#10003;':n)+'</div><span class="sp-lbl '+l+'">'+s+'</span></div>';}).join('')+'</div>';}
+function jv(t){return'<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext">'+t+'</div></div>';}
+function snav(n){return'<div class="setup-nav">'+(n>1?'<button class="btn-white" style="flex:1;padding:11px;font-size:12px" onclick="renderStep('+(n-1)+')">&#8249; Back</button>':'')+'<button class="btn-gold" style="flex:2;padding:11px;font-size:12px" onclick="'+(n<7?'renderStep('+(n+1)+')':'finishSetup()')+'">Next &#8594;</button></div>';}
+function buildStepContent(n){
+  if(n===1)return jv("Let's set up your household.")+`<div style="font-size:18px;font-weight:700;color:var(--white)">Your Household</div><div class="field-group"><div class="field-label">Household Name</div><input class="field-input" id="hh-name" value="Betancur Family"></div><div class="field-group"><div class="field-label">Address</div><input class="field-input" id="hh-addr" value="Tallahassee, FL"></div><div class="field-group"><div class="field-label">Time Zone</div><input class="field-input" id="hh-tz" value="Eastern Time (ET)"></div>`+snav(1);
+  if(n===2)return jv('Your family is pre-loaded.')+`<div style="font-size:18px;font-weight:700;color:var(--white)">Family Members</div><div class="s-row"><div><div class="s-row-name">${S.profile?.name||'AJ Betancur'}</div><div class="s-row-sub">Admin · Head of household</div></div><span class="tag-gold" style="font-size:8px;padding:3px 8px">YOU</span></div><div class="s-row"><div><div class="s-row-name">Juliette Betancur</div><div class="s-row-sub">Admin · Week 13 · Due Nov 23 2026</div></div><span class="tag-purple" style="font-size:8px;padding:3px 8px">ADMIN</span></div><div class="s-row"><div><div class="s-row-name">Diana Betancur</div><div class="s-row-sub">Baby · Jan 7 2025 · 16 months</div></div><span class="tag-gray" style="font-size:8px;padding:3px 8px">BABY</span></div>`+snav(2);
+  if(n===3)return jv('All 12 rooms loaded. Edit or remove any.')+`<div style="font-size:18px;font-weight:700;color:var(--white)">Your Rooms</div>${setupRooms.map((r,i)=>`<div class="s-row"><span class="s-row-name">${r}</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--green);font-weight:700">&#10003;</span><button class="btn-white-sm" onclick="editRoom(${i})">Edit</button><span class="del-x" onclick="removeRoom(${i})">&#215;</span></div></div>`).join('')}<div class="add-row" onclick="addRoom()"><span class="add-plus">+</span><span class="add-text">Add a room...</span></div>`+snav(3);
+  if(n===4)return jv('Full budget pre-loaded — 18 bills, $9,100 income.')+`<div class="card" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Monthly Income</span><span style="font-size:14px;font-weight:700;color:var(--white)">$9,100</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Total Bills</span><span style="font-size:14px;font-weight:700;color:var(--white)">$5,984</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--green)">Remaining</span><span style="font-size:14px;font-weight:700;color:var(--green)">$3,116</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Tithe</span><span style="font-size:12px;color:var(--white)">$100 every Sunday</span></div></div><p style="font-size:11px;color:var(--white);opacity:0.6;line-height:1.4">All 18 bills pre-loaded. Edit from Budget tab anytime.</p>`+snav(4);
+  if(n===5)return jv('Romeo, Nina, chickens, RAV4 all pre-loaded.')+`<div class="s-row" style="margin-bottom:6px"><div><div class="s-row-name">Romeo &amp; Nina &#128021;</div><div class="s-row-sub">Doberman ~3yr · Mixed ~10yr · Raw diet</div></div></div><div class="s-row" style="margin-bottom:6px"><div><div class="s-row-name">Chickens &#128020;</div><div class="s-row-sub">5 birds · Backyard</div></div></div><div class="s-row"><div><div class="s-row-name">2020 Toyota RAV4 &#128663;</div><div class="s-row-sub">118,172 mi · Oil due ~125,172</div></div></div>`+snav(5);
+  if(n===6)return jv('3 businesses ready. Full onboarding from Business tab.')+`<div class="s-row" style="border-color:var(--green);margin-bottom:6px"><div><div class="s-row-name">ParkNest</div><div class="s-row-sub">Parking Tech · Active</div></div><span class="tag-green" style="font-size:8px;padding:2px 7px">ADDED</span></div><div class="s-row-a" style="margin-bottom:6px"><div><div class="s-row-name">Poof</div><div class="s-row-sub">Decompression App · Active</div></div><span class="tag-gold" style="font-size:8px;padding:2px 7px">ADDED</span></div><div class="s-row-o"><div><div class="s-row-name" style="opacity:0.6">Garage Airbnb</div><div class="s-row-sub" style="opacity:0.4">Short-term Rental · Pending</div></div></div>`+snav(6);
+  if(n===7)return jv('Last step. Manage all users from Users tab anytime.')+`<div class="s-row" style="border-color:var(--green);margin-bottom:6px"><div><div class="s-row-name">Juliette Betancur</div><div class="s-row-sub">Admin · Full access</div></div><button class="btn-gold-sm" onclick="showSuccess('Share your Betancur OS URL with Juliette.')">Invite</button></div><div class="s-row-o" style="margin-bottom:14px"><div><div class="s-row-name" style="opacity:0.7">Babysitter</div><div class="s-row-sub" style="opacity:0.4">Diana + Chores only</div></div></div><button class="btn-gold" style="font-size:14px;padding:15px" onclick="finishSetup()">&#127881; Launch Betancur Operating System</button>`;
+}
+function editRoom(i){const n=prompt('Room name:',setupRooms[i]);if(n?.trim()){setupRooms[i]=n.trim();renderStep(3);}}
+function removeRoom(i){if(confirm('Remove?')){setupRooms.splice(i,1);renderStep(3);}}
+function addRoom(){const n=prompt('New room:');if(n?.trim()){setupRooms.push(n.trim());renderStep(3);}}
+async function finishSetup(){
+  const btn=document.querySelector('#setup-body .btn-gold');if(btn){btn.textContent='Setting up...';btn.disabled=true;}
+  try{await seedData();localStorage.setItem('bos_setup_'+S.user.id,'1');document.getElementById('setup-screen').style.display='none';launchApp();}
+  catch(e){showError(e.message);if(btn){btn.textContent='Launch Betancur Operating System';btn.disabled=false;}}
+}
+async function seedData(){
+  if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
+  const choreSeeds=[{r:'Laundry',n:'Laundry',s:['Wash','Fold','Put away'],rec:'weekly'},{r:'Kitchen',n:'Dishes',s:[],rec:'daily'},{r:'Kitchen',n:'Wipe counters',s:[],rec:'daily'},{r:'Kitchen',n:'Sweep & mop',s:[],rec:'weekly'},{r:'Master Bath',n:'Clean bathroom',s:['Toilet','Sink','Shower'],rec:'weekly'},{r:'Guest Bath',n:'Clean guest bath',s:['Toilet','Sink'],rec:'weekly'},{r:'Living Room',n:'Vacuum',s:[],rec:'weekly'},{r:'Dining Room',n:'Clean dining room',s:[],rec:'weekly'},{r:'Backyard / Chickens',n:'Clean coop',s:[],rec:'weekly'},{r:'Backyard / Chickens',n:'Check chicken feed',s:[],rec:'daily'},{r:'Master Bedroom',n:'Make bed',s:[],rec:'daily'},{r:'Guest Room',n:'Tidy guest room',s:[],rec:'weekly'}];
+  for(const c of choreSeeds)await sb.from('chores').insert({household_id:hid,created_by:uid,room:c.r,name:c.n,steps:c.s,recurrence:c.rec,status:'not_started'}).catch(()=>{});
+  const bills=[['Tithe',100,'faith',null,'sunday',false,'Manual'],['Mortgage',2031.12,'home',1,'monthly',false,'S. Checking'],['2nd Mortgage',40.23,'home',1,'monthly',false,'S. Saving'],['Utilities',300,'home',13,'monthly',false,'Manual'],['Cellphones',170,'home',8,'monthly',true,'Card'],['WiFi',70,'home',8,'monthly',true,'Card'],['Babysitting',900,'home',null,'weekly',false,'Card'],['Auto Loan',450,'transport',1,'monthly',false,'S. Checking'],['Auto Insurance',157.66,'transport',null,'monthly',true,'S. Checking'],['Gasoline',100,'transport',null,'monthly',false,'Credit'],['Student Loan',170,'debt',15,'monthly',false,'S. Checking'],['TD Card',35,'debt',18,'monthly',false,'Credit'],['Groceries / Household',400,'living',null,'monthly',false,'Credit'],['Dining Out',400,'living',null,'monthly',false,'Credit'],['Dog Food',100,'pets',null,'monthly',false,'Credit'],['Streaming',4.99,'subscriptions',10,'monthly',true,'Card'],['Gifts / Birthdays',100,'misc',null,'monthly',false,'Manual'],['Amex',155,'misc',10,'monthly',false,'Credit']];
+  for(const[name,amount,cat,due_day,due_type,auto_pay,src]of bills)await sb.from('bills').insert({household_id:hid,name,amount,category:cat,due_day,due_type,auto_pay,payment_source:src,paid:false}).catch(()=>{});
+  await sb.from('pets').insert([{household_id:hid,name:'Romeo & Nina',type:'dogs',diet:'Raw food',tasks:[{name:'Grooming',status:'overdue',color:'red'},{name:'Food run',status:'due',color:'gold'},{name:'Vet visit',status:'ok',color:'green'}]},{household_id:hid,name:'Chickens',type:'chickens',tasks:[{name:'Check feed',status:'not_started',color:'gray'},{name:'Clean coop',status:'not_started',color:'gray'}]}]).catch(()=>{});
+  await sb.from('vehicles').insert({household_id:hid,year:2020,make:'Toyota',model:'RAV4',current_mileage:118172,oil_change_interval:7000,last_oil_mileage:118172,service_records:[{date:'2025-12-27',description:'Air filter changed. Battery exchanged (Walmart was faulty).'},{date:'2025-12-03',description:'Oil change. Plugged back left tire. Air in all tires.',mileage:118172},{date:'2025-07-23',description:'Oil change',mileage:111048},{date:'2025-07-15',description:'Front brake pads + front left caliper — LIFETIME WARRANTY'},{date:'2025-07-14',description:'Battery replacement'}]}).catch(()=>{});
+  await sb.from('businesses').insert([{household_id:hid,owner_id:uid,name:'ParkNest',type:'Parking Technology',stage:'active',description:'Parking technology platform.',kpis:[{label:'Revenue',value:'$12,400',trend:'↑ 18% MoM'},{label:'Active Lots',value:'7',trend:'Target: 10'},{label:'New Clients',value:'2',trend:'This month'},{label:'Expenses',value:'$3,200',trend:'Under budget'}],tasks:[{id:uid4(),text:'Close deal with downtown lot',done:false,due:'May 15'},{id:uid4(),text:'Update investor deck',done:false,due:'May 20'}],team:[{name:S.profile?.name||'AJ',role:'Founder · CEO',initials:'AJ'}],notes:[]},{household_id:hid,owner_id:uid,name:'Poof',type:'Emotional Decompression App',stage:'active',description:'Consumer app for emotional decompression.',kpis:[{label:'Status',value:'Active',trend:'Building'}],tasks:[{id:uid4(),text:'Follow up with ambassadors on videos',done:false}],team:[{name:S.profile?.name||'AJ',role:'Founder',initials:'AJ'}],notes:[]},{household_id:hid,owner_id:uid,name:'Garage Airbnb',type:'Short-term Rental',stage:'setup',description:'Garage conversion to Airbnb.',kpis:[],tasks:[{id:uid4(),text:'Complete garage conversion',done:false},{id:uid4(),text:'Set up Airbnb listing',done:false}],team:[],notes:[]}]).catch(()=>{});
+  for(const[day,name]of[['monday','Upper Body'],['tuesday','Lower Body'],['wednesday','Zone 2'],['thursday','Push'],['friday','Pull'],['saturday','Legs'],['sunday','Zone 2']])await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:'10:00'}).catch(()=>{});
+  await sb.from('supplements').insert([{user_id:uid,name:'Creatine',dose:'10g',timing:'Morning · With water'},{user_id:uid,name:'Fish Oil',dose:'1 tablet',timing:'Morning · With food'}]).catch(()=>{});
+  await sb.from('diana_health').insert({household_id:hid,dob:'2025-01-07',milestones:[{text:'First steps',date:'Mar 2025',done:true},{text:'First word — "Mama"',date:'Feb 2025',done:true},{text:'Started solid foods',date:'Apr 2025',done:true}],vaccines:[{name:'Newborn vaccines',date:'Jan 2025',done:true},{name:'2-month vaccines',date:'Mar 2025',done:true},{name:'6-month vaccines',date:'Jul 2025',done:true},{name:'18-month vaccines',date:'Jul 2026',done:false}],appointments:[{title:'15-month checkup',date:'2026-05-17',doctor:'Pediatrician'}]}).catch(()=>{});
+  await sb.from('diana_schedule').insert({household_id:hid,created_by:uid,items:[{time:'7:00 AM',activity:'Wake up'},{time:'8:00 AM',activity:'Breakfast'},{time:'12:00 PM',activity:'Nap time'},{time:'1:30 PM',activity:'Lunch'},{time:'2:00 PM',activity:'Playtime'},{time:'7:00 PM',activity:'Bedtime routine'}]}).catch(()=>{});
+}
+
+// MAIN APP
+async function launchApp(){
+  document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
+  setupNav();setupTopBar();setupSwipe();
+  await loadAll();renderHome();
+  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{if(S.currentSection==='home')renderHome();});},30000);
+}
+function setupNav(){
+  document.getElementById('drawer-user-name').textContent=S.profile?.name||'User';
+  document.getElementById('drawer-user-role').textContent=(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)+' \u00b7 Tallahassee, FL';
+  const navs=[['home','\ud83c\udfe0','Home'],['chores','\ud83e\uddf9','Chores'],['budget','\ud83d\udcb0','Budget'],['health','\u2764\ufe0f','Health'],['business','\ud83d\udcbc','Business'],['life','\ud83c\udf3f','Life'],['minutes','\ud83d\udccb','Minutes'],['schedule','\ud83d\udcc5','Schedule'],['grocery','\ud83d\uded2','Grocery'],['users','\ud83d\udc65','Users']];
+  document.getElementById('drawer-nav').innerHTML=navs.map(([id,icon,label])=>`<div class="nav-item ${S.currentSection===id?'active':''}" id="nav-${id}" onclick="go('${id}')"><span class="nav-icon">${icon}</span><span class="nav-label">${label}</span></div>`).join('');
+}
+function setupTopBar(){
+  const c=S.profile?.avatar_color||'#E8BC50',isDark=c==='#E8BC50',name=(S.profile?.name||'User').split(' ')[0];
+  document.getElementById('top-user-pill').innerHTML=`<div class="user-pill" style="background:${c}"><div class="u-dot" style="background:${isDark?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${isDark?'#2A2D35':'#FFFFFF'}">${name} \u2014 ${(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)}</span></div>`;
+}
+function setupSwipe(){let sx=0;const app=document.getElementById('main-app');app.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});app.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>45){if(dx>0&&sx<60)openDrawer();else if(dx<0)closeDrawer();}},{passive:true});}
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('show');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+function go(sec){
+  closeDrawer();document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('section-'+sec);if(el)el.classList.add('active');
+  S.currentSection=sec;document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const nel=document.getElementById('nav-'+sec);if(nel)nel.classList.add('active');
+  document.getElementById('page-container').scrollTop=0;
+  ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,grocery:renderGrocery,users:renderUsers})[sec]?.();
+}
+async function loadAll(){
+  if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
+  const[chores,bills,pets,vehicles,businesses,grocery,activity,diana,ds]=await Promise.all([
+    sb.from('chores').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('bills').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('pets').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('vehicles').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('businesses').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('grocery_items').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('activity_feed').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('diana_health').select('*').eq('household_id',hid).then(r=>r?.[0]||null).catch(()=>null),
+    sb.from('diana_schedule').select('*').eq('household_id',hid).then(r=>r?.[0]||null).catch(()=>null),
+  ]);
+  Object.assign(S.data,{chores,bills,pets,vehicles,businesses,grocery,activity,diana,diana_schedule:ds});
+  const[workouts,wlogs,supps,slogs,meetings,users,tithe,savings]=await Promise.all([
+    sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]),
+    sb.from('workout_logs').select('*').eq('user_id',uid).catch(()=>[]),
+    sb.from('supplements').select('*').eq('user_id',uid).catch(()=>[]),
+    sb.from('supplement_logs').select('*').eq('user_id',uid).catch(()=>[]),
+    sb.from('meetings').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('user_profiles').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('tithe_records').select('*').eq('household_id',hid).catch(()=>[]),
+    sb.from('savings_goals').select('*').eq('household_id',hid).catch(()=>[]),
+  ]);
+  Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings,users,tithe,savings});
+  const wof=getWeekOf(new Date());
+  const mySched=await sb.from('schedules').select('*').eq('user_id',uid).then(r=>r?.find(s=>s.week_of===wof)||null).catch(()=>null);
+  S.data.schedules.mine=mySched;
+}
+// UTILS
+function getTZ(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));}
+function getWeekOf(d){const dt=new Date(d),day=dt.getDay(),diff=dt.getDate()-day+(day===0?-6:1);return new Date(dt.getFullYear(),dt.getMonth(),diff).toISOString().split('T')[0];}
+function fmt(d){try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch{return d||'';}}
+function getPregWeek(lmp){return Math.floor((getTZ()-new Date(lmp))/(7*24*60*60*1000));}
+function getDianaAge(){const dob=new Date('2025-01-07'),now=getTZ();return(now.getFullYear()-dob.getFullYear())*12+(now.getMonth()-dob.getMonth());}
+function getSundays(yr,mo){const s=[],d=new Date(yr,mo,1);while(d.getMonth()===mo){if(d.getDay()===0)s.push(new Date(d).toISOString().split('T')[0]);d.setDate(d.getDate()+1);}return s;}
+function canPay(b){if(!b.auto_pay)return true;const t=getTZ();if(!b.due_day)return true;return t.getDate()>=b.due_day;}
+function billSt(b){if(b.paid)return'paid';const t=getTZ();if(!b.due_day)return'manual';if(t.getDate()>b.due_day+2)return'overdue';if(t.getDate()>=b.due_day-3)return'soon';return b.auto_pay?'autopay':'manual';}
+function showModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('show');}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+// HOME
+function renderHome(){
+  const now=getTZ(),hr=now.getHours(),gr=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  const name=(S.profile?.name||'').split(' ')[0]||'AJ';
+  document.getElementById('home-greeting').textContent=gr+', '+name;
+  document.getElementById('home-date').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' \u00b7 Tallahassee, FL';
+  document.getElementById('pulse-strip').innerHTML=['AJ','Juliette','Diana'].map((n,i)=>`<div class="pulse-person"><div class="pulse-name">${n}</div><div class="pulse-status"><span class="sdot ${i===2?'dot-gr':'dot-g'}"></span>${i===2?'Napping':'Active'}</div></div>`).join('');
+  const gu=(S.data.grocery||[]).filter(g=>!g.checked).length;
+  document.getElementById('grocery-count').textContent=gu+' item'+(gu===1?'':'s');
+  const ac=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,3);
+  document.getElementById('home-chores').innerHTML=ac.length?ac.map(c=>{const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,has=steps.length>0;return`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="card-title">${c.room}</div><div class="card-main">${c.name}${has?' \u2014 Step '+(cur+1)+' of '+steps.length:''}</div></div><span class="tag ${c.status==='in_progress'?'tag-gold':'tag-outline'}">${c.status==='in_progress'?'In Progress':'Pending'}</span></div>${has?`<div class="step-row" style="margin-top:8px">${steps.map((s,i)=>`<span class="sc ${i<cur?'sc-done':i===cur?'sc-next':'sc-pend'}">${s}</span>${i<steps.length-1?'<span class="sarr">&#8250;</span>':''}`).join('')}</div>`:''}<div style="margin-top:8px;display:flex;gap:6px"><button class="check-btn" onclick="${has?'advanceStep(\''+c.id+'\')':'doneChore(\''+c.id+'\')'}">${has?'\u2713 Step':'\u2713 Done'}</button><button class="btn-white-sm" onclick="go('chores')">View all</button></div></div>`;}).join(''):'<div class="card"><div style="color:var(--green);text-align:center;font-weight:700;padding:4px 0">All chores done! \u{1F389}</div></div>';
+  const day=now.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
+  const tasks=[];
+  if(day==='thursday')tasks.push({text:'Trash out \u2014 early AM',time:'AM',r:'rdot-r'});
+  (S.data.bills||[]).filter(b=>!b.paid&&billSt(b)==='overdue').slice(0,2).forEach(b=>tasks.push({text:'Pay '+b.name+' \u2014 overdue',time:'Now',r:'rdot-r'}));
+  (S.data.bills||[]).filter(b=>!b.paid&&billSt(b)==='soon').slice(0,2).forEach(b=>tasks.push({text:b.name+' due',time:b.due_day+'th',r:'rdot'}));
+  document.getElementById('home-tasks').innerHTML=tasks.length?tasks.map(t=>`<div class="ri"><span class="rdot ${t.r}"></span><span class="rtext">${t.text}</span>${t.time?`<span class="rtime">${t.time}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">No urgent tasks today</span></div>';
+  const today=now.toISOString().split('T')[0],wof=getWeekOf(now),wofD=new Date(wof);
+  const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofD);dt.setDate(dt.getDate()+i);const ds=dt.toISOString().split('T')[0];const logged=(S.data.workout_logs||[]).some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
+  document.getElementById('home-streak').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--white)">Workout Streak</span><button class="check-btn" onclick="logWorkout()">\u2713 Log today</button></div><div class="streak-row">${dots}</div>`;
+  const bills=S.data.bills||[],ov=bills.filter(b=>!b.paid&&billSt(b)==='overdue').length,rem=9100-5984;
+  document.getElementById('home-budget').innerHTML=`<div class="mini-card"><div class="slabel">Bills</div><div class="sval" style="font-size:14px;color:${ov>0?'var(--red)':'var(--white)'}">${ov>0?ov+' overdue':'All current'}</div><div class="ssub">${bills.filter(b=>!b.paid).length} remaining</div></div><div class="mini-card"><div class="slabel">Remaining</div><div class="sval" style="font-size:14px;color:var(--green)">$${rem.toLocaleString()}</div><div class="ssub">After all bills</div></div>`;
+  const acts=S.data.activity||[];
+  document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
+  const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
+  document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' bill'+(ov>1?'s':'')+' overdue');
+  document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
+  const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
+}
+// CHORES
+function renderChores(){
+  const chores=S.data.chores||[];const rooms=[...new Set(chores.map(c=>c.room))];
+  const done=chores.filter(c=>c.status==='done').length,prog=chores.filter(c=>c.status==='in_progress').length,none=chores.filter(c=>c.status==='not_started').length;
+  document.getElementById('chores-status-strip').innerHTML=`<span style="font-size:9px;color:var(--green);font-weight:700">&#11044; ${done} done</span><span style="font-size:9px;color:var(--gold);font-weight:700">&#11044; ${prog} in progress</span><span style="font-size:9px;color:var(--white);opacity:0.5;font-weight:700">&#11044; ${none} not started</span>`;
+  const rd=rooms.map(r=>{const t=chores.filter(c=>c.room===r);const d=t.filter(c=>c.status==='done').length,p=t.filter(c=>c.status==='in_progress').length;const st=d===t.length&&t.length>0?'done':p>0||d>0?'progress':'empty';return{room:r,done:d,total:t.length,status:st};});
+  document.getElementById('room-grid').innerHTML=rd.map(r=>`<div class="room-tile rt-${r.status}" onclick="showRoom('${encodeURIComponent(r.room)}')"><div class="rt-name">${r.room}</div><div class="rt-status rts-${r.status}">&#11044; ${r.status==='done'?'Done':r.status==='progress'?'In progress':'Not started'}</div><div class="rt-count">${r.done} of ${r.total}</div><span class="rt-arr">&#8250;</span></div>`).join('');
+  if(!rooms.length)document.getElementById('room-grid').innerHTML='<div class="card" style="grid-column:1/-1;text-align:center"><div class="card-main" style="opacity:0.5">No chores yet. Tap + Add.</div></div>';
+  document.getElementById('chores-room-detail').style.display='none';
+}
+function showRoom(re){
+  const room=decodeURIComponent(re);const tasks=(S.data.chores||[]).filter(c=>c.room===room);
+  document.getElementById('room-grid').style.display='none';
+  const det=document.getElementById('chores-room-detail');det.style.display='block';
+  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><button class="btn-white-sm" onclick="closeRoom()">&#8249; Rooms</button><button class="btn-gold-sm" onclick="addTaskInRoom('${encodeURIComponent(room)}')">+ Task</button></div><div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px">${room}</div><div class="card">${tasks.length?tasks.map(t=>{const steps=Array.isArray(t.steps)?t.steps:[],cur=t.current_step||0,has=steps.length>0;return`<div class="task-item ${t.status==='done'?'td':''}"><div class="chk ${t.status==='done'?'checked':''}" onclick="${t.status!=='done'?(has?'advanceStep(\''+t.id+'\')':'doneChore(\''+t.id+'\')'):'void(0)'}" style="cursor:${t.status==='done'?'default':'pointer'}">${t.status==='done'?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="t-name ${t.status==='done'?'stk':''}">${t.name}</div><div class="t-meta">${t.recurrence||''}${t.estimated_time?' \u00b7 ~'+t.estimated_time:''}</div>${has&&t.status!=='done'?`<div class="step-row">${steps.map((s,i)=>`<span class="sc ${i<cur?'sc-done':i===cur?'sc-next':'sc-pend'}">${s}</span>${i<steps.length-1?'<span class="sarr">&#8250;</span>':''}`).join('')}</div>`:''}</div><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editC('${t.id}')">Edit</button><span class="del-x" onclick="delC('${t.id}')">&#215;</span></div></div>`;}).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No tasks yet.</span></div>'}</div>`;
+}
+function closeRoom(){document.getElementById('room-grid').style.display='grid';document.getElementById('chores-room-detail').style.display='none';}
+async function doneChore(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const upd={status:'done',completed_by:S.profile.id,completed_at:new Date().toISOString()};S.data.chores=S.data.chores.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_CHORE',id,upd);logActivity('completed '+c.name,'chores',c.name);S.currentSection==='chores'?renderChores():renderHome();}
+async function advanceStep(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,next=cur+1,done=next>=steps.length;const upd=done?{status:'done',current_step:next,completed_by:S.profile.id,completed_at:new Date().toISOString()}:{status:'in_progress',current_step:next,last_completed_by:S.profile.id};S.data.chores=S.data.chores.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_CHORE',id,upd);S.currentSection==='chores'?renderChores():renderHome();}
+function addTaskInRoom(re){const room=decodeURIComponent(re);showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task \u2014 ${room}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Vacuum..."></div><div class="field-group"><div class="field-label">Steps (comma separated)</div><input class="field-input" id="nc-steps" placeholder="e.g. Move furniture, Vacuum..."></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><input type="hidden" id="nc-room" value="${room}"><button class="btn-gold" onclick="saveC()">Save Task</button></div>`);}
+function showAddChore(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Room</div><select class="field-input" id="nc-room"><option value="">Select...</option>${['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office','Kitchen','Living Room','Dining Room','Laundry','Backyard / Chickens','Front Yard','Garage / Airbnb'].map(r=>`<option>${r}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Deep clean..."></div><div class="field-group"><div class="field-label">Steps (comma separated, optional)</div><input class="field-input" id="nc-steps" placeholder="e.g. Dishes, Stove, Sweep"></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><button class="btn-gold" onclick="saveC()">Save Chore</button></div>`);}
+async function saveC(){const room=document.getElementById('nc-room')?.value,name=document.getElementById('nc-name')?.value?.trim(),sr=document.getElementById('nc-steps')?.value?.trim(),rec=document.getElementById('nc-rec')?.value;if(!room||!name){showError('BOS-DATA-001');return;}const steps=sr?sr.split(',').map(s=>s.trim()).filter(Boolean):[];try{const r=await sb.from('chores').insert({household_id:S.household.id,created_by:S.profile.id,room,name,steps,recurrence:rec||'weekly',status:'not_started'});if(r?.[0])S.data.chores.push(r[0]);closeModal();showSuccess('Chore added!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+async function delC(id){if(!confirm('Delete?'))return;try{await sb.from('chores').delete().eq('id',id);S.data.chores=S.data.chores.filter(c=>c.id!==id);showSuccess('Deleted');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+function editC(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ec-name" value="${c.name}"></div><div class="field-group"><div class="field-label">Steps</div><input class="field-input" id="ec-steps" value="${(c.steps||[]).join(', ')}"></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="ec-rec"><option value="daily" ${c.recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${c.recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${c.recurrence==='monthly'?'selected':''}>Monthly</option></select></div><button class="btn-gold" onclick="updateC('${id}')">Save</button><button class="btn-red-outline" onclick="resetC('${id}')">Reset to Not Started</button></div>`);}
+async function updateC(id){const name=document.getElementById('ec-name')?.value?.trim();const steps=document.getElementById('ec-steps')?.value?.split(',').map(s=>s.trim()).filter(Boolean);const rec=document.getElementById('ec-rec')?.value;if(!name){showError('BOS-DATA-001');return;}try{const upd={name,steps,recurrence:rec};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Saved!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+async function resetC(id){try{const upd={status:'not_started',current_step:0,completed_by:null,completed_at:null};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Reset!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+// BUDGET
+function renderBudget(){
+  const now=getTZ();document.getElementById('budget-month-label').textContent=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const bills=S.data.bills||[],income=9100,total=bills.reduce((s,b)=>s+(b.amount||0),0),paidA=bills.filter(b=>b.paid).reduce((s,b)=>s+(b.amount||0),0),rem=income-total,pct=Math.min(100,Math.round((paidA/total)*100));
+  document.getElementById('budget-summary').innerHTML=`<div class="mini-card"><div class="slabel">Income</div><div class="sval">$${income.toLocaleString()}</div><div class="ssub">Monthly</div></div><div class="mini-card"><div class="slabel">Total Bills</div><div class="sval">$${total.toFixed(0)}</div><div class="ssub">${bills.length} bills</div></div><div class="mini-card" style="border-left-color:var(--green)"><div class="slabel" style="color:var(--green)">Remaining</div><div class="sval sval-g">$${rem.toFixed(0)}</div><div class="ssub">After bills</div></div><div class="mini-card"><div class="slabel">Paid</div><div class="sval">${bills.filter(b=>b.paid).length}/${bills.length}</div><div class="ssub">This month</div></div>`;
+  document.getElementById('budget-progress').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--gold)">Bills Progress</span><span style="font-size:11px;font-weight:700;color:var(--white)">$${paidA.toFixed(0)} / $${total.toFixed(0)}</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6;margin-top:3px">${pct}% of bills paid</div></div>`;
+  const cats={faith:0,home:0,transport:0,debt:0,living:0,pets:0,subscriptions:0,misc:0};bills.forEach(b=>{if(cats[b.category]!==undefined)cats[b.category]+=(b.amount||0);});
+  document.getElementById('budget-categories').innerHTML=Object.entries(cats).filter(([,v])=>v>0).map(([k,v])=>`<div class="ri"><span class="rdot"></span><span class="rtext">${k.charAt(0).toUpperCase()+k.slice(1)}</span><span class="rtime">$${v.toFixed(0)}</span></div>`).join('');
+  const sundays=getSundays(now.getFullYear(),now.getMonth());const titheRecs=S.data.tithe||[];
+  document.getElementById('tithe-tracker').innerHTML=sundays.map(s=>{const rec=titheRecs.find(t=>t.sunday_date===s),past=new Date(s)<=now;return`<div class="ri"><div class="chk ${rec?.paid?'checked':''}" onclick="${past&&!rec?.paid?'markTithe(\''+s+'\')':''}" style="cursor:${past&&!rec?.paid?'pointer':'default'}">${rec?.paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span class="rtext">Sunday ${fmt(s)}</span><span class="rtime" style="${rec?.paid?'color:var(--green)':''}">$100</span></div>`;}).join('');
+  const savs=S.data.savings||[];
+  document.getElementById('savings-section').innerHTML=savs.length?savs.map(g=>{const p=Math.min(100,Math.round(((g.current_amount||0)/(g.target_amount||1))*100));return`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:700;color:var(--white)">${g.name}</span><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editSav('${g.id}')">Edit</button><span class="del-x" onclick="delSav('${g.id}')">&#215;</span></div></div><div class="pb-bg"><div class="pb-g" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6">$${(g.current_amount||0).toLocaleString()} of $${(g.target_amount||0).toLocaleString()}</div></div>`;}).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:6px 0">No savings goals yet.</div>';
+  const cats2={faith:'Faith',home:'Home',transport:'Transportation',debt:'Debt / Loans',living:'Living Expenses',pets:'Pets',subscriptions:'Subscriptions',misc:'Misc'};let bHTML='';
+  Object.entries(cats2).forEach(([cat,label])=>{
+    const cb=bills.filter(b=>b.category===cat);if(!cb.length)return;
+    bHTML+=`<div class="sec-label">${label}</div>`;
+    cb.forEach(b=>{const st=billSt(b),cp=canPay(b);
+      bHTML+=`<div class="bill-row bill-${b.paid?'paid':b.auto_pay&&!cp?'auto':st==='overdue'?'ov':st==='soon'?'soon':'man'}"><div class="chk ${b.paid?'checked':''}" onclick="${cp&&!b.paid?'payBill(\''+b.id+'\')':''}" style="cursor:${cp&&!b.paid?'pointer':'default'}">${b.paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':b.auto_pay&&!cp?'<span style="font-size:8px;color:var(--border)">&#128274;</span>':''}</div><div class="binfo"><div class="bname ${b.paid?'bname-stk':''}">${b.name}${b.auto_pay?'<span class="autotag">AUTO</span>':''}</div><div class="${st==='overdue'&&!b.paid?'bmeta-r':'bmeta'}">${b.paid?'Paid \u2714':b.auto_pay&&!cp?'Auto \u00b7 Due '+b.due_day+'th':st==='overdue'?'\u26a0 Overdue':b.due_day?'Due '+b.due_day+'th':(b.payment_source||'')}</div></div><div class="bright"><span class="bamt ${b.paid?'bamt-g':''}">$${(b.amount||0).toFixed(2)}</span></div><button class="btn-white-sm" onclick="editBill('${b.id}')">Edit</button><span class="del-x" onclick="delBill('${b.id}')">&#215;</span></div>`;});});
+  document.getElementById('bills-list').innerHTML=bHTML;
+}
+async function payBill(id){const upd={paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()};S.data.bills=S.data.bills.map(b=>b.id===id?{...b,...upd}:b);await safeSave('UPDATE_BILL',id,upd);renderBudget();showSuccess('Paid!');}
+async function markTithe(date){try{const r=await sb.from('tithe_records').insert({household_id:S.household.id,sunday_date:date,amount:100,paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()});if(r?.[0])S.data.tithe=[...S.data.tithe||[],...r];renderBudget();showSuccess('Tithe recorded!');}catch(e){showError(e.message);}}
+function showAddBill(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Bill</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="nb-name" placeholder="e.g. Netflix..."></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="nb-amt" type="number" step="0.01" placeholder="0.00"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nb-cat"><option value="home">Home</option><option value="transport">Transportation</option><option value="debt">Debt</option><option value="living">Living</option><option value="pets">Pets</option><option value="subscriptions">Subscriptions</option><option value="faith">Faith</option><option value="misc">Misc</option></select></div><div class="field-group"><div class="field-label">Due Day (1-31)</div><input class="field-input" id="nb-due" type="number" min="1" max="31" placeholder="e.g. 15"></div><div class="field-group"><div class="field-label">Payment Source</div><input class="field-input" id="nb-src" placeholder="e.g. Credit Card..."></div><div class="field-group"><div class="field-label">Auto Pay?</div><select class="field-input" id="nb-auto"><option value="false">No \u2014 Manual</option><option value="true">Yes \u2014 Auto Pay</option></select></div><button class="btn-gold" onclick="saveBill()">Add Bill</button></div>`);}
+async function saveBill(){const name=document.getElementById('nb-name')?.value?.trim(),amt=parseFloat(document.getElementById('nb-amt')?.value),cat=document.getElementById('nb-cat')?.value,due=parseInt(document.getElementById('nb-due')?.value)||null,src=document.getElementById('nb-src')?.value?.trim(),auto=document.getElementById('nb-auto')?.value==='true';if(!name||isNaN(amt)||amt<=0){showError('BOS-DATA-001');return;}try{const r=await sb.from('bills').insert({household_id:S.household.id,name,amount:amt,category:cat,due_day:due,payment_source:src,auto_pay:auto,paid:false});if(r?.[0])S.data.bills.push(r[0]);closeModal();showSuccess('Bill added!');renderBudget();}catch(e){showError(e.message);}}
+async function delBill(id){if(!confirm('Delete?'))return;try{await sb.from('bills').delete().eq('id',id);S.data.bills=S.data.bills.filter(b=>b.id!==id);renderBudget();}catch(e){showError(e.message);}}
+function editBill(id){const b=(S.data.bills||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Bill</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="eb-name" value="${b.name}"></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="eb-amt" type="number" step="0.01" value="${b.amount}"></div><div class="field-group"><div class="field-label">Due Day</div><input class="field-input" id="eb-due" type="number" min="1" max="31" value="${b.due_day||''}"></div><div class="field-group"><div class="field-label">Payment Source</div><input class="field-input" id="eb-src" value="${b.payment_source||''}"></div><div class="field-group"><div class="field-label">Auto Pay?</div><select class="field-input" id="eb-auto"><option value="false" ${!b.auto_pay?'selected':''}>No</option><option value="true" ${b.auto_pay?'selected':''}>Yes</option></select></div><button class="btn-gold" onclick="updBill('${id}')">Save</button>${b.paid?`<button class="btn-white" onclick="unpayBill('${id}')">Unmark Paid</button>`:''}</div>`);}
+async function updBill(id){const name=document.getElementById('eb-name')?.value?.trim(),amt=parseFloat(document.getElementById('eb-amt')?.value),due=parseInt(document.getElementById('eb-due')?.value)||null,src=document.getElementById('eb-src')?.value?.trim(),auto=document.getElementById('eb-auto')?.value==='true';if(!name||isNaN(amt)){showError('BOS-DATA-001');return;}try{const upd={name,amount:amt,due_day:due,payment_source:src,auto_pay:auto};await sb.from('bills').update(upd).eq('id',id);S.data.bills=S.data.bills.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBudget();}catch(e){showError(e.message);}}
+async function unpayBill(id){const upd={paid:false,paid_by:null,paid_at:null};await sb.from('bills').update(upd).eq('id',id).catch(()=>{});S.data.bills=S.data.bills.map(b=>b.id===id?{...b,...upd}:b);closeModal();renderBudget();}
+function showAddSavings(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Savings Goal</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Goal Name</div><input class="field-input" id="ns-nm" placeholder="e.g. Emergency Fund..."></div><div class="field-group"><div class="field-label">Target ($)</div><input class="field-input" id="ns-tgt" type="number" placeholder="10000"></div><div class="field-group"><div class="field-label">Current ($)</div><input class="field-input" id="ns-cur" type="number" placeholder="0"></div><button class="btn-gold" onclick="saveSav()">Add Goal</button></div>`);}
+async function saveSav(){const name=document.getElementById('ns-nm')?.value?.trim(),target=parseFloat(document.getElementById('ns-tgt')?.value),cur=parseFloat(document.getElementById('ns-cur')?.value)||0;if(!name||isNaN(target)){showError('BOS-DATA-001');return;}try{const r=await sb.from('savings_goals').insert({household_id:S.household.id,name,target_amount:target,current_amount:cur});if(r?.[0])S.data.savings=[...S.data.savings||[],...r];closeModal();showSuccess('Goal added!');renderBudget();}catch(e){showError(e.message);}}
+async function delSav(id){if(!confirm('Delete?'))return;try{await sb.from('savings_goals').delete().eq('id',id);S.data.savings=(S.data.savings||[]).filter(s=>s.id!==id);renderBudget();}catch(e){showError(e.message);}}
+function editSav(id){const g=(S.data.savings||[]).find(x=>x.id===id);if(!g)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Goal</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="eg-nm" value="${g.name}"></div><div class="field-group"><div class="field-label">Target ($)</div><input class="field-input" id="eg-tgt" type="number" value="${g.target_amount}"></div><div class="field-group"><div class="field-label">Current ($)</div><input class="field-input" id="eg-cur" type="number" value="${g.current_amount||0}"></div><button class="btn-gold" onclick="updSav('${id}')">Save</button></div>`);}
+async function updSav(id){const name=document.getElementById('eg-nm')?.value?.trim(),target=parseFloat(document.getElementById('eg-tgt')?.value),cur=parseFloat(document.getElementById('eg-cur')?.value)||0;if(!name||isNaN(target)){showError('BOS-DATA-001');return;}try{const upd={name,target_amount:target,current_amount:cur};await sb.from('savings_goals').update(upd).eq('id',id);S.data.savings=(S.data.savings||[]).map(s=>s.id===id?{...s,...upd}:s);closeModal();showSuccess('Saved!');renderBudget();}catch(e){showError(e.message);}}
+// HEALTH
+function renderHealth(){switchHTab(S.currentHealthTab);}
+function switchHealthTab(t){switchHTab(t);}
+function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
+function renderWorkouts(c){
+  const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getTZ().toISOString().split('T')[0];
+  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];const todayDay=days[getTZ().getDay()];
+  const wof=getWeekOf(new Date()),wofD=new Date(wof);
+  const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofD);dt.setDate(dt.getDate()+i);const ds=dt.toISOString().split('T')[0];const logged=logs.some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
+  c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis \u2014 Training</div><div class="jtext">Your 7-day split is loaded. Today is ${todayDay.charAt(0).toUpperCase()+todayDay.slice(1)} \u2014 ${(w.find(x=>x.day_of_week===todayDay)||{}).name||'Rest day'}.</div><div class="jcta" onclick="openJarvisCtx('fitness and training advice')">Ask Jarvis &#8594;</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Split</span><div style="display:flex;gap:6px"><button class="btn-white-sm" onclick="editSplit()">Edit Split</button><button class="btn-gold-sm" onclick="logWorkout()">\u2713 Log Today</button></div></div>
+    <div class="card">${w.length?w.map(x=>{const isT=x.day_of_week===todayDay;const logged=logs.some(l=>{const ld=new Date(l.logged_date);return ld.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase()===x.day_of_week&&l.logged_date>=wof;});return`<div class="task-item"><div class="chk ${logged?'checked':''}">${logged?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:10px;font-weight:700;color:var(--gold);width:30px;flex-shrink:0">${x.day_of_week.slice(0,3).toUpperCase()}</span><span class="t-name ${logged?'stk':''}" style="flex:1">${x.name}</span><span style="font-size:10px;color:var(--gold)">${x.workout_time||'10:00'}</span>${isT?'<span class="tag-gold" style="font-size:8px;padding:1px 6px">Today</span>':''}</div>`;}).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No split yet. Tap Edit Split.</span></div>'}</div>
+    <div class="card"><div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:6px">Week Streak</div><div class="streak-row">${dots}</div></div>`;
+}
+async function logWorkout(){const today=getTZ().toISOString().split('T')[0];if((S.data.workout_logs||[]).some(l=>l.logged_date===today)){showSuccess('Already logged today!');return;}try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Workout logged!');S.currentSection==='health'?renderHealth():renderHome();}catch(e){showError(e.message);}}
+function editSplit(){const w=S.data.workouts||[];const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Workout Split</div><div style="display:flex;flex-direction:column;gap:8px">${days.map(d=>{const wd=w.find(x=>x.day_of_week===d)||{};return`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--gold);width:32px">${d.slice(0,3).toUpperCase()}</span><input class="field-input" id="ws-${d}" style="flex:1;padding:8px 10px;font-size:12px" value="${wd.name||''}" placeholder="Rest..."><input class="field-input" id="wt-${d}" style="width:70px;padding:8px 10px;font-size:12px" value="${wd.workout_time||'10:00'}"></div>`;}).join('')}<button class="btn-gold" onclick="saveSplit()" style="margin-top:8px">Save Split</button></div>`);}
+async function saveSplit(){const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];try{for(const d of days){const name=document.getElementById('ws-'+d)?.value?.trim(),time=document.getElementById('wt-'+d)?.value?.trim()||'10:00';const ex=(S.data.workouts||[]).find(w=>w.day_of_week===d);if(ex){if(name!==ex.name||time!==ex.workout_time){await sb.from('workouts').update({name,workout_time:time}).eq('id',ex.id);S.data.workouts=S.data.workouts.map(w=>w.id===ex.id?{...w,name,workout_time:time}:w);}}else if(name){const r=await sb.from('workouts').insert({user_id:S.profile.id,day_of_week:d,name,workout_time:time});if(r?.[0])S.data.workouts=[...S.data.workouts||[],...r];}}closeModal();showSuccess('Split saved!');renderHealth();}catch(e){showError(e.message);}}
+function renderSupps(c){
+  const supps=S.data.supplements||[],logs=S.data.supplement_logs||[],today=getTZ().toISOString().split('T')[0];
+  c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Supplements</span><button class="btn-gold-sm" onclick="addSupp()">+ Add</button></div>
+    <div class="card">${supps.length?supps.map(s=>{const taken=logs.some(l=>l.supplement_id===s.id&&l.taken_date===today);return`<div class="supp-row"><div class="schk ${taken?'taken':''}" onclick="${taken?'':'logSupp(\''+s.id+'\')'}" style="cursor:${taken?'default':'pointer'}">${taken?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${s.name}</div><div style="font-size:9px;color:var(--gold);margin-top:1px">${s.dose} \u00b7 ${s.timing}</div></div><button class="btn-white-sm" onclick="editSupp('${s.id}')">Edit</button><span class="del-x" onclick="delSupp('${s.id}')">&#215;</span></div>`;}).join(''):'<div class="supp-row"><span style="opacity:0.4;font-size:12px">No supplements yet.</span></div>'}</div>
+    <div style="font-size:15px;font-weight:700;color:var(--white);margin-top:4px">Juliette's Supplements</div>
+    <div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:var(--white)">View only</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">Juliette only</span></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Prenatal Vitamins</div><div style="font-size:9px;color:var(--gold)">1 tablet \u00b7 Morning</div></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Creatine</div><div style="font-size:9px;color:var(--gold)">5g \u00b7 Morning</div></div></div></div>`;
+}
+async function logSupp(id){const today=getTZ().toISOString().split('T')[0];try{const r=await sb.from('supplement_logs').insert({supplement_id:id,user_id:S.profile.id,taken_date:today});if(r?.[0])S.data.supplement_logs=[...S.data.supplement_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){if(e.message?.includes('unique'))showSuccess('Already logged!');else showError(e.message);}}
+function addSupp(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Supplement</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ns-sn" placeholder="e.g. Magnesium..."></div><div class="field-group"><div class="field-label">Dose</div><input class="field-input" id="ns-dose" placeholder="e.g. 400mg..."></div><div class="field-group"><div class="field-label">Timing</div><input class="field-input" id="ns-timing" placeholder="e.g. Morning with food..."></div><button class="btn-gold" onclick="saveSupp()">Add</button></div>`);}
+async function saveSupp(){const name=document.getElementById('ns-sn')?.value?.trim(),dose=document.getElementById('ns-dose')?.value?.trim(),timing=document.getElementById('ns-timing')?.value?.trim();if(!name||!dose||!timing){showError('BOS-DATA-001');return;}try{const r=await sb.from('supplements').insert({user_id:S.profile.id,name,dose,timing});if(r?.[0])S.data.supplements=[...S.data.supplements||[],...r];closeModal();showSuccess('Added!');renderHealth();}catch(e){showError(e.message);}}
+function editSupp(id){const s=(S.data.supplements||[]).find(x=>x.id===id);if(!s)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Supplement</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="es-sn" value="${s.name}"></div><div class="field-group"><div class="field-label">Dose</div><input class="field-input" id="es-dose" value="${s.dose}"></div><div class="field-group"><div class="field-label">Timing</div><input class="field-input" id="es-timing" value="${s.timing}"></div><button class="btn-gold" onclick="updSupp('${id}')">Save</button></div>`);}
+async function updSupp(id){const name=document.getElementById('es-sn')?.value?.trim(),dose=document.getElementById('es-dose')?.value?.trim(),timing=document.getElementById('es-timing')?.value?.trim();if(!name||!dose||!timing){showError('BOS-DATA-001');return;}try{const upd={name,dose,timing};await sb.from('supplements').update(upd).eq('id',id);S.data.supplements=S.data.supplements.map(s=>s.id===id?{...s,...upd}:s);closeModal();showSuccess('Saved!');renderHealth();}catch(e){showError(e.message);}}
+async function delSupp(id){if(!confirm('Delete?'))return;try{await sb.from('supplements').delete().eq('id',id);S.data.supplements=S.data.supplements.filter(s=>s.id!==id);renderHealth();}catch(e){showError(e.message);}}
+function renderPregnancy(c){
+  const now=getTZ(),weeks=getPregWeek('2026-02-09'),due=new Date('2026-11-23'),dLeft=Math.floor((due-now)/(24*60*60*1000)),pct=Math.min(100,Math.round((weeks/40)*100));
+  const msgs={13:'Baby is the size of a lemon. Fingerprints forming. Energy improving as morning sickness eases.',14:'Baby is the size of a peach. Great time to start prenatal yoga and light resistance training.',15:'Baby is the size of an apple. Bones hardening. Add more calcium-rich foods.',16:'Baby is size of an avocado. You may start feeling movement soon. Stay hydrated.'};
+  c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis \u2014 Week ${weeks}</div><div class="jtext">${msgs[weeks]||'Week '+weeks+'. Keep up prenatals and light exercise.'}</div><div class="jcta" onclick="openJarvisCtx('pregnancy week ${weeks} advice and tips')">Ask Jarvis &#8594;</div></div>
+    <div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:18px;font-weight:700;color:var(--white)">Week ${weeks} &#127881;</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${weeks<=12?'1st Trimester':weeks<=26?'2nd Trimester \u2014 Just started!':'3rd Trimester'}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--white)">${dLeft} days</div><div style="font-size:10px;color:var(--gold)">Until Nov 23</div></div></div><div style="margin-top:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:var(--white);opacity:0.5">Wk 1</span><span style="font-size:9px;color:var(--gold);font-weight:700">Week ${weeks} of 40</span><span style="font-size:9px;color:var(--white);opacity:0.5">Wk 40</span></div><div class="preg-bg"><div class="preg-bar" style="width:${pct}%"></div></div></div></div>
+    <div style="font-size:14px;font-weight:700;color:var(--white)">Symptom / Notes Log</div>
+    <div class="card" id="preg-notes"><div style="font-size:11px;color:var(--white);opacity:0.4;padding:8px 0">No notes yet.</div></div>
+    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Note</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Note</div><input class=\\"field-input\\" id=\\"pn-t\\" placeholder=\\"How are you feeling...\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Noted!\');closeModal()\\">Save</button></div>')">+ Log Note</button>
+    <div style="font-size:14px;font-weight:700;color:var(--white)">OB Appointments</div>
+    <div class="card"><div class="appt-row"><div class="adb"><div class="adb-mo">JUN</div><div class="adb-day">3</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">OB Checkup \u2014 Week 17</div><div style="font-size:10px;color:var(--gold)">Anatomy scan</div></div></div></div>
+    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Appointment</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Title</div><input class=\\"field-input\\" id=\\"oa-t\\" placeholder=\\"e.g. OB Week 20...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"oa-d\\" type=\\"date\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Appointment</button>`;
+}
+function renderDiana(c){
+  const d=S.data.diana,age=getDianaAge();
+  const miles=d?.milestones||[{text:'First steps',date:'Mar 2025',done:true},{text:'First word \u2014 "Mama"',date:'Feb 2025',done:true},{text:'Started solid foods',date:'Apr 2025',done:true}];
+  const vaccs=d?.vaccines||[{name:'Newborn vaccines',date:'Jan 2025',done:true},{name:'2-month vaccines',date:'Mar 2025',done:true},{name:'6-month vaccines',date:'Jul 2025',done:true},{name:'18-month vaccines',date:'Jul 2026',done:false}];
+  const appts=d?.appointments||[{title:'15-month checkup',date:'2026-05-17',doctor:'Pediatrician'}];
+  c.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:17px;font-weight:700;color:var(--white)">Diana &#128118;</div><div style="font-size:11px;color:var(--gold);margin-top:2px">Born Jan 7, 2025 \u00b7 ${age} months old</div></div><div style="text-align:right"><div style="font-size:11px;font-weight:700;color:var(--white)">Next checkup</div><div style="font-size:10px;color:var(--gold)">${appts[0]?fmt(appts[0].date):'None'}</div></div></div></div>
+    <div style="font-size:14px;font-weight:700;color:var(--white)">Milestones</div>
+    <div class="card">${miles.map(m=>`<div class="mrow"><div class="mdot" style="background:${m.done?'var(--green)':'var(--gold)'}"></div><span style="font-size:12px;color:var(--white);font-weight:500;flex:1">${m.text}</span><span style="font-size:10px;color:var(--gold);font-weight:700">${m.date}</span></div>`).join('')}</div>
+    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Milestone</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Milestone</div><input class=\\"field-input\\" id=\\"ms-t\\" placeholder=\\"e.g. First sentence...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"ms-d\\" placeholder=\\"May 2026\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Milestone</button>
+    <div style="font-size:14px;font-weight:700;color:var(--white)">Vaccines</div>
+    <div class="card">${vaccs.map(v=>`<div class="mrow"><div class="mdot" style="background:${v.done?'var(--green)':'var(--gold)'}"></div><span style="font-size:12px;color:var(--white);font-weight:500;flex:1">${v.name}</span><span style="font-size:10px;color:${v.done?'var(--green)':'var(--gold)'};font-weight:700">${v.done?'Done \u2714':v.date}</span></div>`).join('')}</div>
+    <div style="font-size:14px;font-weight:700;color:var(--white)">Appointments</div>
+    <div class="card">${appts.map(a=>`<div class="appt-row"><div class="adb"><div class="adb-mo">${new Date(a.date).toLocaleDateString('en-US',{month:'short'}).toUpperCase()}</div><div class="adb-day">${new Date(a.date).getDate()}</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${a.title}</div><div style="font-size:10px;color:var(--gold)">${a.doctor||''}</div></div></div>`).join('')}</div>
+    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Appointment</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Title</div><input class=\\"field-input\\" id=\\"da-t\\" placeholder=\\"18-month checkup...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"da-d\\" type=\\"date\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Doctor</div><input class=\\"field-input\\" id=\\"da-doc\\" placeholder=\\"Pediatrician...\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Appointment</button>`;
+}
+// BUSINESS
+function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${b.stage.toUpperCase()}</span>${own?`<button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button>`:''}</div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div>${!own?'<div style="margin-top:8px"><div class="lock-badge"><span>&#128274;</span><span style="font-size:10px;color:var(--white);opacity:0.6;margin-left:4px">View only</span></div></div>':''}</div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
+function openBiz(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div><div style="font-size:18px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div><div style="display:flex;gap:6px"><button class="btn-gold-sm" onclick="openJarvisCtx('${b.name} business strategy and advice')">Jarvis</button><button class="btn-white-sm" onclick="editBizModal('${id}')">Edit</button></div></div><div id="biz-tabs" style="display:flex;gap:6px;margin-bottom:12px"><button class="biz-tab on" onclick="switchBTab('kpis','${id}')">KPIs</button><button class="biz-tab" onclick="switchBTab('tasks','${id}')">Tasks</button><button class="biz-tab" onclick="switchBTab('team','${id}')">Team</button><button class="biz-tab" onclick="switchBTab('notes','${id}')">Notes</button></div><div id="biz-tc"></div><button class="btn-red-outline" style="margin-top:12px" onclick="delBiz('${id}')">Delete Business</button>`);switchBTab('kpis',id);}
+function switchBTab(tab,id){document.querySelectorAll('#biz-tabs .biz-tab').forEach((t,i)=>t.classList.toggle('on',['kpis','tasks','team','notes'][i]===tab));const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;const c=document.getElementById('biz-tc');if(!c)return;
+  if(tab==='kpis')c.innerHTML=`<div class="kpi-grid">${(b.kpis||[]).map(k=>`<div class="kpi-c"><div class="kpi-lbl">${k.label}</div><div class="kpi-val">${k.value}</div><div class="kpi-tr ${(k.trend||'').includes('\u2191')?'kpi-g':'kpi-o'}">${k.trend||''}</div></div>`).join('')}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addKPI('${id}')">+ Add KPI</button>`;
+  else if(tab==='tasks')c.innerHTML=`<div class="card">${(b.tasks||[]).length?b.tasks.map(t=>`<div class="task-item ${t.done?'td':''}"><div class="chk ${t.done?'checked':''}" onclick="togBizTask('${id}','${t.id}')" style="cursor:pointer">${t.done?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="t-name ${t.done?'stk':''}">${t.text}</div>${t.due?`<div class="t-meta">Due ${t.due}</div>`:''}</div><span class="del-x" onclick="delBizTask('${id}','${t.id}')">&#215;</span></div>`).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No tasks yet.</span></div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addBizTask('${id}')">+ Add Task</button>`;
+  else if(tab==='team')c.innerHTML=`<div class="card">${(b.team||[]).map(m=>`<div class="team-row"><div class="t-av">${(m.initials||m.name?.slice(0,2)||'?').toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--white)">${m.name}</div><div style="font-size:10px;color:var(--gold)">${m.role}</div></div><span class="del-x" onclick="delTeam('${id}','${m.name}')">&#215;</span></div>`).join('')||'<div class="task-item"><span class="t-name" style="opacity:0.4">No team yet.</span></div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addTeam('${id}')">+ Add Member</button>`;
+  else if(tab==='notes')c.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${(b.notes||[]).length?b.notes.map((n,i)=>`<div class="card"><div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:4px">${n.title||'Note'} \u00b7 ${n.date||''}</div><div style="font-size:12px;color:var(--white);line-height:1.4">${n.text}</div><span class="del-x" onclick="delBizNote('${id}',${i})">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4">No notes yet.</div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addBizNote('${id}')">+ Add Note</button>`;}
+async function togBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);switchBTab('tasks',bid);}catch(e){showError(e.message);}}
+async function delBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).filter(t=>t.id!==tid);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);switchBTab('tasks',bid);}catch(e){showError(e.message);}}
+function addBizTask(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task</div><input class="field-input" id="bt-text" placeholder="What needs to be done..."></div><div class="field-group"><div class="field-label">Due (optional)</div><input class="field-input" id="bt-due" placeholder="e.g. May 20"></div><button class="btn-gold" onclick="saveBizTask('${bid}')">Add</button></div>`);}
+async function saveBizTask(bid){const text=document.getElementById('bt-text')?.value?.trim(),due=document.getElementById('bt-due')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=[...(b.tasks||[]),{id:uid4(),text,due,done:false}];try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
+function addKPI(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add KPI</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Label</div><input class="field-input" id="kl" placeholder="e.g. Revenue..."></div><div class="field-group"><div class="field-label">Value</div><input class="field-input" id="kv" placeholder="e.g. $12,400..."></div><div class="field-group"><div class="field-label">Trend</div><input class="field-input" id="kt" placeholder="e.g. &#8593; 18%..."></div><button class="btn-gold" onclick="saveKPI('${bid}')">Add</button></div>`);}
+async function saveKPI(bid){const label=document.getElementById('kl')?.value?.trim(),value=document.getElementById('kv')?.value?.trim(),trend=document.getElementById('kt')?.value?.trim();if(!label||!value){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const kpis=[...(b.kpis||[]),{label,value,trend}];try{await sb.from('businesses').update({kpis}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,kpis}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
+function addTeam(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Team Member</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="tm-n" placeholder="Full name..."></div><div class="field-group"><div class="field-label">Role</div><input class="field-input" id="tm-r" placeholder="e.g. Developer..."></div><button class="btn-gold" onclick="saveTeam('${bid}')">Add</button></div>`);}
+async function saveTeam(bid){const name=document.getElementById('tm-n')?.value?.trim(),role=document.getElementById('tm-r')?.value?.trim();if(!name||!role){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=[...(b.team||[]),{name,role,initials:name.slice(0,2).toUpperCase()}];try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
+async function delTeam(bid,mname){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=(b.team||[]).filter(m=>m.name!==mname);try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);switchBTab('team',bid);}catch(e){showError(e.message);}}
+function addBizNote(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Note</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="bn-t" placeholder="e.g. Investor call..."></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="bn-n" rows="4" style="resize:none;min-height:80px" placeholder="Write your notes..."></textarea></div><button class="btn-gold" onclick="saveBizNote('${bid}')">Save</button></div>`);}
+async function saveBizNote(bid){const title=document.getElementById('bn-t')?.value?.trim(),text=document.getElementById('bn-n')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=[...(b.notes||[]),{title,text,date:getTZ().toLocaleDateString('en-US',{month:'short',day:'numeric'})}];try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
+async function delBizNote(bid,idx){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=(b.notes||[]).filter((_,i)=>i!==parseInt(idx));try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);switchBTab('notes',bid);}catch(e){showError(e.message);}}
+function showAddBusiness(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ab-n" placeholder="e.g. My Company..."></div><div class="field-group"><div class="field-label">Type / Industry</div><input class="field-input" id="ab-t" placeholder="e.g. Tech, Retail..."></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ab-s"><option value="idea">Idea</option><option value="setup">Setup</option><option value="active" selected>Active</option><option value="scaling">Scaling</option></select></div><div class="field-group"><div class="field-label">Description</div><textarea class="field-input" id="ab-d" rows="3" style="resize:none;min-height:60px" placeholder="What does this business do?"></textarea></div><button class="btn-gold" onclick="saveBiz()">Create</button></div>`);}
+async function saveBiz(){const name=document.getElementById('ab-n')?.value?.trim(),type=document.getElementById('ab-t')?.value?.trim(),stage=document.getElementById('ab-s')?.value,desc=document.getElementById('ab-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('businesses').insert({household_id:S.household.id,owner_id:S.profile.id,name,type,stage,description:desc,kpis:[],tasks:[],team:[{name:S.profile.name,role:'Founder',initials:(S.profile.name||'').slice(0,2).toUpperCase()}],notes:[]});if(r?.[0])S.data.businesses.push(r[0]);closeModal();showSuccess('Business added!');renderBusiness();}catch(e){showError(e.message);}}
+async function delBiz(id){if(!confirm('Delete? Cannot be undone.'))return;try{await sb.from('businesses').delete().eq('id',id);S.data.businesses=S.data.businesses.filter(b=>b.id!==id);closeModal();showSuccess('Deleted');renderBusiness();}catch(e){showError(e.message);}}
+function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button></div>`);}
+async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
+// LIFE
+function renderLife(){switchLTab(S.currentLifeTab);}
+function switchLifeTab(t){switchLTab(t);}
+function switchLTab(tab){S.currentLifeTab=tab;document.querySelectorAll('#life-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['pets','vehicles','recipes'][i]===tab));const c=document.getElementById('life-content');if(tab==='pets')renderPets(c);else if(tab==='vehicles')renderVehicles(c);else if(tab==='recipes')renderRecipes(c);}
+function renderPets(c){const pets=S.data.pets||[];c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext">Romeo and Nina may be overdue for grooming. Nina is 10 \u2014 senior vet checkup every 6 months. Chickens coop check due.</div><div class="jcta" onclick="openJarvisCtx('pet care and vet schedule')">Ask Jarvis &#8594;</div></div>`+pets.map(p=>`<div class="pet-card"><div class="pet-hdr"><div><div class="pet-name">${p.name} ${p.type==='dogs'?'&#128021;':'&#128020;'}</div><div class="pet-sub">${p.type==='dogs'?'Doberman ~3yr \u00b7 Mixed ~10yr \u00b7 Raw diet':'5 birds \u00b7 Backyard'}</div></div><div style="display:flex;gap:6px"><button class="btn-white-sm" onclick="editPet('${p.id}')">Edit</button><span class="del-x" onclick="delPet('${p.id}')">&#215;</span></div></div>${(p.tasks||[]).map(t=>`<div class="pet-task"><div class="ptdot" style="background:${t.color==='red'?'var(--red)':t.color==='green'?'var(--green)':'var(--gold)'}"></div><span class="ptname">${t.name}</span><div class="ptsub" style="color:${t.color==='red'?'var(--red)':t.color==='green'?'var(--green)':'var(--gold)'}">${t.status==='overdue'?'Overdue':t.status==='due'?'Due this week':t.status==='ok'?'Up to date':'Not started'}</div><button class="check-btn" onclick="donePetTask('${p.id}','${t.name}')">Done</button></div>`).join('')}<div class="add-item-row" onclick="addPetTask('${p.id}')"><span class="add-item-plus">+</span><span class="add-item-text">Add task...</span></div></div>`).join('')+`<button class="btn-gold-outline" onclick="addPet()">+ Add Animal</button>`;}
+async function donePetTask(pid,tname){const p=(S.data.pets||[]).find(x=>x.id===pid);if(!p)return;const tasks=(p.tasks||[]).map(t=>t.name===tname?{...t,status:'ok',color:'green'}:t);try{await sb.from('pets').update({tasks}).eq('id',pid);S.data.pets=S.data.pets.map(x=>x.id===pid?{...x,tasks}:x);showSuccess('Done!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function addPetTask(pid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Pet Task</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task</div><input class="field-input" id="pt-n" placeholder="e.g. Vet visit..."></div><button class="btn-gold" onclick="savePetTask('${pid}')">Add</button></div>`);}
+async function savePetTask(pid){const name=document.getElementById('pt-n')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}const p=(S.data.pets||[]).find(x=>x.id===pid);if(!p)return;const tasks=[...(p.tasks||[]),{name,status:'not_started',color:'gray'}];try{await sb.from('pets').update({tasks}).eq('id',pid);S.data.pets=S.data.pets.map(x=>x.id===pid?{...x,tasks}:x);closeModal();renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function addPet(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Animal</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ap-n" placeholder="e.g. Max..."></div><div class="field-group"><div class="field-label">Type</div><select class="field-input" id="ap-t"><option value="dogs">Dog</option><option value="cats">Cat</option><option value="chickens">Chickens</option><option value="other">Other</option></select></div><div class="field-group"><div class="field-label">Diet</div><input class="field-input" id="ap-d" placeholder="e.g. Raw food..."></div><button class="btn-gold" onclick="savePet()">Add</button></div>`);}
+async function savePet(){const name=document.getElementById('ap-n')?.value?.trim(),type=document.getElementById('ap-t')?.value,diet=document.getElementById('ap-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('pets').insert({household_id:S.household.id,name,type,diet,tasks:[]});if(r?.[0])S.data.pets.push(r[0]);closeModal();showSuccess('Added!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+async function delPet(id){if(!confirm('Remove?'))return;try{await sb.from('pets').delete().eq('id',id);S.data.pets=S.data.pets.filter(p=>p.id!==id);renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function editPet(id){const p=(S.data.pets||[]).find(x=>x.id===id);if(!p)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${p.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ep-n" value="${p.name}"></div><div class="field-group"><div class="field-label">Diet</div><input class="field-input" id="ep-d" value="${p.diet||''}"></div><button class="btn-gold" onclick="updPet('${id}')">Save</button></div>`);}
+async function updPet(id){const name=document.getElementById('ep-n')?.value?.trim(),diet=document.getElementById('ep-d')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{await sb.from('pets').update({name,diet}).eq('id',id);S.data.pets=S.data.pets.map(p=>p.id===id?{...p,name,diet}:p);closeModal();showSuccess('Saved!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function renderVehicles(c){
+  const vs=S.data.vehicles||[];
+  c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext" id="vj-text">Checking vehicle status...</div><div class="jcta" onclick="openJarvisCtx('vehicle maintenance schedule')">Ask Jarvis &#8594;</div></div>`+vs.map(v=>{const nl=(v.last_oil_mileage||0)+(v.oil_change_interval||7000),ml=nl-(v.current_mileage||0),pct=Math.min(100,Math.round(((v.current_mileage-(v.last_oil_mileage||0))/(v.oil_change_interval||7000))*100));return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:var(--white)">${v.year} ${v.make} ${v.model} &#128663;</div><div style="font-size:10px;color:var(--gold);margin-top:1px">${(v.current_mileage||0).toLocaleString()} mi current</div></div><button class="btn-white-sm" onclick="editVeh('${v.id}')">Edit</button></div><div style="background:var(--bg-dark);border-radius:8px;padding:8px 10px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;color:var(--gold);font-weight:700">Next Oil Change</span><span style="font-size:10px;font-weight:700;color:var(--white)">~${nl.toLocaleString()} mi</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%;background:${ml<=0?'var(--red)':ml<=1000?'var(--gold)':'var(--gold)'}"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6">${ml>0?ml.toLocaleString()+' miles remaining':'Overdue \u2014 schedule now'}</div></div><div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">Service History</div>${(v.service_records||[]).map(r=>`<div class="sv-row"><div class="sdb"><div class="sdb-mo">${r.date?new Date(r.date).toLocaleDateString('en-US',{month:'short'}).toUpperCase():'N/A'}</div><div class="sdb-day">${r.date?new Date(r.date).getDate():''}</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${r.description}</div>${r.mileage?`<div style="font-size:10px;color:var(--gold)">${r.mileage.toLocaleString()} mi</div>`:''}</div></div>`).join('')}<button class="btn-gold-outline" style="margin-top:8px" onclick="addSvc('${v.id}')">+ Add Service Record</button></div>`;}).join('');
+  if(!vs.length)c.innerHTML+=`<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No vehicles.</div></div>`;
+  c.innerHTML+=`<button class="btn-gold-outline" onclick="addVeh()">+ Add Vehicle</button>`;
+  const el=document.getElementById('vj-text');if(el&&vs[0]){const v=vs[0];const nl=(v.last_oil_mileage||0)+(v.oil_change_interval||7000),ml=nl-(v.current_mileage||0);el.textContent=`${v.year} ${v.make} ${v.model} at ${(v.current_mileage||0).toLocaleString()} miles. ${ml<=0?'Oil change OVERDUE.':ml<=1000?'Oil change due very soon.':'Next oil change at ~'+nl.toLocaleString()+' miles.'} Front brakes have lifetime warranty.`;}
+}
+function addSvc(vid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Service Record</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="sr-date" type="date"></div><div class="field-group"><div class="field-label">Description</div><input class="field-input" id="sr-desc" placeholder="e.g. Oil change..."></div><div class="field-group"><div class="field-label">Mileage (optional)</div><input class="field-input" id="sr-mi" type="number"></div><button class="btn-gold" onclick="saveSvc('${vid}')">Add</button></div>`);}
+async function saveSvc(vid){const date=document.getElementById('sr-date')?.value,desc=document.getElementById('sr-desc')?.value?.trim(),mi=document.getElementById('sr-mi')?.value;if(!date||!desc){showError('BOS-DATA-001');return;}const v=(S.data.vehicles||[]).find(x=>x.id===vid);if(!v)return;const records=[{date,description:desc,mileage:mi?parseInt(mi):null},...(v.service_records||[])];const upd={service_records:records};if(desc.toLowerCase().includes('oil change')&&mi){upd.last_oil_mileage=parseInt(mi);upd.current_mileage=parseInt(mi);}try{await sb.from('vehicles').update(upd).eq('id',vid);S.data.vehicles=S.data.vehicles.map(x=>x.id===vid?{...x,...upd}:x);closeModal();showSuccess('Record added!');renderVehicles(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function addVeh(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Vehicle</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Year</div><input class="field-input" id="av-y" type="number" placeholder="2022"></div><div class="field-group"><div class="field-label">Make</div><input class="field-input" id="av-m" placeholder="Toyota"></div><div class="field-group"><div class="field-label">Model</div><input class="field-input" id="av-mo" placeholder="Camry"></div><div class="field-group"><div class="field-label">Current Mileage</div><input class="field-input" id="av-mi" type="number"></div><button class="btn-gold" onclick="saveVeh()">Add</button></div>`);}
+async function saveVeh(){const year=parseInt(document.getElementById('av-y')?.value),make=document.getElementById('av-m')?.value?.trim(),model=document.getElementById('av-mo')?.value?.trim(),mi=parseInt(document.getElementById('av-mi')?.value)||0;if(!year||!make||!model){showError('BOS-DATA-001');return;}try{const r=await sb.from('vehicles').insert({household_id:S.household.id,year,make,model,current_mileage:mi,oil_change_interval:7000,last_oil_mileage:mi,service_records:[]});if(r?.[0])S.data.vehicles.push(r[0]);closeModal();showSuccess('Vehicle added!');renderVehicles(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function editVeh(id){const v=(S.data.vehicles||[]).find(x=>x.id===id);if(!v)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Vehicle</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Current Mileage</div><input class="field-input" id="ev-mi" type="number" value="${v.current_mileage||0}"></div><div class="field-group"><div class="field-label">Oil Change Interval (miles)</div><input class="field-input" id="ev-int" type="number" value="${v.oil_change_interval||7000}"></div><button class="btn-gold" onclick="updVeh('${id}')">Save</button></div>`);}
+async function updVeh(id){const mi=parseInt(document.getElementById('ev-mi')?.value)||0,interval=parseInt(document.getElementById('ev-int')?.value)||7000;try{await sb.from('vehicles').update({current_mileage:mi,oil_change_interval:interval}).eq('id',id);S.data.vehicles=S.data.vehicles.map(v=>v.id===id?{...v,current_mileage:mi,oil_change_interval:interval}:v);closeModal();showSuccess('Saved!');renderVehicles(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function renderRecipes(c){const recs=S.data.recipes||[];c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext">Add your family recipes and Jarvis will suggest meals based on your grocery list each week.</div><div class="jcta" onclick="openJarvisCtx('meal planning ideas for a family of 3 plus baby')">Get meal ideas &#8594;</div></div>`+(recs.length?recs.map(r=>`<div class="recipe-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="r-name">${r.name}</div><div class="r-meta">${r.category||'Dinner'} \u00b7 ${r.prep_time||'30 min'} \u00b7 Serves ${r.serves||4}</div></div></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn-white-sm" onclick="viewRec('${r.id}')">View</button><span class="del-x" onclick="delRec('${r.id}')">&#215;</span></div></div>`).join(''):'<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No recipes yet.</div></div>')+`<button class="btn-gold-outline" onclick="addRec()">+ Add Recipe</button>`;}
+function addRec(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Recipe</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ar-n" placeholder="e.g. Chicken Rice Bowl..."></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="ar-c"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner" selected>Dinner</option><option value="snack">Snack</option></select></div><div class="field-group"><div class="field-label">Prep Time</div><input class="field-input" id="ar-t" placeholder="e.g. 30 min"></div><div class="field-group"><div class="field-label">Serves</div><input class="field-input" id="ar-s" type="number" placeholder="4"></div><div class="field-group"><div class="field-label">Ingredients (one per line)</div><textarea class="field-input" id="ar-i" rows="4" style="resize:none;min-height:70px" placeholder="Chicken breast&#10;White rice..."></textarea></div><div class="field-group"><div class="field-label">Instructions</div><textarea class="field-input" id="ar-in" rows="4" style="resize:none;min-height:70px" placeholder="1. Cook rice...&#10;2. Season chicken..."></textarea></div><button class="btn-gold" onclick="saveRec()">Save</button></div>`);}
+async function saveRec(){const name=document.getElementById('ar-n')?.value?.trim(),cat=document.getElementById('ar-c')?.value,time=document.getElementById('ar-t')?.value?.trim(),serves=parseInt(document.getElementById('ar-s')?.value)||4,ing=document.getElementById('ar-i')?.value?.trim().split('\n').filter(Boolean),inst=document.getElementById('ar-in')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{const r=await sb.from('recipes').insert({household_id:S.household.id,name,category:cat,prep_time:time,serves,ingredients:ing,instructions:inst});if(r?.[0])S.data.recipes.push(r[0]);closeModal();showSuccess('Recipe added!');renderRecipes(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+async function delRec(id){if(!confirm('Delete?'))return;try{await sb.from('recipes').delete().eq('id',id);S.data.recipes=S.data.recipes.filter(r=>r.id!==id);renderRecipes(document.getElementById('life-content'));}catch(e){showError(e.message);}}
+function viewRec(id){const r=(S.data.recipes||[]).find(x=>x.id===id);if(!r)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">${r.name}</div><div style="font-size:11px;color:var(--gold);margin-bottom:12px">${r.category} \u00b7 ${r.prep_time||''} \u00b7 Serves ${r.serves||4}</div>${r.ingredients?.length?`<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">Ingredients</div><ul style="padding-left:16px;display:flex;flex-direction:column;gap:4px">${r.ingredients.map(i=>`<li style="font-size:12px;color:var(--white)">${i}</li>`).join('')}</ul>`:''}<div style="height:12px"></div>${r.instructions?`<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">Instructions</div><div style="font-size:12px;color:var(--white);line-height:1.6;white-space:pre-line">${r.instructions}</div>`:''}<button class="btn-gold" style="margin-top:16px" onclick="closeModal()">Done</button>`);}
+// MINUTES
+function renderMinutes(){const meetings=S.data.meetings||[];const filtered=S.meetingFilter==='all'?meetings:meetings.filter(m=>m.category===S.meetingFilter||(S.meetingFilter==='shared'&&m.shared));const openA=meetings.flatMap(m=>(m.action_items||[]).filter(a=>!a.done));document.getElementById('minutes-jarvis-text').textContent=openA.length?openA.length+' open action item'+(openA.length>1?'s':'')+' across your meetings.':'No open action items. All clear.';const filters=[['all','All'],['business','Business'],['ministry','Ministry'],['personal','Personal'],['family','Family'],['shared','Shared']];document.getElementById('meetings-filter').innerHTML=filters.map(([k,l])=>`<div style="padding:4px 10px;border-radius:12px;background:${S.meetingFilter===k?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${S.meetingFilter===k?'var(--gold)':'var(--border)'};cursor:pointer;font-size:10px;font-weight:700;color:${S.meetingFilter===k?'var(--gd)':'var(--white)'}" onclick="setMF('${k}')">${l}</div>`).join('');document.getElementById('meetings-list').innerHTML=filtered.length?filtered.map(m=>{const own=m.owner_id===S.profile.id||m.shared;return`<div class="meet-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div style="flex:1;padding-right:8px"><div class="meet-title">${m.title}</div><div class="meet-meta">${fmt(m.meeting_date)} \u00b7 ${m.attendees||''}</div></div><div style="display:flex;gap:4px"><span class="tag tag-gray" style="font-size:7px">${(m.category||'personal').toUpperCase()}</span>${m.shared?'<span style="font-size:8px;color:var(--green);font-weight:700">SHARED</span>':''}</div></div>${m.notes?`<div class="meet-notes">${m.notes}</div>`:''}<div class="meet-ah">Action Items</div>${(m.action_items||[]).map(a=>`<div class="ai"><div class="chk ${a.done?'checked':''}" onclick="${own?'togAI(\''+m.id+'\',\''+a.id+'\')':''}" style="cursor:${own?'pointer':'default'}">${a.done?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:11px;color:var(--white);${a.done?'text-decoration:line-through;opacity:0.5;':''}flex:1">${a.text}</span></div>`).join('')}<div class="meet-btns">${own?`<button class="btn-white-sm" onclick="editMtg('${m.id}')">Edit</button>`:''}<button class="btn-white-sm" onclick="openJarvisCtx('Summarize this meeting and extract key decisions: Title: ${m.title}. Notes: ${(m.notes||'').slice(0,200)}')">Jarvis</button>${own?`<span class="del-x" onclick="delMtg('${m.id}')">&#215;</span>`:''}</div></div>`;}).join(''):'<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No meetings in this category.</div></div>';}
+function setMF(f){S.meetingFilter=f;renderMinutes();}
+async function togAI(mid,aid){const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=(m.action_items||[]).map(a=>a.id===aid?{...a,done:!a.done}:a);try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);renderMinutes();}catch(e){showError(e.message);}}
+function showAddMeeting(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">New Meeting</div><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px"><div id="own-mine" style="flex:1;background:var(--gold);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('mine')"><div style="font-size:13px;font-weight:700;color:var(--gd)">Mine</div></div><div id="own-shared" style="flex:1;background:var(--bg-dark);border:0.5px solid var(--blue);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('shared')"><div style="font-size:13px;font-weight:700;color:var(--blue)">Both</div></div></div><input type="hidden" id="nm-own" value="mine"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="nm-title" placeholder="e.g. ParkNest sync..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="nm-date" type="date" value="${getTZ().toISOString().split('T')[0]}"></div><div class="field-group"><div class="field-label">Attendees</div><input class="field-input" id="nm-att" placeholder="e.g. AJ, Investor..."></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nm-cat"><option value="business">Business</option><option value="ministry">Ministry</option><option value="personal">Personal</option><option value="family">Family</option></select></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="nm-notes" rows="3" style="resize:none;min-height:60px" placeholder="Key points..."></textarea></div><button class="btn-gold" onclick="saveMtg()">Save Meeting</button></div>`);}
+function selOwner(v){document.getElementById('nm-own').value=v;document.getElementById('own-mine').style.background=v==='mine'?'var(--gold)':'var(--bg-dark)';document.getElementById('own-shared').style.background=v==='shared'?'transparent':'var(--bg-dark)';}
+async function saveMtg(){const title=document.getElementById('nm-title')?.value?.trim(),date=document.getElementById('nm-date')?.value,att=document.getElementById('nm-att')?.value?.trim(),cat=document.getElementById('nm-cat')?.value,notes=document.getElementById('nm-notes')?.value?.trim(),own=document.getElementById('nm-own')?.value;if(!title||!date){showError('BOS-DATA-001');return;}try{const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile.id,shared:own==='shared',title,meeting_date:date,attendees:att,category:cat,notes,action_items:[]});if(r?.[0])S.data.meetings.unshift(r[0]);closeModal();showSuccess('Meeting saved!');renderMinutes();}catch(e){showError(e.message);}}
+async function delMtg(id){if(!confirm('Delete?'))return;try{await sb.from('meetings').delete().eq('id',id);S.data.meetings=S.data.meetings.filter(m=>m.id!==id);renderMinutes();}catch(e){showError(e.message);}}
+function editMtg(id){const m=(S.data.meetings||[]).find(x=>x.id===id);if(!m)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Meeting</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="em-title" value="${m.title}"></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="em-notes" rows="4" style="resize:none;min-height:70px">${m.notes||''}</textarea></div><div class="field-group"><div class="field-label">Add Action Item</div><div style="display:flex;gap:8px"><input class="field-input" id="em-ai" placeholder="New action item..."><button class="btn-gold-sm" onclick="addAI('${id}')">Add</button></div></div><button class="btn-gold" onclick="updMtg('${id}')">Save</button></div>`);}
+async function addAI(mid){const text=document.getElementById('em-ai')?.value?.trim();if(!text)return;const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=[...(m.action_items||[]),{id:uid4(),text,done:false}];try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);document.getElementById('em-ai').value='';showSuccess('Added!');}catch(e){showError(e.message);}}
+async function updMtg(id){const title=document.getElementById('em-title')?.value?.trim(),notes=document.getElementById('em-notes')?.value?.trim();if(!title){showError('BOS-DATA-001');return;}try{await sb.from('meetings').update({title,notes}).eq('id',id);S.data.meetings=S.data.meetings.map(m=>m.id===id?{...m,title,notes}:m);closeModal();showSuccess('Saved!');renderMinutes();}catch(e){showError(e.message);}}
+// SCHEDULE
+function renderSchedule(){const now=getTZ(),name=(S.profile?.name||'').split(' ')[0];const sched=S.data.schedules.mine,items=sched?.items||[];const done=items.filter(i=>i.done).length;document.getElementById('sched-user-pill').innerHTML=`<div class="user-pill" style="background:${S.profile?.avatar_color||'#E8BC50'}"><div class="u-dot" style="background:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}">${name}</span></div>`;document.getElementById('schedule-week-banner').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:700;color:var(--white)">Week of ${now.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div style="font-size:10px;color:var(--gold);margin-top:2px">Fill in by Sunday night</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green)">${done} / ${items.length} done</div></div></div>`;document.getElementById('schedule-jarvis').innerHTML=`<div class="jlabel">Jarvis</div><div class="jtext">${items.length===0?'Your week list is empty. Add what needs to happen.':done+' of '+items.length+' done. Keep it up, '+name+'!'}</div>`;document.getElementById('schedule-tab-row').innerHTML=`<div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='mine'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='mine'?'var(--gd)':'var(--white)'}" onclick="setSV('mine')">My List</div><div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='partner'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='partner'?'var(--gd)':'var(--white)'}" onclick="setSV('partner')">Juliette's List</div>`;const addBtn=document.getElementById('section-schedule').querySelector('.add-item-row');if(addBtn)addBtn.style.display=S.scheduleView==='mine'?'flex':'none';if(S.scheduleView==='mine'){document.getElementById('schedule-my-list').innerHTML=items.map((item,i)=>`<div class="sched-item"><span class="si-num">${i+1}</span><div class="si-chk ${item.done?'done':''}" onclick="togSI(${i})" style="cursor:pointer">${item.done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="si-text ${item.done?'stk':''}">${item.text}</div>${item.time?`<div class="si-time">${item.time}</div>`:''}</div><button class="btn-white-sm" onclick="editSI(${i})" style="font-size:9px;padding:2px 6px">&#9998;</button><span class="del-x" onclick="delSI(${i})">&#215;</span></div>`).join('');}else{document.getElementById('schedule-my-list').innerHTML='<div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">Juliette\'s schedule</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div></div><div style="font-size:11px;color:var(--white);opacity:0.4">Juliette\'s list appears here once she signs in and adds it.</div></div>';}document.getElementById('other-sched-label').style.display='none';document.getElementById('other-schedule-list').innerHTML='';}
+function setSV(v){S.scheduleView=v;renderSchedule();}
+async function togSI(idx){const sched=S.data.schedules.mine;let items=sched?.items?JSON.parse(JSON.stringify(sched.items)):[];if(!items[idx])return;items[idx].done=!items[idx].done;try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const wof=getWeekOf(new Date());const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}renderSchedule();}catch(e){showError(e.message);}}
+function showAddScheduleItem(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add to My List</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">What needs to happen this week?</div><input class="field-input" id="si-text" placeholder="e.g. Meal prep, Call dad..."></div><div class="field-group"><div class="field-label">Time (optional)</div><input class="field-input" id="si-time" placeholder="e.g. Saturday 2pm..."></div><button class="btn-gold" onclick="saveSI()">Add</button></div>`);}
+async function saveSI(){const text=document.getElementById('si-text')?.value?.trim(),time=document.getElementById('si-time')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const wof=getWeekOf(new Date()),sched=S.data.schedules.mine,items=[...(sched?.items||[]),{text,done:false,time:time||null}];try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}closeModal();showSuccess('Added!');renderSchedule();}catch(e){showError(e.message);}}
+async function delSI(idx){const sched=S.data.schedules.mine;if(!sched)return;const items=(sched.items||[]).filter((_,i)=>i!==idx);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};renderSchedule();}catch(e){showError(e.message);}}
+function editSI(idx){const sched=S.data.schedules.mine,item=sched?.items?.[idx];if(!item)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Item</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Text</div><input class="field-input" id="esi-t" value="${item.text}"></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esi-ti" value="${item.time||''}"></div><button class="btn-gold" onclick="updSI(${idx})">Save</button></div>`);}
+async function updSI(idx){const text=document.getElementById('esi-t')?.value?.trim(),time=document.getElementById('esi-ti')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const sched=S.data.schedules.mine;if(!sched)return;const items=sched.items.map((item,i)=>i===idx?{...item,text,time:time||null}:item);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};closeModal();renderSchedule();}catch(e){showError(e.message);}}
+// GROCERY
+function renderGrocery(){const items=S.data.grocery||[];const unc=items.filter(i=>!i.checked),chk=items.filter(i=>i.checked);document.getElementById('grocery-list').innerHTML=`${unc.map(item=>`<div class="grocery-item"><div class="g-chk" onclick="togG('${item.id}')" style="cursor:pointer"></div><span class="g-name">${item.name}${item.quantity?' ('+item.quantity+')':''}</span><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`).join('')}${chk.length?`<div class="sec-label" style="margin-top:8px">In Cart</div>${chk.map(item=>`<div class="grocery-item"><div class="g-chk checked" onclick="togG('${item.id}')" style="cursor:pointer"><span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span></div><span class="g-name stk">${item.name}</span><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`).join('')}`:''}${!items.length?'<div style="padding:12px 0;font-size:13px;color:var(--white);opacity:0.4;text-align:center">List is empty! Tap + Add.</div>':''}`;document.getElementById('grocery-count').textContent=unc.length+' item'+(unc.length===1?'':'s');}
+async function togG(id){const g=(S.data.grocery||[]).find(x=>x.id===id);if(!g)return;const upd={checked:!g.checked,checked_by:!g.checked?S.profile.id:null};S.data.grocery=S.data.grocery.map(x=>x.id===id?{...x,...upd}:x);try{await sb.from('grocery_items').update(upd).eq('id',id);renderGrocery();}catch(e){showError(e.message);}}
+function showAddGrocery(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add to List</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Item</div><input class="field-input" id="ag-n" placeholder="e.g. Chicken breast..."></div><div class="field-group"><div class="field-label">Quantity (optional)</div><input class="field-input" id="ag-q" placeholder="e.g. 2 lbs..."></div><button class="btn-gold" onclick="saveG()">Add</button></div>`);}
+async function saveG(){const name=document.getElementById('ag-n')?.value?.trim(),qty=document.getElementById('ag-q')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{const r=await sb.from('grocery_items').insert({household_id:S.household.id,name,quantity:qty,checked:false});if(r?.[0])S.data.grocery.unshift(r[0]);closeModal();showSuccess('Added!');renderGrocery();}catch(e){showError(e.message);}}
+async function delG(id){try{await sb.from('grocery_items').delete().eq('id',id);S.data.grocery=S.data.grocery.filter(g=>g.id!==id);renderGrocery();}catch(e){showError(e.message);}}
+// USERS
+function renderUsers(){const users=S.data.users||[];const admins=users.filter(u=>u.role==='admin'),others=users.filter(u=>u.role!=='admin');document.getElementById('admin-users-list').innerHTML=admins.length?admins.map(u=>`<div class="u-row"><div class="u-av" style="background:${u.avatar_color||'#E8BC50'}"><span style="color:${u.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'};font-size:11px;font-weight:700">${(u.name||'').slice(0,2).toUpperCase()}</span></div><div class="u-info"><div class="u-name-t">${u.name}</div><div class="u-role-t">Admin \u00b7 Full access</div></div>${u.id===S.profile.id?'<span class="tag-gold" style="font-size:8px;padding:2px 7px">YOU</span>':`<button class="btn-white-sm" onclick="manageU('${u.id}')">Manage</button>`}</div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No admins.</div>';document.getElementById('other-users-list').innerHTML=others.length?others.map(u=>`<div class="u-row"><div class="u-av" style="background:var(--border)"><span style="color:var(--white);font-size:11px;font-weight:700">${(u.name||'').slice(0,2).toUpperCase()}</span></div><div class="u-info"><div class="u-name-t">${u.name}</div><div class="u-role-t">${u.role.charAt(0).toUpperCase()+u.role.slice(1)} \u00b7 ${u.role==='babysitter'?"Diana + Chores":'Limited'}</div></div><button class="btn-white-sm" onclick="manageU('${u.id}')">Manage</button></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No other users yet.</div>';document.getElementById('role-permissions').innerHTML=`<div class="ri"><span class="tag-gold" style="font-size:8px;padding:2px 7px">ADMIN</span><div style="flex:1;margin-left:8px"><div style="font-size:11px;font-weight:600;color:var(--white)">Full access \u00b7 Edit everything</div></div></div><div class="ri"><span class="tag-gray" style="font-size:8px;padding:2px 7px">SITTER</span><div style="flex:1;margin-left:8px"><div style="font-size:11px;font-weight:600;color:var(--white)">Diana + Chores + Notes only</div></div></div>`;}
+function showInviteUser(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Invite Someone</div><div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">How to invite</div><div style="font-size:11px;color:var(--white);opacity:0.7;line-height:1.6">1. Share your Betancur OS URL<br>2. They tap "Create Account"<br>3. They select their role<br>4. They appear in your Users list</div></div><button class="btn-gold" onclick="showSuccess('Share your app URL to invite someone!');closeModal()">Got it</button>`);}
+function manageU(id){const u=(S.data.users||[]).find(x=>x.id===id);if(!u)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Manage ${u.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div style="font-size:13px;color:var(--white);opacity:0.7">Current role: ${u.role}</div><div class="field-group"><div class="field-label">Change Role</div><select class="field-input" id="mr-role"><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option><option value="babysitter" ${u.role==='babysitter'?'selected':''}>Babysitter</option><option value="mom" ${u.role==='mom'?'selected':''}>Mom</option><option value="custom" ${u.role==='custom'?'selected':''}>Custom</option></select></div><button class="btn-gold" onclick="updRole('${id}')">Save Role</button><button class="btn-red-outline" onclick="removeU('${id}')">Remove User</button></div>`);}
+async function updRole(id){const role=document.getElementById('mr-role')?.value;try{await sb.from('user_profiles').update({role}).eq('id',id);S.data.users=S.data.users.map(u=>u.id===id?{...u,role}:u);closeModal();showSuccess('Role updated!');renderUsers();}catch(e){showError(e.message);}}
+async function removeU(id){if(!confirm('Remove this user?'))return;try{await sb.from('user_profiles').delete().eq('id',id);S.data.users=S.data.users.filter(u=>u.id!==id);closeModal();showSuccess('Removed');renderUsers();}catch(e){showError(e.message);}}
+// JARVIS
+function openJarvis(){document.getElementById('jarvis-modal').style.display='flex';document.getElementById('jarvis-input')?.focus();if(!S.jarvisMessages.length)addJMsg('ai','Hi! I\'m Jarvis \u2014 your family AI. I know your home, health, businesses, and schedule. What can I help with?');}
+function openJarvisCtx(ctx){S.jarvisMessages=[];openJarvis();sendJMsg('Help me with: '+ctx);}
+function closeJarvis(){document.getElementById('jarvis-modal').style.display='none';}
+function addJMsg(role,text){S.jarvisMessages.push({role,text});const msgs=document.getElementById('jarvis-messages');const div=document.createElement('div');div.className=role==='user'?'jm-user':'jm-ai';div.textContent=text;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+async function sendJarvis(){const input=document.getElementById('jarvis-input');const text=input?.value?.trim();if(!text)return;input.value='';sendJMsg(text);}
+async function sendJMsg(text){
+  addJMsg('user',text);
+  const msgs=document.getElementById('jarvis-messages');const ld=document.createElement('div');ld.className='jm-ai';ld.id='jld';ld.innerHTML='<span style="color:var(--gd);font-size:12px;opacity:0.7">Thinking\u2026</span>';msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;
+  const ctx={bills_total:5984,income:9100,remaining:3116,chores_pending:(S.data.chores||[]).filter(c=>c.status!=='done').length,supps_taken:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0]).length,total_supps:(S.data.supplements||[]).length,preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,sched_done:(S.data.schedules.mine?.items||[]).filter(i=>i.done).length,sched_total:(S.data.schedules.mine?.items||[]).length};
+  const messages=[...S.jarvisMessages.filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text})).slice(-8),{role:'user',content:text}];
+  try{
+    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:ctx})});
+    const data=await r.json();document.getElementById('jld')?.remove();
+    if(data.error){addJMsg('ai','Jarvis is having trouble. Please try again.');return;}
+    const reply=data.content?.[0]?.text||'I\'m not sure about that. Please rephrase.';
+    addJMsg('ai',reply);S.jarvisMessages.push({role:'assistant',text:reply});
+  }catch(e){document.getElementById('jld')?.remove();addJMsg('ai','Jarvis is offline. Check your connection.');}
+}
+// BABYSITTER
+function launchSitter(){document.getElementById('splash').style.display='none';document.getElementById('main-app').style.display='none';document.getElementById('babysitter-app').style.display='flex';const name=(S.profile?.name||'').split(' ')[0]||'There';document.getElementById('sitter-greeting').textContent='Hi '+name+'! \ud83d\udc4b';document.getElementById('sitter-date').textContent=getTZ().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('sitter-pill').innerHTML=`<div style="background:var(--border);border-radius:10px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--white);opacity:0.5"></div><span style="font-size:8px;font-weight:700;color:var(--white)">${name}</span></div>`;const ds=S.data.diana_schedule;const di=ds?.items||[{time:'7:00 AM',activity:'Wake up'},{time:'8:00 AM',activity:'Breakfast'},{time:'12:00 PM',activity:'Nap time'},{time:'1:30 PM',activity:'Lunch'},{time:'2:00 PM',activity:'Playtime'},{time:'7:00 PM',activity:'Bedtime routine'}];const chores=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,5);document.getElementById('sitter-body').innerHTML=`<div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Diana Today &#128118;</div>${di.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)"><span style="font-size:12px;color:var(--white);font-weight:500">${i.activity}</span><span style="font-size:11px;color:var(--gold);font-weight:700">${i.time}</span></div>`).join('')}</div><div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Chores</div>${chores.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)"><div class="chk" id="sc${i}" onclick="sChk('${c.id}',${i})" style="cursor:pointer"></div><span style="font-size:13px;color:var(--white);font-weight:500;flex:1" id="sct${i}">${c.room} \u2014 ${c.name}</span></div>`).join('')}${!chores.length?'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">All chores done!</div>':''}</div><div class="card"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px">LEAVE A NOTE FOR AJ + JULIETTE</div><textarea id="sit-note" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;color:var(--white);width:100%;min-height:70px;resize:none" placeholder="How did the session go? Any notes about Diana..."></textarea><button class="btn-gold" style="margin-top:8px;padding:10px;font-size:13px" onclick="sendSNote()">Send Note</button></div><button style="background:transparent;border:none;color:var(--red);font-size:12px;font-weight:700;text-align:center;width:100%;padding:10px;cursor:pointer" onclick="logout()">Sign Out</button>`;}
+function sChk(id,i){const el=document.getElementById('sc'+i);const tel=document.getElementById('sct'+i);if(el){el.classList.add('checked');el.innerHTML='<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>';el.onclick=null;}if(tel){tel.style.textDecoration='line-through';tel.style.opacity='0.5';}doneChore(id);}
+async function sendSNote(){const note=document.getElementById('sit-note')?.value?.trim();if(!note){showError('Please write a note first.');return;}try{await sb.from('babysitter_notes').insert({household_id:S.household.id,from_user_id:S.profile.id,note,session_date:getTZ().toISOString().split('T')[0]});document.getElementById('sit-note').value='';showSuccess('Note sent to AJ and Juliette!');}catch(e){showError(e.message);}}
+// INIT
+window.addEventListener('load',async()=>{
+  S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
+  if(localStorage.getItem('bos_token')){
+    try{await loadProfile();}
+    catch(e){localStorage.removeItem('bos_token');document.getElementById('splash').style.display='flex';}
+  }else{
+    document.getElementById('splash').style.display='flex';
+  }
+});
+</script>
+</body>
+</html>
