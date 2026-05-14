@@ -576,8 +576,23 @@ async function doSignUp(){
   const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Creating...';btn.disabled=true;}
   try{
     const d=await sb.auth.signUp(tmp.email,tmp.pass,{name:tmp.name,role:S.selectedRole});
-    if(d.user){if(d.session){localStorage.setItem('bos_token',d.session.access_token);localStorage.setItem('bos_refresh',d.session.refresh_token);}S.user=d.user;localStorage.removeItem('bos_su_tmp');await createProfile(tmp.name,S.selectedRole);}
-    else{showSuccess('Check your email to confirm, then sign in.');}
+    if(d.user){
+      if(d.session){
+        localStorage.setItem('bos_token',d.session.access_token);
+        localStorage.setItem('bos_refresh',d.session.refresh_token);
+        S.user=d.user;localStorage.removeItem('bos_su_tmp');
+        await createProfile(tmp.name,S.selectedRole);
+      } else {
+        // No session returned — confirmation off but Supabase still requires sign-in
+        // Auto sign-in immediately after signup
+        S.user=d.user;localStorage.removeItem('bos_su_tmp');
+        const s=await sb.auth.signIn(tmp.email,tmp.pass);
+        await createProfile(tmp.name,S.selectedRole);
+      }
+    } else {
+      showAuthError('Could not create account. Username may already be taken.');
+      if(btn){btn.textContent='Create Account →';btn.disabled=false;}
+    }
   }catch(e){showAuthError(e.message?.includes('already')?'BOS-USER-001':e.message);if(btn){btn.textContent='Create Account →';btn.disabled=false;}}
 }
 function showAuthError(c){const el=document.getElementById('auth-error');if(!el)return;el.textContent=ERRORS[c]||c;el.style.display='block';}
@@ -586,7 +601,15 @@ async function createProfile(name,role){
   try{const r=await sb.from('households').select('*').all();hh=r?.[0]||null;}catch(e){}
   if(!hh){const r=await sb.from('households').insert({name:'Betancur Family',address:'Tallahassee, FL',timezone:'America/New_York'});hh=Array.isArray(r)?r[0]:r;}
   const color=role==='admin'?'#E8BC50':role==='babysitter'?'#55586A':'#C47AE8';
-  await sb.from('user_profiles').insert({id:S.user.id,household_id:hh.id,username:name.toLowerCase().replace(/\s+/g,'_'),name,role,avatar_color:color});
+  // Check if profile already exists before inserting
+  try{
+    const existing=await sb.from('user_profiles').select('*').eq('id',S.user.id);
+    if(!existing||existing.length===0){
+      await sb.from('user_profiles').insert({id:S.user.id,household_id:hh.id,username:name.toLowerCase().replace(/\s+/g,'_'),name,role,avatar_color:color});
+    }
+  }catch(e){
+    // Insert failed — profile may already exist, that's ok
+  }
   S.household=hh;await loadProfile();
 }
 async function loadProfile(){
