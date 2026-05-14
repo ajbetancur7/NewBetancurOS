@@ -575,25 +575,20 @@ async function doSignUp(){
   if(!tmp.email){showAuthError('BOS-DATA-001');return;}
   const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Creating...';btn.disabled=true;}
   try{
-    const d=await sb.auth.signUp(tmp.email,tmp.pass,{name:tmp.name,role:S.selectedRole});
-    if(d.user){
-      if(d.session){
-        localStorage.setItem('bos_token',d.session.access_token);
-        localStorage.setItem('bos_refresh',d.session.refresh_token);
-        S.user=d.user;localStorage.removeItem('bos_su_tmp');
-        await createProfile(tmp.name,S.selectedRole);
-      } else {
-        // No session returned — confirmation off but Supabase still requires sign-in
-        // Auto sign-in immediately after signup
-        S.user=d.user;localStorage.removeItem('bos_su_tmp');
-        const s=await sb.auth.signIn(tmp.email,tmp.pass);
-        await createProfile(tmp.name,S.selectedRole);
-      }
-    } else {
-      showAuthError('Could not create account. Username may already be taken.');
-      if(btn){btn.textContent='Create Account →';btn.disabled=false;}
-    }
-  }catch(e){showAuthError(e.message?.includes('already')?'BOS-USER-001':e.message);if(btn){btn.textContent='Create Account →';btn.disabled=false;}}
+    // Step 1: Try to sign up
+    await sb.auth.signUp(tmp.email,tmp.pass,{name:tmp.name,role:S.selectedRole});
+  }catch(e){
+    // Signup failed — account may already exist, that's ok, continue to sign-in
+  }
+  // Step 2: Always sign in after signup attempt (works whether account is new or already existed)
+  try{
+    await sb.auth.signIn(tmp.email,tmp.pass);
+    localStorage.removeItem('bos_su_tmp');
+    await createProfile(tmp.name,S.selectedRole);
+  }catch(e){
+    showAuthError('Could not sign in. Check your username and password and try again.');
+    if(btn){btn.textContent='Create Account →';btn.disabled=false;}
+  }
 }
 function showAuthError(c){const el=document.getElementById('auth-error');if(!el)return;el.textContent=ERRORS[c]||c;el.style.display='block';}
 async function createProfile(name,role){
