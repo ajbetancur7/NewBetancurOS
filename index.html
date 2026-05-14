@@ -509,19 +509,39 @@ const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'A
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
 function uid4(){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);});}
+async function simpleHash(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 window.addEventListener('online',()=>{S.isOnline=true;document.getElementById('offline-banner').style.display='none';});
 window.addEventListener('offline',()=>{S.isOnline=false;document.getElementById('offline-banner').style.display='block';});
 const sb=(()=>{
   const h={'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json'};
-  const ah=()=>{const t=localStorage.getItem('bos_token');return t?{...h,'Authorization':'Bearer '+t}:h;};
+  const ah=()=>h; // Use anon key for all requests - RLS disabled
   const req=async(method,path,body)=>{if(!navigator.onLine)throw new Error('BOS-SYNC-002');const opts={method,headers:ah()};if(body)opts.body=JSON.stringify(body);const r=await fetch(SUPABASE_URL+'/rest/v1'+path,opts);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||'HTTP '+r.status);}const txt=await r.text();return txt?JSON.parse(txt):[];};
   return{
     auth:{
-      signUp:async(email,pw,meta)=>{const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:h,body:JSON.stringify({email,password:pw,data:meta})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d;},
-      signIn:async(email,pw)=>{const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:h,body:JSON.stringify({email,password:pw})});const d=await r.json();if(d.error)throw new Error(d.error_description||d.error);localStorage.setItem('bos_token',d.access_token);localStorage.setItem('bos_refresh',d.refresh_token);return d;},
-      signOut:async()=>{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:ah()}).catch(()=>{});localStorage.removeItem('bos_token');localStorage.removeItem('bos_refresh');},
-      getUser:async()=>{const t=localStorage.getItem('bos_token');if(!t)return null;const r=await fetch(SUPABASE_URL+'/auth/v1/user',{headers:ah()});if(!r.ok)return null;return r.json();},
-      refresh:async()=>{const rt=localStorage.getItem('bos_refresh');if(!rt)return null;const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:h,body:JSON.stringify({refresh_token:rt})});const d=await r.json();if(d.access_token){localStorage.setItem('bos_token',d.access_token);localStorage.setItem('bos_refresh',d.refresh_token);}return d;}
+      signUp:async(un,pw,meta)=>{
+        // Custom auth — store in user_profiles, no Supabase Auth used
+        const hash=await simpleHash(pw);
+        return {username:un,hash,meta};
+      },
+      signIn:async(un,pw)=>{
+        // Look up user by username, verify password hash
+        const hash=await simpleHash(pw);
+        const rows=await req('GET','/user_profiles?username=eq.'+encodeURIComponent(un)+'&select=*');
+        if(!rows||rows.length===0)throw new Error('BOS-AUTH-001');
+        const user=rows[0];
+        if(user.pw_hash!==hash)throw new Error('BOS-AUTH-001');
+        // Store session locally
+        const token=btoa(user.id+':'+hash+':'+Date.now());
+        localStorage.setItem('bos_token',token);
+        localStorage.setItem('bos_uid',user.id);
+        localStorage.setItem('bos_household',user.household_id);
+        return user;
+      },
+      signOut:async()=>{localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');localStorage.removeItem('bos_household');},
+      getUser:async()=>{const uid=localStorage.getItem('bos_uid');if(!uid)return null;return {id:uid};}
     },
     from:(table)=>({
       select:(cols='*')=>({eq:(col,val)=>req('GET',`/${table}?select=${cols}&${col}=eq.${encodeURIComponent(val)}&order=created_at.desc`),all:()=>req('GET',`/${table}?select=${cols}`)}),
@@ -559,68 +579,90 @@ function validateStep1(){
   if(p!==p2){showAuthError('BOS-USER-002');return;}
   if(p.length<6){showAuthError('Password must be at least 6 characters');return;}
   if(/\s/.test(raw)){showAuthError('Username cannot contain spaces. Use underscores.');return;}
-  const email=raw.includes('@')?raw:raw.toLowerCase()+'@betancur.local';
-  localStorage.setItem('bos_su_tmp',JSON.stringify({name:n,email,username:raw.toLowerCase(),pass:p}));renderSignUp(2);
+  const username=raw.toLowerCase().replace(/[^a-z0-9_]/g,'_');
+  localStorage.setItem('bos_su_tmp',JSON.stringify({name:n,username,pass:p}));renderSignUp(2);
 }
 async function doSignIn(){
   const raw=document.getElementById('si-email')?.value?.trim(),pass=document.getElementById('si-pass')?.value;
   if(!raw||!pass){showAuthError('BOS-DATA-001');return;}
-  const email=raw.includes('@')?raw:raw.toLowerCase().replace(/\s+/g,'_')+'@betancur.local';
+  const username=raw.toLowerCase().replace(/\s+/g,'_');
   const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Signing in...';btn.disabled=true;}
-  try{await sb.auth.signIn(email,pass);await loadProfile();}
-  catch(e){showAuthError(e.message?.toLowerCase().includes('invalid')?'BOS-AUTH-001':e.message);if(btn){btn.textContent='Sign In';btn.disabled=false;}}
+  try{
+    const hash=await simpleHash(pass);
+    const rows=await sb.from('user_profiles').select('*').eq('username',username);
+    if(!rows||rows.length===0){showAuthError('BOS-AUTH-001');if(btn){btn.textContent='Sign In';btn.disabled=false;}return;}
+    const profile=rows[0];
+    if(profile.pw_hash!==hash){showAuthError('BOS-AUTH-001');if(btn){btn.textContent='Sign In';btn.disabled=false;}return;}
+    // Valid — set session
+    localStorage.setItem('bos_token',btoa(profile.id+':'+Date.now()));
+    localStorage.setItem('bos_uid',profile.id);
+    localStorage.setItem('bos_household',profile.household_id);
+    S.user={id:profile.id};S.profile=profile;
+    const hhs=await sb.from('households').select('*').eq('id',profile.household_id);
+    S.household=hhs?.[0]||null;
+    document.getElementById('auth-screen').style.display='none';
+    if(profile.role==='babysitter'){launchSitter();}
+    else if(!localStorage.getItem('bos_setup_'+profile.id)){launchSetup();}
+    else{launchApp();}
+  }catch(e){showAuthError('BOS-AUTH-001');if(btn){btn.textContent='Sign In';btn.disabled=false;}}
 }
 async function doSignUp(){
   const tmp=JSON.parse(localStorage.getItem('bos_su_tmp')||'{}');
-  if(!tmp.email){showAuthError('BOS-DATA-001');return;}
+  if(!tmp.username||!tmp.pass){showAuthError('BOS-DATA-001');return;}
   const btn=document.querySelector('#auth-body .btn-primary');if(btn){btn.textContent='Creating...';btn.disabled=true;}
   try{
-    // Step 1: Try to sign up
-    await sb.auth.signUp(tmp.email,tmp.pass,{name:tmp.name,role:S.selectedRole});
-  }catch(e){
-    // Signup failed — account may already exist, that's ok, continue to sign-in
-  }
-  // Step 2: Always sign in after signup attempt (works whether account is new or already existed)
-  try{
-    await sb.auth.signIn(tmp.email,tmp.pass);
+    // Check username not already taken
+    const existing=await sb.from('user_profiles').select('id').eq('username',tmp.username).catch(()=>[]);
+    if(existing&&existing.length>0){showAuthError('Username already taken. Choose a different one.');if(btn){btn.textContent='Create Account →';btn.disabled=false;}return;}
+    // Get or create household
+    let hh=null;
+    const hhs=await sb.from('households').select('*').all().catch(()=>[]);
+    if(hhs&&hhs.length>0){hh=hhs[0];}
+    else{const r=await sb.from('households').insert({name:'Betancur Family',address:'Tallahassee, FL',timezone:'America/New_York'});hh=Array.isArray(r)?r[0]:r;}
+    // Hash password and create profile
+    const hash=await simpleHash(tmp.pass);
+    const color=S.selectedRole==='admin'?'#E8BC50':S.selectedRole==='babysitter'?'#55586A':'#C47AE8';
+    const uid='usr-'+uid4();
+    const rows=await sb.from('user_profiles').insert({id:uid,household_id:hh.id,username:tmp.username,name:tmp.name,role:S.selectedRole,avatar_color:color,pw_hash:hash});
+    const profile=Array.isArray(rows)?rows[0]:rows;
+    // Set session
+    localStorage.setItem('bos_token',btoa(uid+':'+Date.now()));
+    localStorage.setItem('bos_uid',uid);
+    localStorage.setItem('bos_household',hh.id);
     localStorage.removeItem('bos_su_tmp');
-    await createProfile(tmp.name,S.selectedRole);
+    S.user={id:uid};S.profile=profile;S.household=hh;
+    // Launch
+    document.getElementById('auth-screen').style.display='none';
+    if(S.profile.role==='babysitter'){launchSitter();}
+    else if(!localStorage.getItem('bos_setup_'+uid)){launchSetup();}
+    else{launchApp();}
   }catch(e){
-    showAuthError('Could not sign in. Check your username and password and try again.');
+    showAuthError(e.message||'Could not create account. Please try again.');
     if(btn){btn.textContent='Create Account →';btn.disabled=false;}
   }
 }
 function showAuthError(c){const el=document.getElementById('auth-error');if(!el)return;el.textContent=ERRORS[c]||c;el.style.display='block';}
 async function createProfile(name,role){
-  let hh=null;
-  try{const r=await sb.from('households').select('*').all();hh=r?.[0]||null;}catch(e){}
-  if(!hh){const r=await sb.from('households').insert({name:'Betancur Family',address:'Tallahassee, FL',timezone:'America/New_York'});hh=Array.isArray(r)?r[0]:r;}
-  const color=role==='admin'?'#E8BC50':role==='babysitter'?'#55586A':'#C47AE8';
-  // Check if profile already exists before inserting
-  try{
-    const existing=await sb.from('user_profiles').select('*').eq('id',S.user.id);
-    if(!existing||existing.length===0){
-      await sb.from('user_profiles').insert({id:S.user.id,household_id:hh.id,username:name.toLowerCase().replace(/\s+/g,'_'),name,role,avatar_color:color});
-    }
-  }catch(e){
-    // Insert failed — profile may already exist, that's ok
-  }
-  S.household=hh;await loadProfile();
+  // This function is now handled inside doSignUp directly.
+  // Only called as fallback — load whatever profile exists.
+  await loadProfile();
 }
 async function loadProfile(){
-  const user=await sb.auth.getUser();if(!user){showAuth('signin');return;}
-  S.user=user;
-  const profiles=await sb.from('user_profiles').select('*').eq('id',user.id).catch(()=>[]);
-  if(!profiles?.length){document.getElementById('auth-screen').style.display='none';await createProfile(user.email?.split('@')[0]||'User','admin');return;}
-  S.profile=profiles[0];
-  const hh=await sb.from('households').select('*').eq('id',S.profile.household_id).catch(()=>[]);
-  S.household=hh?.[0]||null;
-  document.getElementById('auth-screen').style.display='none';document.getElementById('setup-screen').style.display='none';
-  if(S.profile.role==='babysitter'){launchSitter();}
-  else if(!localStorage.getItem('bos_setup_'+S.user.id)&&S.profile.role==='admin'){launchSetup();}
-  else{launchApp();}
+  const uid=localStorage.getItem('bos_uid');
+  if(!uid){showAuth('signin');return;}
+  try{
+    const profiles=await sb.from('user_profiles').select('*').eq('id',uid);
+    if(!profiles?.length){localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');showAuth('signin');return;}
+    S.profile=profiles[0];S.user={id:uid};
+    const hh=await sb.from('households').select('*').eq('id',S.profile.household_id).catch(()=>[]);
+    S.household=hh?.[0]||null;
+    document.getElementById('auth-screen').style.display='none';document.getElementById('setup-screen').style.display='none';
+    if(S.profile.role==='babysitter'){launchSitter();}
+    else if(!localStorage.getItem('bos_setup_'+uid)&&S.profile.role==='admin'){launchSetup();}
+    else{launchApp();}
+  }catch(e){showAuth('signin');}
 }
-async function logout(){await sb.auth.signOut().catch(()=>{});S.user=null;S.profile=null;S.household=null;['main-app','babysitter-app','setup-screen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('splash').style.display='flex';}
+async function logout(){localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');localStorage.removeItem('bos_household');S.user=null;S.profile=null;S.household=null;['main-app','babysitter-app','setup-screen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('splash').style.display='flex';}
 
 // SETUP WIZARD
 let setupRooms=['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office','Kitchen','Living Room','Dining Room','Laundry','Backyard / Chickens','Front Yard','Garage / Airbnb'];
@@ -994,9 +1036,9 @@ async function sendSNote(){const note=document.getElementById('sit-note')?.value
 // INIT
 window.addEventListener('load',async()=>{
   S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
-  if(localStorage.getItem('bos_token')){
+  if(localStorage.getItem('bos_uid')){
     try{await loadProfile();}
-    catch(e){localStorage.removeItem('bos_token');document.getElementById('splash').style.display='flex';}
+    catch(e){localStorage.removeItem('bos_uid');document.getElementById('splash').style.display='flex';}
   }else{
     document.getElementById('splash').style.display='flex';
   }
