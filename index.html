@@ -518,7 +518,7 @@ window.addEventListener('offline',()=>{S.isOnline=false;document.getElementById(
 const sb=(()=>{
   const h={'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json'};
   const ah=()=>h; // Use anon key for all requests - RLS disabled
-  const req=async(method,path,body)=>{if(!navigator.onLine)throw new Error('BOS-SYNC-002');const opts={method,headers:ah()};if(body)opts.body=JSON.stringify(body);const r=await fetch(SUPABASE_URL+'/rest/v1'+path,opts);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||'HTTP '+r.status);}const txt=await r.text();return txt?JSON.parse(txt):[];};
+  const req=async(method,path,body,extra_headers)=>{if(!navigator.onLine)throw new Error('BOS-SYNC-002');const opts={method,headers:{...ah(),...(extra_headers||{})}};if(body)opts.body=JSON.stringify(body);const r=await fetch(SUPABASE_URL+'/rest/v1'+path,opts);if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||'HTTP '+r.status);}const txt=await r.text();return txt?JSON.parse(txt):[];};
   return{
     auth:{
       signUp:async(un,pw,meta)=>{
@@ -545,7 +545,7 @@ const sb=(()=>{
     },
     from:(table)=>({
       select:(cols='*')=>({eq:(col,val)=>req('GET',`/${table}?select=${cols}&${col}=eq.${encodeURIComponent(val)}&order=created_at.desc`),all:()=>req('GET',`/${table}?select=${cols}`)}),
-      insert:(data)=>req('POST',`/${table}?Prefer=return%3Drepresentation`,Array.isArray(data)?data:[data]),
+      insert:(data)=>req('POST',`/${table}`,Array.isArray(data)?data:[data],{'Prefer':'return=representation'}),
       update:(data)=>({eq:(col,val)=>req('PATCH',`/${table}?${col}=eq.${encodeURIComponent(val)}`,data)}),
       delete:()=>({eq:(col,val)=>req('DELETE',`/${table}?${col}=eq.${encodeURIComponent(val)}`)})
     })
