@@ -622,9 +622,10 @@ async function doSignUp(){
     // Hash password and create profile
     const hash=await simpleHash(tmp.pass);
     const color=S.selectedRole==='admin'?'#E8BC50':S.selectedRole==='babysitter'?'#55586A':'#C47AE8';
-    const uid='usr-'+uid4();
-    const rows=await sb.from('user_profiles').insert({id:uid,household_id:hh.id,username:tmp.username,name:tmp.name,role:S.selectedRole,avatar_color:color,pw_hash:hash});
+    const rows=await sb.from('user_profiles').insert({household_id:hh.id,username:tmp.username,name:tmp.name,role:S.selectedRole,avatar_color:color,pw_hash:hash});
     const profile=Array.isArray(rows)?rows[0]:rows;
+    if(!profile||!profile.id){throw new Error('Account created but profile not returned. Try signing in.');}
+    const uid=profile.id;
     // Set session
     localStorage.setItem('bos_token',btoa(uid+':'+Date.now()));
     localStorage.setItem('bos_uid',uid);
