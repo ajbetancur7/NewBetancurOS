@@ -305,7 +305,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 @media(min-width:501px){#app{border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
 
 @media (min-width: 768px) {
-  /* ── DESKTOP LAYOUT — does NOT affect phone ── */
+  /* ── DESKTOP: fills full MacBook screen ── */
   html, body {
     background: #111318;
     height: 100%;
@@ -314,32 +314,13 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     padding: 0;
     overflow: hidden;
   }
-
-  /* Full-width app root */
   #app {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
     height: 100vh !important;
     border: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
   }
-
-  /* Splash/auth/setup: dark bg, centered card */
-  #splash, #auth-screen, #setup-screen, #babysitter-app {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    justify-content: center !important;
-    align-items: center !important;
-    background: var(--bg) !important;
-    z-index: 50 !important;
-  }
-
-  /* Main app: sidebar + content */
   #main-app {
     display: flex !important;
     flex-direction: row !important;
@@ -347,8 +328,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     height: 100vh !important;
     overflow: hidden !important;
   }
-
-  /* Drawer: fixed sidebar, always visible */
+  /* Drawer = permanent left sidebar */
   #drawer {
     position: relative !important;
     transform: none !important;
@@ -362,38 +342,43 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     transition: none !important;
     flex-shrink: 0 !important;
     overflow-y: auto !important;
+  }
+  /* Right panel = top-bar + scrollable content */
+  #right-panel {
+    flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
   }
-
-  /* Hide swipe overlay on desktop */
-  #overlay { display: none !important; }
-
-  /* Hide hamburger on desktop */
-  .hamburger { display: none !important; }
-
-  /* Content fills rest of screen */
   #page-container {
     flex: 1 !important;
-    height: 100vh !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    height: auto !important;
     background: var(--bg) !important;
   }
-
-  /* Sections: padding + max readable width */
   .section {
-    padding: 20px 28px !important;
-    max-width: 820px !important;
+    padding: 20px 32px !important;
+    max-width: 900px !important;
     box-sizing: border-box !important;
   }
-
-  /* Grids get more columns */
-  .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
-  #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
-  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
-
-  /* Modal: centered on full screen */
+  /* Hide hamburger, overlay */
+  #overlay { display: none !important; }
+  .hamburger { display: none !important; }
+  /* Splash/auth centered */
+  #splash, #auth-screen, #setup-screen, #babysitter-app {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: var(--bg) !important;
+    z-index: 200 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  /* Modals fixed full screen */
   #modal-overlay {
     position: fixed !important;
     inset: 0 !important;
@@ -403,13 +388,11 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     align-items: flex-end !important;
   }
   .bottom-sheet {
-    width: 500px !important;
-    max-width: 500px !important;
+    width: 520px !important;
+    max-width: 520px !important;
     border-radius: 16px !important;
     margin-bottom: 40px !important;
   }
-
-  /* Jarvis: full screen centered */
   #jarvis-modal {
     position: fixed !important;
     inset: 0 !important;
@@ -417,11 +400,10 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     align-items: center !important;
     justify-content: center !important;
   }
-  .jm-header, .jm-body, .jm-footer {
-    max-width: 560px !important;
-    width: 560px !important;
-  }
-  #jarvis-messages { max-width: 560px !important; }
+  /* Grids */
+  .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
+  #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
 }
 </style>
 </head>
@@ -479,27 +461,15 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <button class="logout-btn" onclick="logout()">Sign Out</button>
     </div>
   </div>
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="menu-btn" onclick="openDrawer()" class="hamburger">&#9776; Menu</button>
-      <span class="os-title">Betancur OS</span>
+  <div id="right-panel">
+
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="menu-btn hamburger" onclick="openDrawer()">&#9776; Menu</button>
+        <span class="os-title">Betancur OS</span>
+      </div>
+      <div id="top-user-pill"></div>
     </div>
-    <div id="top-user-pill"></div>
-  </div>
-  <div id="jarvis-modal">
-    <div class="jm-header">
-      <span class="jm-title">&#10022; Jarvis</span>
-      <button class="jm-close" onclick="closeJarvis()">&#215;</button>
-    </div>
-    <div class="jm-msgs" id="jarvis-messages"></div>
-    <div class="jm-input-row">
-      <input class="jm-input" id="jarvis-input" placeholder="Ask Jarvis anything..." onkeydown="if(event.key==='Enter')sendJarvis()">
-      <button class="jm-send" onclick="sendJarvis()">Send</button>
-    </div>
-  </div>
-  <div id="modal-overlay" onclick="closeModal()">
-    <div class="bottom-sheet" id="modal-content" onclick="event.stopPropagation()"></div>
-  </div>
   <div id="page-container">
     <div class="section active" id="section-home">
       <div style="padding:2px 0 6px">
@@ -617,6 +587,21 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div class="sec-label">Other Users</div><div class="card" id="other-users-list"></div>
       <div class="sec-label">Role Permissions</div><div class="card" id="role-permissions"></div>
     </div>
+  </div>
+</div>
+  <div id="jarvis-modal">
+        <div class="jm-header">
+      <span class="jm-title">&#10022; Jarvis</span>
+      <button class="jm-close" onclick="closeJarvis()">&#215;</button>
+    </div>
+    <div class="jm-msgs" id="jarvis-messages"></div>
+    <div class="jm-input-row">
+      <input class="jm-input" id="jarvis-input" placeholder="Ask Jarvis anything..." onkeydown="if(event.key==='Enter')sendJarvis()">
+      <button class="jm-send" onclick="sendJarvis()">Send</button>
+    </div>
+  </div>
+  <div id="modal-overlay" onclick="closeModal()">
+    <div class="bottom-sheet" id="modal-content" onclick="event.stopPropagation()"></div>
   </div>
 </div>
 </div>
