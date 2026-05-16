@@ -304,55 +304,126 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(min-width:501px){#app{border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
 
-@media (min-width: 600px) {
-  html { background: #111318; height: 100%; }
-  body {
+@media (min-width: 768px) {
+  /* ── DESKTOP: full two-panel layout ── */
+  html, body {
     background: #111318;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
     width: 100%;
-    padding: 0;
+    height: 100%;
     margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
   #app-root {
-    width: 430px;
-    min-width: 430px;
-    max-width: 430px;
-    min-height: 100vh;
-    position: relative;
-    box-shadow: 0 0 80px rgba(0,0,0,0.8);
-    background: var(--bg);
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  #splash, #auth-screen, #setup-screen, #babysitter-app {
-    width: 430px;
-    max-width: 430px;
-    position: relative;
-  }
-  #main-app {
-    width: 430px;
-    max-width: 430px;
-    flex-direction: row;
-    height: 100vh;
-    overflow: hidden;
-  }
-  #drawer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    z-index: 100;
-  }
-  #page-container {
     width: 100%;
-    overflow-y: auto;
     height: 100vh;
+    display: flex;
+    flex-direction: row;
+    background: #111318;
+    overflow: hidden;
   }
-  .modal-overlay { position: absolute; width: 430px; }
-  .jarvis-modal { position: absolute; width: 430px; }
+
+  /* Splash / Auth / Setup: centered card */
+  #splash, #auth-screen, #setup-screen, #babysitter-app {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg);
+    z-index: 10;
+  }
+  #splash > *, #auth-screen > *, #setup-screen > * {
+    width: 420px;
+    max-width: 420px;
+  }
+
+  /* Main app: sidebar + content */
+  #main-app {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    background: var(--bg) !important;
+  }
+
+  /* DRAWER becomes persistent sidebar */
+  #drawer {
+    position: relative !important;
+    transform: none !important;
+    width: 220px !important;
+    min-width: 220px !important;
+    height: 100vh !important;
+    background: #1e2028 !important;
+    border-right: 1px solid var(--border) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    box-shadow: none !important;
+    z-index: 1 !important;
+    flex-shrink: 0 !important;
+  }
+  /* Hide the swipe overlay on desktop */
+  #overlay { display: none !important; }
+
+  /* Top bar: hide hamburger on desktop */
+  .hamburger { display: none !important; }
+
+  /* Page content fills remaining space */
+  #page-container {
+    flex: 1 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    background: var(--bg) !important;
+    max-width: none !important;
+  }
+
+  /* Nav items bigger on desktop */
+  .nav-item {
+    padding: 12px 20px !important;
+    font-size: 13px !important;
+  }
+  .nav-icon { font-size: 18px !important; }
+
+  /* Sections get more breathing room */
+  .section { padding: 20px 24px !important; max-width: 800px; }
+
+  /* Cards wider */
+  .card { border-radius: 12px !important; }
+
+  /* Modal centered on screen */
+  .modal-overlay {
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .modal-sheet {
+    width: 500px !important;
+    max-width: 500px !important;
+    margin: auto !important;
+    border-radius: 16px !important;
+  }
+  .jarvis-modal {
+    position: fixed !important;
+    width: 100% !important;
+    left: 0 !important;
+  }
+  .jarvis-inner {
+    width: 520px !important;
+    max-width: 520px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Grid layouts use more columns */
+  .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
+  #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* Drawer user info area */
+  .drawer-user { padding: 24px 16px 16px !important; }
 }
 </style>
 </head>
@@ -412,7 +483,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
   </div>
   <div class="top-bar">
     <div style="display:flex;align-items:center;gap:10px">
-      <button class="menu-btn" onclick="openDrawer()">&#9776; Menu</button>
+      <button class="menu-btn" onclick="openDrawer()" class="hamburger">&#9776; Menu</button>
       <span class="os-title">Betancur OS</span>
     </div>
     <div id="top-user-pill"></div>
@@ -501,8 +572,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     </div>
     <div class="section" id="section-life" style="padding:0">
       <div class="top-tabs" id="life-tabs">
-        <div class="ttab on" onclick="switchLifeTab('vehicles')">Vehicles</div>
-        <div class="ttab" onclick="switchLifeTab('recipes')">Recipes</div>
+        <div class="ttab on" onclick="switchLifeTab('recipes')">Recipes</div>
+        <div class="ttab" onclick="switchLifeTab('vehicles')">Vehicles</div>
       </div>
       <div id="life-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
@@ -883,6 +954,7 @@ function openActivityDetail(){
 }
 function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';localStorage.setItem('aj_status',s==='home'?'work':'home');renderHome();}
 function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="localStorage.setItem('jul_status','home');closeModal();renderHome()">At Home</button><button class="btn-white" style="flex:1" onclick="localStorage.setItem('jul_status','work');closeModal();renderHome()">At Work</button></div>`);}
+function isDesktop(){return window.innerWidth>=768;}
 function setupNav(){
   document.getElementById('drawer-user-name').textContent=S.profile?.name||'User';
   document.getElementById('drawer-user-role').textContent=(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)+' \u00b7 Tallahassee, FL';
@@ -894,8 +966,8 @@ function setupTopBar(){
   document.getElementById('top-user-pill').innerHTML=`<div class="user-pill" style="background:${c}"><div class="u-dot" style="background:${isDark?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${isDark?'#2A2D35':'#FFFFFF'}">${name} \u2014 ${(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)}</span></div>`;
 }
 function setupSwipe(){let sx=0;const app=document.getElementById('main-app');app.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});app.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>45){if(dx>0&&sx<60)openDrawer();else if(dx<0)closeDrawer();}},{passive:true});}
-function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('show');}
-function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+function openDrawer(){if(isDesktop())return;document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('show');}
+function closeDrawer(){if(isDesktop())return;document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
 function go(sec){
   closeDrawer();document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById('section-'+sec);if(el)el.classList.add('active');
@@ -945,6 +1017,18 @@ async function loadAll(){
   S.data.schedules.mine=mySched;
 }
 // UTILS
+function getDateForDay(dayName){
+  // Returns the date string for the most recent occurrence of dayName this week
+  const dayMap={monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
+  const target=dayMap[dayName];
+  const now=getTZ();
+  const current=now.getDay(); // 0=Sun
+  let diff=current-target;
+  if(diff<0)diff+=7; // if target is in future this week, go back to last week
+  const d=new Date(now);
+  d.setDate(d.getDate()-diff);
+  return d.toISOString().split('T')[0];
+}
 function getTZ(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));}
 function getWeekOf(d){const dt=new Date(d),day=dt.getDay(),diff=dt.getDate()-day+(day===0?-6:1);return new Date(dt.getFullYear(),dt.getMonth(),diff).toISOString().split('T')[0];}
 function fmt(d){try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch{return d||'';}}
@@ -1190,7 +1274,7 @@ function renderWorkouts(c){
         });
         const isRest=x.name==='Full Recovery';
         return`<div class="task-item" style="cursor:pointer" onclick="openWorkoutDay('${x.id}','${x.day_of_week}','${x.name.replace(/'/g,'')}')">
-          <div class="chk ${logged?'checked':''}" onclick="event.stopPropagation();toggleWorkoutLog('${x.id}','${x.day_of_week}')" style="cursor:pointer">
+          <div class="chk ${logged?'checked':''}" onclick="event.stopPropagation();toggleWorkoutLog('${x.id}','${x.day_of_week}',getDateForDay('${x.day_of_week}'))" style="cursor:pointer">
             ${logged?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}
           </div>
           <div style="flex:1;min-width:0">
@@ -1224,11 +1308,17 @@ function renderWorkouts(c){
       }).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Tap \u2713 Log Today after each workout.</div>`}
     </div>`;
 }
-async function toggleWorkoutLog(wid,day){
-  const today=getTZ().toISOString().split('T')[0];
-  const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===today);
-  if(existing){try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged');renderHealth();}catch(e){showError(e.message);}}
-  else{try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){showError(e.message);}}
+async function toggleWorkoutLog(wid,day,targetDate){
+  // targetDate: specific date for that day (not forced to today)
+  const dateToLog=targetDate||getTZ().toISOString().split('T')[0];
+  const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===dateToLog);
+  if(existing){
+    try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged — '+dateToLog);renderHealth();}
+    catch(e){showError(e.message);}
+  }else{
+    try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:dateToLog});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Logged ✔ — '+dateToLog);renderHealth();}
+    catch(e){showError(e.message);}
+  }
 }
 function editSplitDay(id,day,name,time){
   showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${day.charAt(0).toUpperCase()+day.slice(1)}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Workout Name</div><input class="field-input" id="esd-name" value="${name}" placeholder="e.g. Upper Body, Rest..."></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esd-time" value="${time}" placeholder="10:00"></div><div class="field-group"><div class="field-label">Ask Jarvis for ideas</div><button class="btn-white" onclick="openJarvisCtx('Suggest a ${day} workout for someone doing a 7-day resistance split. Give me exercises, sets, and reps.')">&#129302; Get Jarvis suggestions</button></div><button class="btn-gold" onclick="saveSplitDay('${id}','${day}')">Save</button></div>`);
@@ -1263,8 +1353,8 @@ function openWorkoutDay(id,day,name){
       <div style="display:flex;gap:8px">
         ${isLogged
           ?`<div style="flex:1;text-align:center;padding:10px;background:var(--green);border-radius:8px"><div style="font-size:12px;font-weight:700;color:var(--white)">\u2714 Logged Today</div></div>
-            <button class="btn-white" style="flex:0" onclick="toggleWorkoutLog('${id}','${day}');closeModal();renderHealth()">Undo</button>`
-          :`<button class="btn-gold" style="flex:1;padding:12px;font-size:14px" onclick="toggleWorkoutLog('${id}','${day}');closeModal();renderHealth()">\u2713 Log This Session</button>`
+            <button class="btn-white" style="flex:0" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo</button>`
+          :`<button class="btn-gold" style="flex:1;padding:12px;font-size:14px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">\u2713 Log This Session</button>`
         }
       </div>
     </div>
@@ -1293,11 +1383,17 @@ async function reseedWorkouts(){
   showSuccess('Workout split loaded!');
   renderHealth();
 }
-async function toggleWorkoutLog(wid,day){
-  const today=getTZ().toISOString().split('T')[0];
-  const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===today);
-  if(existing){try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged');renderHealth();}catch(e){showError(e.message);}}
-  else{try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){showError(e.message);}}
+async function toggleWorkoutLog(wid,day,targetDate){
+  // targetDate: specific date for that day (not forced to today)
+  const dateToLog=targetDate||getTZ().toISOString().split('T')[0];
+  const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===dateToLog);
+  if(existing){
+    try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged — '+dateToLog);renderHealth();}
+    catch(e){showError(e.message);}
+  }else{
+    try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:dateToLog});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Logged ✔ — '+dateToLog);renderHealth();}
+    catch(e){showError(e.message);}
+  }
 }
 function editSplitDay(id,day,name,time){
   showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${day.charAt(0).toUpperCase()+day.slice(1)}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Workout Name</div><input class="field-input" id="esd-name" value="${name}" placeholder="e.g. Upper Body, Rest..."></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esd-time" value="${time}" placeholder="10:00"></div><div class="field-group"><div class="field-label">Jarvis suggestions</div><button class="btn-white" style="width:100%;padding:10px" onclick="openJarvisCtx('Suggest a '+day+' workout for my 7-day resistance split. Give me exercises, sets and reps.')">&#129302; Ask Jarvis</button></div><button class="btn-gold" onclick="saveSplitDay('${id}')">Save</button></div>`);
@@ -1375,11 +1471,11 @@ async function delBiz(id){if(!confirm('Delete? Cannot be undone.'))return;try{aw
 function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button></div>`);}
 async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
 // LIFE
-function renderLife(){if(S.currentLifeTab==='pets')S.currentLifeTab='vehicles';switchLTab(S.currentLifeTab);}
+function renderLife(){if(S.currentLifeTab==='pets'||!S.currentLifeTab)S.currentLifeTab='recipes';switchLTab(S.currentLifeTab);}
 function switchLifeTab(t){switchLTab(t);}
 function switchLTab(tab){
   S.currentLifeTab=tab;
-  document.querySelectorAll('#life-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['vehicles','recipes'][i]===tab));
+  document.querySelectorAll('#life-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['recipes','vehicles'][i]===tab));
   const c=document.getElementById('life-content');
   if(tab==='vehicles')renderVehicles(c);
   else if(tab==='recipes')renderRecipes(c);
