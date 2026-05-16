@@ -1021,17 +1021,7 @@ async function loadAll(){
     sb.from('savings_goals').select('*').eq('household_id',hid).catch(()=>[]),
   ]);
   Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings,users,tithe,savings});
-  // Monthly reset: on the 1st, reset all manual paid bills
-  const today=getTZ();const todayKey=today.getFullYear()+'-'+(today.getMonth()+1);
-  const lastResetMonth=localStorage.getItem('bos_bill_reset_month');
-  if(lastResetMonth!==todayKey&&today.getDate()===1){
-    const resetBills=(S.data.bills||[]).filter(b=>b.paid&&!b.auto_pay);
-    for(const b of resetBills){
-      await sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{});
-    }
-    S.data.bills=(S.data.bills||[]).map(b=>b.auto_pay?b:{...b,paid:false,paid_by:null,paid_at:null});
-    localStorage.setItem('bos_bill_reset_month',todayKey);
-  }
+  // Bill reset handled by checkMonthlyBillReset() in renderBudget
   const wof=getWeekOf(new Date());
   const mySched=await sb.from('schedules').select('*').eq('user_id',uid).then(r=>r?.find(s=>s.week_of===wof)||null).catch(()=>null);
   S.data.schedules.mine=mySched;
@@ -1136,21 +1126,7 @@ function saveIncome(){
   localStorage.setItem('aj_income',val);
   closeModal();showSuccess('Income updated!');renderBudget();
 }
-function checkMonthlyBillReset(){
-  // Reset all manual bill paid status on the 1st of each month
-  const key='bos_bills_reset_month';
-  const now=getTZ();
-  const thisMonth=now.getFullYear()+'-'+(now.getMonth()+1);
-  if(localStorage.getItem(key)===thisMonth)return;
-  // New month - reset all non-autopay bills to unpaid
-  const toReset=(S.data.bills||[]).filter(b=>b.paid&&!b.auto_pay);
-  toReset.forEach(b=>{
-    sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{});
-  });
-  S.data.bills=(S.data.bills||[]).map(b=>(!b.auto_pay&&b.paid)?{...b,paid:false,paid_by:null,paid_at:null}:b);
-  localStorage.setItem(key,thisMonth);
-  if(toReset.length>0)showSuccess('New month — bills reset!');
-}
+
 function editIncomeModal(who){
   const isAJ=who==='aj';
   const key=isAJ?'aj_income':'jul_income';
@@ -1170,14 +1146,25 @@ function saveIncome(){
   localStorage.setItem('aj_income',val);closeModal();showSuccess('Income updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
-  const key='bos_bills_reset_month';const now=getTZ();
-  const thisMonth=now.getFullYear()+'-'+(now.getMonth()+1);
-  if(localStorage.getItem(key)===thisMonth)return;
+  // Only resets on the 1st of a new month. Never fires mid-month.
+  // Auto-pay bills are NEVER reset — they auto-check by date in the UI.
+  // Only manual bills (auto_pay=false) that were manually checked get reset.
+  const key='bos_bills_reset_month';
+  const now=getTZ();
+  const todayDate=now.getDate();
+  // Only act on the 1st of the month
+  if(todayDate!==1)return;
+  const thisMonth=now.getFullYear()+'-'+now.getMonth(); // unique per month
+  if(localStorage.getItem(key)===thisMonth)return; // already reset this month
+  // Reset only manually-paid bills (not auto-pay)
   const toReset=(S.data.bills||[]).filter(b=>b.paid&&!b.auto_pay);
-  toReset.forEach(b=>{sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{});});
+  if(toReset.length===0){localStorage.setItem(key,thisMonth);return;}
+  toReset.forEach(b=>{
+    sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{});
+  });
   S.data.bills=(S.data.bills||[]).map(b=>(!b.auto_pay&&b.paid)?{...b,paid:false,paid_by:null,paid_at:null}:b);
   localStorage.setItem(key,thisMonth);
-  if(toReset.length>0)showSuccess('New month — bills reset!');
+  showSuccess('New month — manual bills reset for '+now.toLocaleDateString('en-US',{month:'long'}));
 }
 function renderBudget(){
   checkMonthlyBillReset();
