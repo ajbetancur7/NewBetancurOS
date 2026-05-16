@@ -328,21 +328,33 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     height: 100vh !important;
     overflow: hidden !important;
   }
-  /* Drawer = permanent left sidebar */
+
+  /* Sidebar: collapsible with smooth transition */
   #drawer {
     position: relative !important;
     transform: none !important;
     width: 200px !important;
     min-width: 200px !important;
+    max-width: 200px !important;
     height: 100vh !important;
     background: #1a1c24 !important;
     border-right: 1px solid var(--border) !important;
     z-index: 1 !important;
     box-shadow: none !important;
-    transition: none !important;
+    transition: width 0.25s ease, min-width 0.25s ease, opacity 0.25s ease !important;
     flex-shrink: 0 !important;
+    overflow: hidden !important;
     overflow-y: auto !important;
   }
+  /* Collapsed state */
+  #main-app.sidebar-closed #drawer {
+    width: 0 !important;
+    min-width: 0 !important;
+    border-right: none !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+  }
+
   /* Right panel = top-bar + scrollable content */
   #right-panel {
     flex: 1 !important;
@@ -364,9 +376,12 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     max-width: 900px !important;
     box-sizing: border-box !important;
   }
-  /* Hide hamburger, overlay */
+
+  /* Show desktop toggle button, hide mobile overlay */
   #overlay { display: none !important; }
   .hamburger { display: none !important; }
+  .desktop-sidebar-toggle { display: flex !important; }
+
   /* Splash/auth centered */
   #splash, #auth-screen, #setup-screen, #babysitter-app {
     position: fixed !important;
@@ -378,7 +393,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     justify-content: center !important;
     align-items: center !important;
   }
-  /* Modals fixed full screen */
+
+  /* Modals */
   #modal-overlay {
     position: fixed !important;
     inset: 0 !important;
@@ -400,11 +416,14 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     align-items: center !important;
     justify-content: center !important;
   }
+
   /* Grids */
   .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
   #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
 }
+.desktop-sidebar-toggle{display:none;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--white);font-size:16px;flex-shrink:0}
+.desktop-sidebar-toggle:hover{background:var(--bg-dark);border-color:var(--gold)}
 </style>
 </head>
 <body><div id="app-root">
@@ -466,6 +485,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     <div class="top-bar">
       <div style="display:flex;align-items:center;gap:10px">
         <button class="menu-btn hamburger" onclick="openDrawer()">&#9776; Menu</button>
+        <button class="desktop-sidebar-toggle" onclick="toggleDesktopSidebar()" title="Toggle sidebar">&#9776;</button>
         <span class="os-title">Betancur OS</span>
       </div>
       <div id="top-user-pill"></div>
@@ -911,7 +931,7 @@ async function finishSetup(){
 }
 async function launchApp(){
   document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
-  setupNav();setupTopBar();setupSwipe();
+  setupNav();setupTopBar();setupSwipe();restoreSidebarState();
   await loadAll();renderHome();
   setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{if(S.currentSection==='home')renderHome();});},30000);
 }
@@ -948,7 +968,24 @@ function setupTopBar(){
   const c=S.profile?.avatar_color||'#E8BC50',isDark=c==='#E8BC50',name=(S.profile?.name||'User').split(' ')[0];
   document.getElementById('top-user-pill').innerHTML=`<div class="user-pill" style="background:${c}"><div class="u-dot" style="background:${isDark?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${isDark?'#2A2D35':'#FFFFFF'}">${name} \u2014 ${(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)}</span></div>`;
 }
+function restoreSidebarState(){
+  if(!isDesktop())return;
+  const saved=localStorage.getItem('bos_sidebar');
+  const app=document.getElementById('main-app');
+  if(saved==='closed'){app.classList.add('sidebar-closed');}
+  // Default is open (no class needed)
+}
 function setupSwipe(){let sx=0;const app=document.getElementById('main-app');app.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});app.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>45){if(dx>0&&sx<60)openDrawer();else if(dx<0)closeDrawer();}},{passive:true});}
+function toggleDesktopSidebar(){
+  const app=document.getElementById('main-app');
+  if(app.classList.contains('sidebar-closed')){
+    app.classList.remove('sidebar-closed');
+    localStorage.setItem('bos_sidebar','open');
+  }else{
+    app.classList.add('sidebar-closed');
+    localStorage.setItem('bos_sidebar','closed');
+  }
+}
 function openDrawer(){if(isDesktop())return;document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('show');}
 function closeDrawer(){if(isDesktop())return;document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
 function go(sec){
