@@ -1194,7 +1194,9 @@ function renderBudget(){
     cb.forEach(b=>{const st=billSt(b),cp=canPay(b);
       // Auto-pay: show checked if past due_day this month, locked icon
       const todayD=getTZ().getDate();
-      const autoChecked=b.auto_pay&&b.due_day&&todayD>=b.due_day;
+      // Auto-pay: if no due_day, treat as processed (debits automatically).
+      // If due_day set, check after that date.
+      const autoChecked=b.auto_pay&&(!b.due_day||(b.due_day&&todayD>=b.due_day));
       const effectivePaid=b.paid||autoChecked;
       const isManual=!b.auto_pay;
       const canToggle=isManual;
@@ -1336,46 +1338,111 @@ async function saveSplitDay(id,day){
 }
 function openWorkoutDay(id,day,name){
   const logs=S.data.workout_logs||[];
-  const wof=getWeekOf(new Date());
   const w=S.data.workouts||[];
   const workout=w.find(x=>x.id===id)||{};
+  const today=getTZ().toISOString().split('T')[0];
+  const isLogged=logs.some(l=>l.logged_date===today);
   const dayLogs=[...logs].filter(l=>{
     const ld=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
     return ld===day;
   }).sort((a,b)=>b.logged_date.localeCompare(a.logged_date));
-  const isLogged=logs.some(l=>l.logged_date===getTZ().toISOString().split('T')[0]);
+  // Load saved notes for this day from localStorage
+  const notesKey='bos_workout_notes_'+day;
+  const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
+  const lastNote=allNotes[0]||null;
 
   showModal(`<div class="sheet-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-      <div>
-        <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
-        <div style="font-size:18px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
-        <div style="font-size:11px;color:var(--white);opacity:0.5;margin-top:3px">${workout.description||''}</div>
-      </div>
-      <button class="btn-gold-sm" onclick="openJarvisCtx('I am on ${name} day (${day}). My full split: ${w.map(x=>x.day_of_week.slice(0,3)+': '+x.name).join(', ')}. Total sessions logged: ${logs.length}. Give me a specific workout with exercises, sets, reps, and progressive overload guidance for today.')">&#129302; Ask Jarvis</button>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.45;margin-top:3px">${workout.description||''}</div>
     </div>
 
-    <div class="card" style="margin-bottom:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">QUICK LOG</div>
-      <div style="display:flex;gap:8px">
+    <div class="card" style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">LOG SESSION</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
         ${isLogged
           ?`<div style="flex:1;text-align:center;padding:10px;background:var(--green);border-radius:8px"><div style="font-size:12px;font-weight:700;color:var(--white)">\u2714 Logged Today</div></div>
-            <button class="btn-white" style="flex:0" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo</button>`
-          :`<button class="btn-gold" style="flex:1;padding:12px;font-size:14px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">\u2713 Log This Session</button>`
+            <button class="btn-white" style="flex:0;white-space:nowrap" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo</button>`
+          :`<button class="btn-gold" style="flex:1;padding:11px;font-size:13px" onclick="logAndSaveWorkout('${id}','${day}')">+ Log This Session</button>`
         }
+        <button class="btn-white-sm" onclick="editSplitDay('${id}','${day}','${name.replace(/'/g,'')}','${workout.workout_time||'10:00'}')">Edit</button>
       </div>
+      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:64px;resize:none;box-sizing:border-box" placeholder="Log your weights & reps... e.g. Bench: 185x8, 195x6, 200x4">${lastNote?lastNote.notes:''}</textarea>
+      <button class="btn-white" style="margin-top:6px;width:100%;padding:8px;font-size:12px" onclick="saveWorkoutNotes('${day}')">Save Notes</button>
     </div>
 
-    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:6px">${day.charAt(0).toUpperCase()+day.slice(1)} History</div>
+    <div class="card" style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">&#129302; JARVIS \u2014 AI COACH</div>
+      <div id="wod-jarvis-out" style="font-size:12px;color:var(--white);line-height:1.5;min-height:40px;opacity:0.6">Tap below to get your personalized workout plan with progressive overload based on your history.</div>
+      <button class="btn-gold" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length},'${allNotes.slice(0,3).map(n=>n.date+': '+n.notes.slice(0,80)).join(' | ').replace(/'/g,'')}')">&#129302; Generate My Workout Plan</button>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px">${name} History (${dayLogs.length} sessions)</div>
     <div class="card">
-      ${dayLogs.length
-        ?dayLogs.slice(0,8).map(l=>`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">${name}</span><span class="rtime">${fmt(l.logged_date)}</span></div>`).join('')
-        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No ${day} sessions logged yet.</div>`
+      ${allNotes.length
+        ?allNotes.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</div><div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px">${n.notes}</div></div>`).join('')
+        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No notes logged yet. Start tracking your weights above.</div>`
       }
     </div>
-
-    <button class="btn-white" style="margin-top:10px;width:100%;padding:10px" onclick="openJarvisCtx('Based on my ${name} history (${dayLogs.length} sessions logged on ${day}s), suggest progressive overload adjustments and specific weight/rep targets for today. Total training sessions: ${logs.length}.')">&#129302; Get Progressive Overload Plan</button>
   `);
+}
+
+async function logAndSaveWorkout(id,day){
+  await toggleWorkoutLog(id,day,getDateForDay(day));
+  const notes=document.getElementById('wod-notes')?.value?.trim();
+  if(notes)saveWorkoutNotes(day);
+  closeModal();
+  renderHealth();
+}
+
+function saveWorkoutNotes(day){
+  const notes=document.getElementById('wod-notes')?.value?.trim();
+  if(!notes)return;
+  const key='bos_workout_notes_'+day;
+  const existing=JSON.parse(localStorage.getItem(key)||'[]');
+  const today=getTZ().toISOString().split('T')[0];
+  // Update today's entry if exists, otherwise prepend
+  const updated=[{date:today,notes},...existing.filter(n=>n.date!==today)].slice(0,20);
+  localStorage.setItem(key,JSON.stringify(updated));
+  showSuccess('Notes saved!');
+}
+
+async function getInlineWorkoutPlan(day,name,daySessions,totalSessions,recentNotes){
+  const outEl=document.getElementById('wod-jarvis-out');
+  if(!outEl)return;
+  outEl.textContent='Jarvis is thinking\u2026';
+  outEl.style.opacity='1';
+  // Build context from stored notes
+  const notesKey='bos_workout_notes_'+day;
+  const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
+  const historyText=allNotes.length
+    ?allNotes.slice(0,5).map(n=>n.date+': '+n.notes).join('\n')
+    :'No previous weight data logged yet.';
+  const prompt=`I need a specific workout plan for today's ${name} session (${day}).
+
+My recent ${day} history (${daySessions} sessions logged):
+${historyText}
+
+Total training sessions logged: ${totalSessions}
+Workout description: ${name}
+
+Give me:
+1. Specific exercises with sets x reps x weight (use progressive overload from my history if available)
+2. Rest periods
+3. Any technique cues
+4. What to aim for next session
+
+Be specific and practical. If I have no history yet, give me solid starting weights for an intermediate lifter.`;
+
+  try{
+    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],context:{workout_day:day,workout_name:name}})});
+    const data=await r.json();
+    const reply=data.content?.[0]?.text||'Could not get a plan. Try again.';
+    if(outEl)outEl.textContent=reply;
+  }catch(e){
+    if(outEl)outEl.textContent='Jarvis is offline. Check your connection.';
+  }
 }
 async function reseedWorkouts(){
   const uid=S.profile.id;
