@@ -453,7 +453,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div class="sec-label" onclick="go('budget')" style="cursor:pointer">Today's Tasks &#8250;</div><div class="card" id="home-tasks" style="cursor:pointer" onclick="go('budget')"></div>
       <div class="sec-label" onclick="go('health')" style="cursor:pointer">Health Streak &#8250;</div><div class="card" id="home-streak" style="cursor:pointer" onclick="go('health')"></div>
       <div class="sec-label" onclick="go('budget')" style="cursor:pointer">Budget &#8250;</div><div class="grid2" id="home-budget" style="cursor:pointer" onclick="go('budget')"></div>
-      <div class="sec-label" onclick="go('minutes')" style="cursor:pointer">Activity &#8250;</div><div class="card" id="home-activity" style="cursor:pointer" onclick="go('minutes')"></div>
+      <div class="sec-label" onclick="openActivityDetail()" style="cursor:pointer">Activity &#8250;</div><div class="card" id="home-activity" style="cursor:pointer" onclick="go('minutes')"></div>
       <div class="sec-label" onclick="go('schedule')" style="cursor:pointer">Reminders &#8250;</div><div class="card" id="home-reminders" style="cursor:pointer" onclick="go('schedule')"></div>
     </div>
     <div class="section" id="section-chores">
@@ -501,8 +501,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     </div>
     <div class="section" id="section-life" style="padding:0">
       <div class="top-tabs" id="life-tabs">
-        <div class="ttab on" onclick="switchLifeTab('pets')">Pets</div>
-        <div class="ttab" onclick="switchLifeTab('vehicles')">Vehicles</div>
+        <div class="ttab on" onclick="switchLifeTab('vehicles')">Vehicles</div>
         <div class="ttab" onclick="switchLifeTab('recipes')">Recipes</div>
       </div>
       <div id="life-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
@@ -802,8 +801,8 @@ async function seedData(){
     await sb.from('pets').insert({household_id:hid,name:'Chickens',type:'chickens',breed:'Backyard flock',age:'Various',diet:'Chicken feed + scraps',tasks:[{name:'Check feed',status:'not_started',color:'gray'},{name:'Clean coop',status:'not_started',color:'gray'},{name:'Collect eggs',status:'not_started',color:'gray'}]}).catch(()=>{});
   }
   if(!ew||!ew.length){
-    for(const[day,name]of[['monday','Upper Body'],['tuesday','Lower Body'],['wednesday','Zone 2'],['thursday','Push'],['friday','Pull'],['saturday','Legs'],['sunday','Zone 2']]){
-      await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:'10:00'}).catch(()=>{});
+    for(const[day,name,time,description]of[['monday','Upper Strength','10:00','Build pressing & pulling strength. Heavy compounds. Lower reps. Longer rest. Horizontal press, vertical pull, horizontal row, shoulder press.'],['tuesday','Lower Strength','10:00','Build lower body strength & posterior chain. Heavy squats, hinges, unilateral work. Lower reps. Controlled intensity.'],['wednesday','Recovery & Conditioning','10:00','Zone 2 cardio, mobility, stretching, sauna, optional abs/core. No heavy lifting. Improve conditioning & recovery.'],['thursday','Upper Hypertrophy','10:00','Build muscle size & aesthetics. Moderate reps, high volume, controlled tempo, mind-muscle connection. Chest, shoulders, back width.'],['friday','Lower Hypertrophy','10:00','Build leg size, glute development, hamstrings, athletic density. Higher volume, controlled reps, metabolic stress.'],['saturday','Athletic Performance','10:00','Stay explosive and athletic. Sprints, sled pushes, basketball, boxing, kettlebells, or circuits. Functional, lean, explosive.'],['sunday','Full Recovery','10:00','Walking, stretching, prayer, meal prep, nervous system reset. No training.']]){
+      await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:time,description}).catch(()=>{});
     }
   }
   if(!ev||!ev.length){
@@ -861,6 +860,26 @@ async function launchApp(){
   setupNav();setupTopBar();setupSwipe();
   await loadAll();renderHome();
   setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{if(S.currentSection==='home')renderHome();});},30000);
+}
+function openActivityDetail(){
+  const acts=S.data.activity||[];
+  const sectionMap={chores:'chores',budget:'budget',health:'health',business:'business',life:'life',minutes:'minutes',schedule:'schedule',grocery:'grocery'};
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Activity</div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:70vh;overflow-y:auto">
+    ${acts.length?acts.slice(0,20).map(a=>{
+      const sec=sectionMap[a.section]||'home';
+      const name=(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone';
+      return`<div class="card" style="cursor:pointer;margin-bottom:0" onclick="closeModal();go('${sec}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--white)">${name} ${a.action}</div>
+            <div style="font-size:10px;color:var(--gold);margin-top:2px">${fmt(a.created_at)} · ${(a.section||'').charAt(0).toUpperCase()+(a.section||'').slice(1)}</div>
+          </div>
+          <span style="font-size:14px;color:var(--gold)">&#8250;</span>
+        </div>
+      </div>`;
+    }).join(''):`<div style="font-size:13px;color:var(--white);opacity:0.4;padding:16px;text-align:center">No activity yet</div>`}
+    </div>`);
 }
 function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';localStorage.setItem('aj_status',s==='home'?'work':'home');renderHome();}
 function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="localStorage.setItem('jul_status','home');closeModal();renderHome()">At Home</button><button class="btn-white" style="flex:1" onclick="localStorage.setItem('jul_status','work');closeModal();renderHome()">At Work</button></div>`);}
@@ -960,7 +979,7 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const bills=S.data.bills||[],ov=bills.filter(b=>!b.paid&&billSt(b)==='overdue').length,rem=9100-5984;
   document.getElementById('home-budget').innerHTML=`<div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Bills</div><div class="sval" style="font-size:14px;color:${ov>0?'var(--red)':'var(--white)'}">${ov>0?ov+' overdue':'All current'}</div><div class="ssub">${bills.filter(b=>!b.paid).length} remaining</div></div><div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Remaining</div><div class="sval" style="font-size:14px;color:var(--green)">$${rem.toLocaleString()}</div><div class="ssub">After all bills</div></div>`;
   const acts=S.data.activity||[];
-  document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="go(a.section||'home')"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
+  document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
   document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' bill'+(ov>1?'s':'')+' overdue');
@@ -994,9 +1013,18 @@ function editC(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;s
 async function updateC(id){const name=document.getElementById('ec-name')?.value?.trim();const steps=document.getElementById('ec-steps')?.value?.split(',').map(s=>s.trim()).filter(Boolean);const rec=document.getElementById('ec-rec')?.value;if(!name){showError('BOS-DATA-001');return;}try{const upd={name,steps,recurrence:rec};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Saved!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
 async function resetC(id){try{const upd={status:'not_started',current_step:0,completed_by:null,completed_at:null};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Reset!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
 // BUDGET
-function editIncome(){
-  const cur=parseInt(localStorage.getItem('aj_income')||'4550');
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit AJ's Income</div><div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:12px">Juliette's income is fixed at $4,550/mo. Update yours here.</div><div class="field-group"><div class="field-label">AJ Monthly Income ($)</div><input class="field-input" id="aj-inc" type="number" value="${cur}" placeholder="e.g. 4550"></div><button class="btn-gold" onclick="saveIncome()">Save Income</button>`);
+function editIncomeModal(who){
+  const isAJ=who==='aj';
+  const key=isAJ?'aj_income':'jul_income';
+  const cur=parseInt(localStorage.getItem(key)||'4550');
+  const label=isAJ?"AJ's Income":"Juliette's Income";
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${label}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Monthly Income ($)</div><input class="field-input" id="inc-val" type="number" value="${cur}"></div><button class="btn-gold" onclick="saveIncome('${key}')">Save</button></div>`);
+}
+function saveIncome(key){
+  const val=parseInt(document.getElementById('inc-val')?.value);
+  if(!val||val<=0){showError('BOS-DATA-001');return;}
+  localStorage.setItem(key,val.toString());
+  closeModal();showSuccess('Income updated!');renderBudget();
 }
 function saveIncome(){
   const val=parseInt(document.getElementById('aj-inc')?.value)||0;
@@ -1019,9 +1047,18 @@ function checkMonthlyBillReset(){
   localStorage.setItem(key,thisMonth);
   if(toReset.length>0)showSuccess('New month — bills reset!');
 }
-function editIncome(){
-  const cur=parseInt(localStorage.getItem('aj_income')||'4550');
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit AJ's Income</div><div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:12px">Juliette's income is fixed at $4,550/mo. Update yours here.</div><div class="field-group"><div class="field-label">AJ Monthly Income ($)</div><input class="field-input" id="aj-inc" type="number" value="${cur}" placeholder="e.g. 4550"></div><button class="btn-gold" onclick="saveIncome()">Save Income</button>`);
+function editIncomeModal(who){
+  const isAJ=who==='aj';
+  const key=isAJ?'aj_income':'jul_income';
+  const cur=parseInt(localStorage.getItem(key)||'4550');
+  const label=isAJ?"AJ's Income":"Juliette's Income";
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${label}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Monthly Income ($)</div><input class="field-input" id="inc-val" type="number" value="${cur}"></div><button class="btn-gold" onclick="saveIncome('${key}')">Save</button></div>`);
+}
+function saveIncome(key){
+  const val=parseInt(document.getElementById('inc-val')?.value);
+  if(!val||val<=0){showError('BOS-DATA-001');return;}
+  localStorage.setItem(key,val.toString());
+  closeModal();showSuccess('Income updated!');renderBudget();
 }
 function saveIncome(){
   const val=parseInt(document.getElementById('aj-inc')?.value)||0;
@@ -1043,10 +1080,16 @@ function renderBudget(){
   const now=getTZ();document.getElementById('budget-month-label').textContent=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
   // Dynamic income: AJ income (editable) + Juliette fixed $4550
   const ajIncome=parseInt(localStorage.getItem('aj_income')||'4550');
-  const julietteIncome=4550;
+  const julietteIncome=parseInt(localStorage.getItem('jul_income')||'4550');
   const income=ajIncome+julietteIncome;
-  const bills=S.data.bills||[],total=bills.reduce((s,b)=>s+(b.amount||0),0),paidA=bills.filter(b=>b.paid).reduce((s,b)=>s+(b.amount||0),0),rem=income-total,pct=Math.min(100,Math.round((paidA/total)*100));
-  document.getElementById('budget-summary').innerHTML=`<div class="mini-card" onclick="editIncome()" style="cursor:pointer;border-left-color:var(--gold)"><div class="slabel">Income <span style="font-size:9px;opacity:0.6">&#9998; tap</span></div><div class="sval">$${income.toLocaleString()}</div><div class="ssub">AJ $${ajIncome.toLocaleString()} + Jules $${julietteIncome.toLocaleString()}</div></div><div class="mini-card"><div class="slabel">Total Bills</div><div class="sval">$${total.toFixed(0)}</div><div class="ssub">${bills.length} bills</div></div><div class="mini-card" style="border-left-color:var(--green)"><div class="slabel" style="color:var(--green)">Remaining</div><div class="sval sval-g">$${rem.toFixed(0)}</div><div class="ssub">After bills</div></div><div class="mini-card"><div class="slabel">Paid</div><div class="sval">${bills.filter(b=>b.paid).length}/${bills.length}</div><div class="ssub">This month</div></div>`;
+  const bills=S.data.bills||[],total=bills.reduce((s,b)=>s+(b.amount||0),0);
+  const todayDayNum=getTZ().getDate();
+  // Count auto-pay bills past due date as effectively paid
+  const effectivePaidBills=bills.filter(b=>b.paid||(b.auto_pay&&b.due_day&&todayDayNum>=b.due_day));
+  const paidA=effectivePaidBills.reduce((s,b)=>s+(b.amount||0),0);
+  const paidCount=effectivePaidBills.length;
+  const rem=income-total,pct=Math.min(100,Math.round((paidA/total)*100));
+  document.getElementById('budget-summary').innerHTML=`<div class="mini-card" style="border-left-color:var(--gold);grid-column:1/-1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="slabel">Household Income</div><div class="sval">$${income.toLocaleString()}</div></div><div style="display:flex;gap:8px"><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('aj')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">AJ &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${ajIncome.toLocaleString()}</div></div><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('juliette')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">Juliette &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${julietteIncome.toLocaleString()}</div></div></div></div><div class="mini-card"><div class="slabel">Total Bills</div><div class="sval">$${total.toFixed(0)}</div><div class="ssub">${bills.length} bills</div></div><div class="mini-card" style="border-left-color:var(--green)"><div class="slabel" style="color:var(--green)">Remaining</div><div class="sval sval-g">$${rem.toFixed(0)}</div><div class="ssub">After bills</div></div><div class="mini-card"><div class="slabel">Paid</div><div class="sval">${paidCount}/${bills.length}</div><div class="ssub">This month</div></div>`;
   document.getElementById('budget-progress').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--gold)">Bills Progress</span><span style="font-size:11px;font-weight:700;color:var(--white)">$${paidA.toFixed(0)} / $${total.toFixed(0)}</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6;margin-top:3px">${pct}% of bills paid</div></div>`;
   document.getElementById('budget-categories').innerHTML='';
   const sundays=getSundays(now.getFullYear(),now.getMonth());const titheRecs=S.data.tithe||[];
@@ -1078,14 +1121,6 @@ function renderBudget(){
       </div>`;});});
   document.getElementById('bills-list').innerHTML=bHTML;
 }
-function editIncome(){
-  const ajCur=localStorage.getItem('aj_income')||'4550';
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Household Income</div><div style="display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="background:var(--bg-dark)"><div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:4px">Juliette's Income</div><div style="font-size:16px;font-weight:700;color:var(--white)">$4,550 / month</div><div style="font-size:10px;color:var(--white);opacity:0.5;margin-top:2px">Fixed · Edit on Juliette's account</div></div>
-    <div class="field-group"><div class="field-label">AJ's Income This Month ($)</div><input class="field-input" id="aj-inc" type="number" value="${ajCur}" placeholder="e.g. 4550"></div>
-    <div style="font-size:11px;color:var(--white);opacity:0.5">Total household = Juliette + AJ. Update anytime income changes.</div>
-    <button class="btn-gold" onclick="saveIncome()">Save</button></div>`);
-}
 function saveIncome(){
   const val=parseInt(document.getElementById('aj-inc')?.value)||0;
   localStorage.setItem('aj_income',val);
@@ -1110,25 +1145,84 @@ function switchHealthTab(t){switchHTab(t);}
 function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
 function renderWorkouts(c){
   const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getTZ().toISOString().split('T')[0];
-  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];const todayDay=days[getTZ().getDay()];
-  const wof=getWeekOf(new Date()),wofD=new Date(wof);
-  const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofD);dt.setDate(dt.getDate()+i);const ds=dt.toISOString().split('T')[0];const logged=logs.some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const dayNames=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const todayDay=dayNames[getTZ().getDay()];
+  const wof=getWeekOf(new Date()),wofD=new Date(wof);
   const wSorted=[...w].sort((a,b)=>dayOrder.indexOf(a.day_of_week)-dayOrder.indexOf(b.day_of_week));
-  c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis \u2014 Training</div><div class="jtext">Your 7-day split is loaded. Today is ${todayDay.charAt(0).toUpperCase()+todayDay.slice(1)} \u2014 ${(w.find(x=>x.day_of_week===todayDay)||{}).name||'Rest day'}.</div><div class="jcta" onclick="openJarvisCtx('fitness and training advice')">Ask Jarvis &#8594;</div></div>
-    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Split</span><div style="display:flex;gap:6px"><button class="btn-white-sm" onclick="editSplit()">Edit Split</button><button class="btn-gold-sm" onclick="logWorkout()">\u2713 Log Today</button></div></div>
-    <div class="card">${wSorted.length?wSorted.map(x=>{const isT=x.day_of_week===todayDay;const logged=logs.some(l=>{const ld=new Date(l.logged_date);return ld.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase()===x.day_of_week&&l.logged_date>=wof;});return`<div class="task-item" style="cursor:pointer"><div class="chk ${logged?'checked':''}" onclick="toggleWorkoutLog('${x.id}','${x.day_of_week}')" style="cursor:pointer">${logged?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:10px;font-weight:700;color:var(--gold);width:30px;flex-shrink:0">${x.day_of_week.slice(0,3).toUpperCase()}</span><span class="t-name ${logged?'stk':''}" style="flex:1" onclick="editSplitDay('${x.id}','${x.day_of_week}','${x.name||''}','${x.workout_time||'10:00'}')">${x.name||'Rest'}</span><span style="font-size:10px;color:var(--gold)">${x.workout_time||'10:00'}</span>${isT?'<span class="tag-gold" style="font-size:8px;padding:1px 6px">Today</span>':''}<button class="btn-white-sm" onclick="editSplitDay('${x.id}','${x.day_of_week}','${x.name||''}','${x.workout_time||'10:00'}')">Edit</button></div>`;}).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">Your split is being loaded... If empty, tap Edit Split to build your week.</span></div>'}</div>
-    <div class="card"><div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:6px">Week Streak</div><div class="streak-row">${dots}</div></div>`;
-}
-async function reseedWorkouts(){
-  const uid=S.profile.id;
-  for(const[day,name]of[['monday','Upper Body'],['tuesday','Lower Body'],['wednesday','Zone 2'],['thursday','Push'],['friday','Pull'],['saturday','Legs'],['sunday','Zone 2']]){
-    await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:'10:00'}).catch(()=>{});
-  }
-  const rows=await sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]);
-  S.data.workouts=rows||[];
-  showSuccess('Workout split loaded!');
-  renderHealth();
+
+  // Week streak dots
+  const dots=['M','T','W','T','F','S','S'].map((d,i)=>{
+    const dt=new Date(wofD);dt.setDate(dt.getDate()+i);
+    const ds=dt.toISOString().split('T')[0];
+    const logged=logs.some(l=>l.logged_date===ds);
+    const isT=ds===today,isR=i>=5;
+    return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;
+  }).join('');
+
+  // Count total sessions logged
+  const totalLogged=logs.length;
+  const thisWeekLogged=logs.filter(l=>l.logged_date>=wof).length;
+  const todayWorkout=wSorted.find(x=>x.day_of_week===todayDay);
+  const todayLogged=logs.some(l=>l.logged_date===today);
+
+  c.innerHTML=`
+    <div class="jcard" onclick="openJarvisCtx('My workout split: ${wSorted.map(x=>x.day_of_week.slice(0,3)+': '+x.name).join(', ')}. Total sessions: ${totalLogged}. Ask me about progressive overload, what to do today, or how to improve my split.')" style="cursor:pointer">
+      <div class="jlabel">Jarvis \u2014 Training AI &#129302;</div>
+      <div class="jtext">Week ${thisWeekLogged}/${wSorted.filter(x=>x.name!=='Full Recovery').length} sessions done. ${todayLogged?'Today is logged \u2714':todayWorkout?'Today: '+todayWorkout.name:'Rest day today'}. Tap for AI coaching, progressive overload tips, or to log your weights.</div>
+      <div class="jcta">Ask Jarvis about my training &#8594;</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:15px;font-weight:700;color:var(--white)">My Split</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-white-sm" onclick="editSplit()">Edit Split</button>
+        <button class="btn-gold-sm" onclick="logWorkout()">${todayLogged?'\u2713 Logged':'Log Today'}</button>
+      </div>
+    </div>
+
+    <div class="card">
+      ${wSorted.length?wSorted.map(x=>{
+        const isT=x.day_of_week===todayDay;
+        const logged=logs.some(l=>{
+          const ld=new Date(l.logged_date);
+          return ld.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase()===x.day_of_week&&l.logged_date>=wof;
+        });
+        const isRest=x.name==='Full Recovery';
+        return`<div class="task-item" style="cursor:pointer" onclick="openWorkoutDay('${x.id}','${x.day_of_week}','${x.name.replace(/'/g,'')}')">
+          <div class="chk ${logged?'checked':''}" onclick="event.stopPropagation();toggleWorkoutLog('${x.id}','${x.day_of_week}')" style="cursor:pointer">
+            ${logged?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:10px;font-weight:700;color:var(--gold);width:28px;flex-shrink:0">${x.day_of_week.slice(0,3).toUpperCase()}</span>
+              <span class="t-name ${logged?'stk':''}" style="font-size:13px">${x.name}</span>
+              ${isT?'<span class="tag-gold" style="font-size:8px;padding:1px 6px">TODAY</span>':''}
+              ${isRest?'<span style="font-size:8px;color:var(--green);font-weight:700">REST</span>':''}
+            </div>
+            ${x.description?`<div style="font-size:10px;color:var(--white);opacity:0.45;margin-top:2px;padding-left:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.description.slice(0,60)}${x.description.length>60?'...':''}</div>`:''}
+          </div>
+          <span style="font-size:16px;color:var(--gold);opacity:0.5">&#8250;</span>
+        </div>`;
+      }).join(''):`<div class="task-item"><div style="flex:1;text-align:center"><div class="t-name" style="opacity:0.4">No split loaded.</div><button class="btn-gold-sm" style="margin-top:8px" onclick="reseedWorkouts()">Load My Split</button></div></div>`}
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--white)">Week Streak</span>
+        <span style="font-size:10px;color:var(--gold);font-weight:700">${totalLogged} sessions total</span>
+      </div>
+      <div class="streak-row">${dots}</div>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;color:var(--white);margin-top:4px">Workout Log History</div>
+    <div class="card">
+      ${logs.length?[...logs].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10).map(l=>{
+        const dayName=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
+        const wo=w.find(x=>x.day_of_week===dayName);
+        return`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">${wo?wo.name:'Workout'}</span><span class="rtime">${fmt(l.logged_date)}</span></div>`;
+      }).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Tap \u2713 Log Today after each workout.</div>`}
+    </div>`;
 }
 async function toggleWorkoutLog(wid,day){
   const today=getTZ().toISOString().split('T')[0];
@@ -1143,10 +1237,56 @@ async function saveSplitDay(id,day){
   const name=document.getElementById('esd-name')?.value?.trim(),time=document.getElementById('esd-time')?.value?.trim()||'10:00';
   try{await sb.from('workouts').update({name,workout_time:time}).eq('id',id);S.data.workouts=S.data.workouts.map(w=>w.id===id?{...w,name,workout_time:time}:w);closeModal();showSuccess('Saved!');renderHealth();}catch(e){showError(e.message);}
 }
+function openWorkoutDay(id,day,name){
+  const logs=S.data.workout_logs||[];
+  const wof=getWeekOf(new Date());
+  const w=S.data.workouts||[];
+  const workout=w.find(x=>x.id===id)||{};
+  const dayLogs=[...logs].filter(l=>{
+    const ld=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
+    return ld===day;
+  }).sort((a,b)=>b.logged_date.localeCompare(a.logged_date));
+  const isLogged=logs.some(l=>l.logged_date===getTZ().toISOString().split('T')[0]);
+
+  showModal(`<div class="sheet-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
+        <div style="font-size:11px;color:var(--white);opacity:0.5;margin-top:3px">${workout.description||''}</div>
+      </div>
+      <button class="btn-gold-sm" onclick="openJarvisCtx('I am on ${name} day (${day}). My full split: ${w.map(x=>x.day_of_week.slice(0,3)+': '+x.name).join(', ')}. Total sessions logged: ${logs.length}. Give me a specific workout with exercises, sets, reps, and progressive overload guidance for today.')">&#129302; Ask Jarvis</button>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">QUICK LOG</div>
+      <div style="display:flex;gap:8px">
+        ${isLogged
+          ?`<div style="flex:1;text-align:center;padding:10px;background:var(--green);border-radius:8px"><div style="font-size:12px;font-weight:700;color:var(--white)">\u2714 Logged Today</div></div>
+            <button class="btn-white" style="flex:0" onclick="toggleWorkoutLog('${id}','${day}');closeModal();renderHealth()">Undo</button>`
+          :`<button class="btn-gold" style="flex:1;padding:12px;font-size:14px" onclick="toggleWorkoutLog('${id}','${day}');closeModal();renderHealth()">\u2713 Log This Session</button>`
+        }
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:6px">${day.charAt(0).toUpperCase()+day.slice(1)} History</div>
+    <div class="card">
+      ${dayLogs.length
+        ?dayLogs.slice(0,8).map(l=>`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">${name}</span><span class="rtime">${fmt(l.logged_date)}</span></div>`).join('')
+        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No ${day} sessions logged yet.</div>`
+      }
+    </div>
+
+    <button class="btn-white" style="margin-top:10px;width:100%;padding:10px" onclick="openJarvisCtx('Based on my ${name} history (${dayLogs.length} sessions logged on ${day}s), suggest progressive overload adjustments and specific weight/rep targets for today. Total training sessions: ${logs.length}.')">&#129302; Get Progressive Overload Plan</button>
+  `);
+}
 async function reseedWorkouts(){
   const uid=S.profile.id;
-  for(const[day,name]of[['monday','Upper Body'],['tuesday','Lower Body'],['wednesday','Zone 2'],['thursday','Push'],['friday','Pull'],['saturday','Legs'],['sunday','Zone 2']]){
-    await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:'10:00'}).catch(()=>{});
+  // Delete existing first to avoid dupes
+  const existing=await sb.from('workouts').select('id').eq('user_id',uid).catch(()=>[]);
+  for(const w of (existing||[]))await sb.from('workouts').delete().eq('id',w.id).catch(()=>{});
+  for(const[day,name,time,description]of[['monday','Upper Strength','10:00','Build pressing & pulling strength. Heavy compounds. Lower reps. Longer rest. Horizontal press, vertical pull, horizontal row, shoulder press.'],['tuesday','Lower Strength','10:00','Build lower body strength & posterior chain. Heavy squats, hinges, unilateral work. Lower reps. Controlled intensity.'],['wednesday','Recovery & Conditioning','10:00','Zone 2 cardio, mobility, stretching, sauna, optional abs/core. No heavy lifting. Improve conditioning & recovery.'],['thursday','Upper Hypertrophy','10:00','Build muscle size & aesthetics. Moderate reps, high volume, controlled tempo, mind-muscle connection. Chest, shoulders, back width.'],['friday','Lower Hypertrophy','10:00','Build leg size, glute development, hamstrings, athletic density. Higher volume, controlled reps, metabolic stress.'],['saturday','Athletic Performance','10:00','Stay explosive and athletic. Sprints, sled pushes, basketball, boxing, kettlebells, or circuits. Functional, lean, explosive.'],['sunday','Full Recovery','10:00','Walking, stretching, prayer, meal prep, nervous system reset. No training.']]){
+    await sb.from('workouts').insert({user_id:uid,day_of_week:day,name,workout_time:time,description}).catch(()=>{});
   }
   const rows=await sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]);
   S.data.workouts=rows||[];
@@ -1235,9 +1375,15 @@ async function delBiz(id){if(!confirm('Delete? Cannot be undone.'))return;try{aw
 function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button></div>`);}
 async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
 // LIFE
-function renderLife(){switchLTab(S.currentLifeTab);}
+function renderLife(){if(S.currentLifeTab==='pets')S.currentLifeTab='vehicles';switchLTab(S.currentLifeTab);}
 function switchLifeTab(t){switchLTab(t);}
-function switchLTab(tab){S.currentLifeTab=tab;document.querySelectorAll('#life-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['pets','vehicles','recipes'][i]===tab));const c=document.getElementById('life-content');if(tab==='pets')renderPets(c);else if(tab==='vehicles')renderVehicles(c);else if(tab==='recipes')renderRecipes(c);}
+function switchLTab(tab){
+  S.currentLifeTab=tab;
+  document.querySelectorAll('#life-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['vehicles','recipes'][i]===tab));
+  const c=document.getElementById('life-content');
+  if(tab==='vehicles')renderVehicles(c);
+  else if(tab==='recipes')renderRecipes(c);
+}
 function renderPets(c){
   const pets=S.data.pets||[];
   const petEmoji=(type)=>type==='dogs'?'&#128021;':type==='chickens'?'&#128020;':type==='cats'?'&#128049;':'&#128048;';
@@ -1340,7 +1486,25 @@ async function sendJarvis(){const input=document.getElementById('jarvis-input');
 async function sendJMsg(text){
   addJMsg('user',text);
   const msgs=document.getElementById('jarvis-messages');const ld=document.createElement('div');ld.className='jm-ai';ld.id='jld';ld.innerHTML='<span style="color:var(--gd);font-size:12px;opacity:0.7">Thinking\u2026</span>';msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;
-  const ctx={bills_total:5984,income:9100,remaining:3116,chores_pending:(S.data.chores||[]).filter(c=>c.status!=='done').length,supps_taken:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0]).length,total_supps:(S.data.supplements||[]).length,preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,sched_done:(S.data.schedules.mine?.items||[]).filter(i=>i.done).length,sched_total:(S.data.schedules.mine?.items||[]).length};
+  const ajInc=parseInt(localStorage.getItem('aj_income')||'4550');
+  const julInc=parseInt(localStorage.getItem('jul_income')||'4550');
+  const dayOrder2=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const wSortedCtx=[...(S.data.workouts||[])].sort((a,b)=>dayOrder2.indexOf(a.day_of_week)-dayOrder2.indexOf(b.day_of_week));
+  const ctx={
+    family:'AJ Betancur (admin, founder of ParkNest & Poof), Juliette Betancur (pregnant week '+getPregWeek('2026-02-09')+', due Nov 23 2026), Diana (baby '+getDianaAge()+' months)',
+    location:'Tallahassee, FL, Eastern Time',
+    income_aj:ajInc,income_juliette:julInc,household_income:ajInc+julInc,
+    bills_total:(S.data.bills||[]).reduce((s,b)=>s+(b.amount||0),0),
+    remaining:(ajInc+julInc)-(S.data.bills||[]).reduce((s,b)=>s+(b.amount||0),0),
+    chores_pending:(S.data.chores||[]).filter(c=>c.status!=='done').length,
+    workout_split:wSortedCtx.map(x=>x.day_of_week.slice(0,3).toUpperCase()+': '+x.name).join(' | '),
+    total_sessions_logged:(S.data.workout_logs||[]).length,
+    this_week_sessions:(S.data.workout_logs||[]).filter(l=>l.logged_date>=getWeekOf(new Date())).length,
+    supps_taken:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0]).length,
+    preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),
+    open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,
+    grocery_items:(S.data.grocery||[]).filter(g=>!g.checked).length,
+  };
   const messages=[...S.jarvisMessages.filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text})).slice(-8),{role:'user',content:text}];
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:ctx})});
