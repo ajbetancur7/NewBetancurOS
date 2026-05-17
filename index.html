@@ -726,7 +726,7 @@ async function doSignIn(){
     S.household=hhs?.[0]||null;
     document.getElementById('auth-screen').style.display='none';
     if(profile.role==='babysitter'){launchSitter();}
-    else if(!localStorage.getItem('bos_setup_'+profile.id)){launchSetup();}
+    else if(!localStorage.getItem('bos_setup_done')&&profile.role==='admin'){launchSetup();}
     else{launchApp();}
   }catch(e){showAuthError('BOS-AUTH-001');if(btn){btn.textContent='Sign In';btn.disabled=false;}}
 }
@@ -739,9 +739,9 @@ async function doSignUp(){
     const existing=await sb.from('user_profiles').select('id').eq('username',tmp.username).catch(()=>[]);
     if(existing&&existing.length>0){showAuthError('Username already taken. Choose a different one.');if(btn){btn.textContent='Create Account →';btn.disabled=false;}return;}
     // Get or create household
-    let hh=null;
+    let hh=null,joinedExisting=false;
     const hhs=await sb.from('households').select('*').all().catch(()=>[]);
-    if(hhs&&hhs.length>0){hh=hhs[0];}
+    if(hhs&&hhs.length>0){hh=hhs[0];joinedExisting=true;}
     else{const r=await sb.from('households').insert({name:'Betancur Family',address:'Tallahassee, FL',timezone:'America/New_York'});hh=Array.isArray(r)?r[0]:r;}
     // Hash password and create profile
     const hash=await simpleHash(tmp.pass);
@@ -756,10 +756,23 @@ async function doSignUp(){
     localStorage.setItem('bos_household',hh.id);
     localStorage.removeItem('bos_su_tmp');
     S.user={id:uid};S.profile=profile;S.household=hh;
+    // If joining existing household, skip setup wizard (already seeded)
+    if(joinedExisting){
+      localStorage.setItem('bos_setup_done','1');
+    }
     // Launch
     document.getElementById('auth-screen').style.display='none';
     if(S.profile.role==='babysitter'){launchSitter();}
-    else if(!localStorage.getItem('bos_setup_done')){launchSetup();}
+    else if(!localStorage.getItem('bos_setup_done')&&S.profile.role==='admin'){
+      // Check if household already has data (joined existing) — skip setup
+      const existingBills=await sb.from('bills').select('id').eq('household_id',S.household.id).catch(()=>[]);
+      if(existingBills&&existingBills.length>0){
+        localStorage.setItem('bos_setup_done','1');
+        launchApp();
+      }else{
+        launchSetup();
+      }
+    }
     else{launchApp();}
   }catch(e){
     showAuthError(e.message||'Could not create account. Please try again.');
@@ -783,7 +796,12 @@ async function loadProfile(){
     S.household=hh?.[0]||null;
     document.getElementById('auth-screen').style.display='none';document.getElementById('setup-screen').style.display='none';
     if(S.profile.role==='babysitter'){launchSitter();}
-    else if(!localStorage.getItem('bos_setup_done')&&S.profile.role==='admin'){launchSetup();}
+    else if(!localStorage.getItem('bos_setup_done')&&S.profile.role==='admin'){
+      // Auto-skip setup if household already seeded (joining from new device)
+      const eb=await sb.from('bills').select('id').eq('household_id',S.household.id).catch(()=>[]);
+      if(eb&&eb.length>0){localStorage.setItem('bos_setup_done','1');launchApp();}
+      else{launchSetup();}
+    }
     else{launchApp();}
   }catch(e){showAuth('signin');}
 }
@@ -1014,7 +1032,7 @@ async function loadAll(){
     sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('workout_logs').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('supplements').select('*').eq('user_id',uid).catch(()=>[]),
-    sb.from('supplement_logs').select('*').eq('user_id',uid).catch(()=>[]),
+    sb.from('supplement_logs').select('*').eq('user_id',uid).then(r=>(r||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0])).catch(()=>[]),
     sb.from('meetings').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('user_profiles').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('tithe_records').select('*').eq('household_id',hid).catch(()=>[]),
@@ -1028,16 +1046,14 @@ async function loadAll(){
 }
 // UTILS
 function getDateForDay(dayName){
-  // Returns the date string for the most recent occurrence of dayName this week
-  const dayMap={monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
-  const target=dayMap[dayName];
-  const now=getTZ();
-  const current=now.getDay(); // 0=Sun
-  let diff=current-target;
-  if(diff<0)diff+=7; // if target is in future this week, go back to last week
-  const d=new Date(now);
-  d.setDate(d.getDate()-diff);
-  return d.toISOString().split('T')[0];
+  // Returns the date of dayName within the CURRENT week (Mon-Sun)
+  // Week starts Monday. Always returns a date within [weekStart, weekStart+6]
+  const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const targetIdx=dayOrder.indexOf(dayName); // 0=Mon ... 6=Sun
+  const wof=getWeekOf(new Date()); // Monday of this week
+  const weekStart=new Date(wof);
+  weekStart.setDate(weekStart.getDate()+targetIdx);
+  return weekStart.toISOString().split('T')[0];
 }
 function getTZ(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));}
 function getWeekOf(d){const dt=new Date(d),day=dt.getDay(),diff=dt.getDate()-day+(day===0?-6:1);return new Date(dt.getFullYear(),dt.getMonth(),diff).toISOString().split('T')[0];}
@@ -1419,27 +1435,50 @@ async function getInlineWorkoutPlan(day,name,daySessions,totalSessions,recentNot
   const historyText=allNotes.length
     ?allNotes.slice(0,5).map(n=>n.date+': '+n.notes).join('\n')
     :'No previous weight data logged yet.';
-  const prompt=`I need a specific workout plan for today's ${name} session (${day}).
+  const prompt=`Generate a structured workout plan for: ${name} (${day}).
 
-My recent ${day} history (${daySessions} sessions logged):
+Previous ${day} sessions logged: ${daySessions}
+Weight history:
 ${historyText}
 
-Total training sessions logged: ${totalSessions}
-Workout description: ${name}
+Total lifetime sessions: ${totalSessions}
 
-Give me:
-1. Specific exercises with sets x reps x weight (use progressive overload from my history if available)
-2. Rest periods
-3. Any technique cues
-4. What to aim for next session
+Respond in this exact format:
 
-Be specific and practical. If I have no history yet, give me solid starting weights for an intermediate lifter.`;
+## ${name}
+
+**Goal:** [one sentence goal for this day]
+
+**Exercises:**
+1. [Exercise Name] — [sets]x[reps] @ [weight or bodyweight] | Rest: [time]
+2. [Exercise Name] — [sets]x[reps] @ [weight] | Rest: [time]
+(continue for 5-7 exercises appropriate for ${name})
+
+**Progressive Overload Notes:**
+- [Based on history, what to increase or focus on today]
+- [Technique tip]
+
+**Next Session Target:**
+- [What to aim for next ${day}]
+
+Use their weight history to suggest specific weights. If no history, use intermediate-level starting weights. Keep it tight and actionable.`;
 
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],context:{workout_day:day,workout_name:name}})});
     const data=await r.json();
     const reply=data.content?.[0]?.text||'Could not get a plan. Try again.';
-    if(outEl)outEl.textContent=reply;
+    if(outEl){
+      // Format the response as clean HTML
+      const formatted=reply
+        .replace(/\*\*([^*]+)\*\*/g,'<strong style="color:var(--gold)">$1</strong>')
+        .replace(/^#{1,3}\s+(.+)$/gm,'<div style="font-size:13px;font-weight:700;color:var(--gold);margin:10px 0 4px">$1</div>')
+        .replace(/^\d+\.\s+(.+)$/gm,'<div style="padding:3px 0;padding-left:8px;border-left:2px solid var(--gold);margin:3px 0;font-size:12px">$1</div>')
+        .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;font-size:12px;color:var(--white)">&#8226; $1</div>')
+        .replace(/\n\n/g,'<div style="height:8px"></div>')
+        .replace(/\n/g,'<br>');
+      outEl.innerHTML=formatted;
+      outEl.style.opacity='1';
+    }
   }catch(e){
     if(outEl)outEl.textContent='Jarvis is offline. Check your connection.';
   }
