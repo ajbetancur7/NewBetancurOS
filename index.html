@@ -1032,7 +1032,7 @@ async function loadAll(){
     sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('workout_logs').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('supplements').select('*').eq('user_id',uid).catch(()=>[]),
-    sb.from('supplement_logs').select('*').eq('user_id',uid).then(r=>(r||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0])).catch(()=>[]),
+    sb.from('supplement_logs').select('*').eq('user_id',uid).then(r=>(r||[]).filter(l=>l.taken_date===getLocalDateStr())).catch(()=>[]),
     sb.from('meetings').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('user_profiles').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('tithe_records').select('*').eq('household_id',hid).catch(()=>[]),
@@ -1046,17 +1046,42 @@ async function loadAll(){
 }
 // UTILS
 function getDateForDay(dayName){
-  // Returns the date of dayName within the CURRENT week (Mon-Sun)
-  // Week starts Monday. Always returns a date within [weekStart, weekStart+6]
+  // Returns the LOCAL date string for dayName within the current Mon-Sun week.
+  // CRITICAL: parse wof as local date, NOT UTC — new Date('YYYY-MM-DD') is UTC
+  // which shifts the date back 1 day in Eastern Time, causing Sunday→Saturday bug.
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-  const targetIdx=dayOrder.indexOf(dayName); // 0=Mon ... 6=Sun
-  const wof=getWeekOf(new Date()); // Monday of this week
-  const weekStart=new Date(wof);
+  const targetIdx=dayOrder.indexOf(dayName); // Mon=0 ... Sun=6
+  const wof=getWeekOf(new Date()); // e.g. "2026-05-18" = this Monday
+  const parts=wof.split('-');
+  // Parse as LOCAL midnight: new Date(year, month-1, day) — no UTC shift
+  const weekStart=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
   weekStart.setDate(weekStart.getDate()+targetIdx);
-  return weekStart.toISOString().split('T')[0];
+  // Return as YYYY-MM-DD in local time
+  const y=weekStart.getFullYear();
+  const m=String(weekStart.getMonth()+1).padStart(2,'0');
+  const d=String(weekStart.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+d;
 }
 function getTZ(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));}
-function getWeekOf(d){const dt=new Date(d),day=dt.getDay(),diff=dt.getDate()-day+(day===0?-6:1);return new Date(dt.getFullYear(),dt.getMonth(),diff).toISOString().split('T')[0];}
+function getLocalDateStr(d){
+  // Returns YYYY-MM-DD in local time — avoids toISOString() UTC shift
+  const dt=d||getTZ();
+  const y=dt.getFullYear();
+  const m=String(dt.getMonth()+1).padStart(2,'0');
+  const dd=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+function getWeekOf(d){
+  const dt=new Date(d);
+  const day=dt.getDay(); // 0=Sun
+  const diff=dt.getDate()-day+(day===0?-6:1); // Monday of this week
+  const mon=new Date(dt.getFullYear(),dt.getMonth(),diff); // local midnight Monday
+  // Format as YYYY-MM-DD in LOCAL time (avoid toISOString UTC shift)
+  const y=mon.getFullYear();
+  const m=String(mon.getMonth()+1).padStart(2,'0');
+  const dd=String(mon.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
 function fmt(d){try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch{return d||'';}}
 function getPregWeek(lmp){return Math.floor((getTZ()-new Date(lmp))/(7*24*60*60*1000));}
 function getDianaAge(){const dob=new Date('2025-01-07'),now=getTZ();return(now.getFullYear()-dob.getFullYear())*12+(now.getMonth()-dob.getMonth());}
@@ -1253,7 +1278,7 @@ function renderHealth(){switchHTab(S.currentHealthTab);}
 function switchHealthTab(t){switchHTab(t);}
 function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
 function renderWorkouts(c){
-  const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getTZ().toISOString().split('T')[0];
+  const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getLocalDateStr();
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   const dayNames=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
   const todayDay=dayNames[getTZ().getDay()];
@@ -1293,10 +1318,8 @@ function renderWorkouts(c){
     <div class="card">
       ${wSorted.length?wSorted.map(x=>{
         const isT=x.day_of_week===todayDay;
-        const logged=logs.some(l=>{
-          const ld=new Date(l.logged_date);
-          return ld.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase()===x.day_of_week&&l.logged_date>=wof;
-        });
+        const dayDate=getDateForDay(x.day_of_week);
+        const logged=logs.some(l=>l.logged_date===dayDate);
         const isRest=x.name==='Full Recovery';
         return`<div class="task-item" style="cursor:pointer" onclick="openWorkoutDay('${x.id}','${x.day_of_week}','${x.name.replace(/'/g,'')}')">
           <div class="chk ${logged?'checked':''}" onclick="event.stopPropagation();toggleWorkoutLog('${x.id}','${x.day_of_week}',getDateForDay('${x.day_of_week}'))" style="cursor:pointer">
@@ -1335,7 +1358,7 @@ function renderWorkouts(c){
 }
 async function toggleWorkoutLog(wid,day,targetDate){
   // targetDate: specific date for that day (not forced to today)
-  const dateToLog=targetDate||getTZ().toISOString().split('T')[0];
+  const dateToLog=targetDate||getLocalDateStr();
   const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===dateToLog);
   if(existing){
     try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged — '+dateToLog);renderHealth();}
@@ -1356,7 +1379,7 @@ function openWorkoutDay(id,day,name){
   const logs=S.data.workout_logs||[];
   const w=S.data.workouts||[];
   const workout=w.find(x=>x.id===id)||{};
-  const today=getTZ().toISOString().split('T')[0];
+  const today=getLocalDateStr();
   const isLogged=logs.some(l=>l.logged_date===today);
   const dayLogs=[...logs].filter(l=>{
     const ld=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
@@ -1417,7 +1440,7 @@ function saveWorkoutNotes(day){
   if(!notes)return;
   const key='bos_workout_notes_'+day;
   const existing=JSON.parse(localStorage.getItem(key)||'[]');
-  const today=getTZ().toISOString().split('T')[0];
+  const today=getLocalDateStr();
   // Update today's entry if exists, otherwise prepend
   const updated=[{date:today,notes},...existing.filter(n=>n.date!==today)].slice(0,20);
   localStorage.setItem(key,JSON.stringify(updated));
@@ -1498,7 +1521,7 @@ async function reseedWorkouts(){
 }
 async function toggleWorkoutLog(wid,day,targetDate){
   // targetDate: specific date for that day (not forced to today)
-  const dateToLog=targetDate||getTZ().toISOString().split('T')[0];
+  const dateToLog=targetDate||getLocalDateStr();
   const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===dateToLog);
   if(existing){
     try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged — '+dateToLog);renderHealth();}
@@ -1515,17 +1538,17 @@ async function saveSplitDay(id){
   const name=document.getElementById('esd-name')?.value?.trim(),time=document.getElementById('esd-time')?.value?.trim()||'10:00';
   try{await sb.from('workouts').update({name,workout_time:time}).eq('id',id);S.data.workouts=S.data.workouts.map(w=>w.id===id?{...w,name,workout_time:time}:w);closeModal();showSuccess('Saved!');renderHealth();}catch(e){showError(e.message);}
 }
-async function logWorkout(){const today=getTZ().toISOString().split('T')[0];if((S.data.workout_logs||[]).some(l=>l.logged_date===today)){showSuccess('Already logged today!');return;}try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Workout logged!');S.currentSection==='health'?renderHealth():renderHome();}catch(e){showError(e.message);}}
+async function logWorkout(){const today=getLocalDateStr();if((S.data.workout_logs||[]).some(l=>l.logged_date===today)){showSuccess('Already logged today!');return;}try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Workout logged!');S.currentSection==='health'?renderHealth():renderHome();}catch(e){showError(e.message);}}
 function editSplit(){const w=S.data.workouts||[];const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Workout Split</div><div style="display:flex;flex-direction:column;gap:8px">${days.map(d=>{const wd=w.find(x=>x.day_of_week===d)||{};return`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--gold);width:32px">${d.slice(0,3).toUpperCase()}</span><input class="field-input" id="ws-${d}" style="flex:1;padding:8px 10px;font-size:12px" value="${wd.name||''}" placeholder="Rest..."><input class="field-input" id="wt-${d}" style="width:70px;padding:8px 10px;font-size:12px" value="${wd.workout_time||'10:00'}"></div>`;}).join('')}<button class="btn-gold" onclick="saveSplit()" style="margin-top:8px">Save Split</button></div>`);}
 async function saveSplit(){const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];try{for(const d of days){const name=document.getElementById('ws-'+d)?.value?.trim(),time=document.getElementById('wt-'+d)?.value?.trim()||'10:00';const ex=(S.data.workouts||[]).find(w=>w.day_of_week===d);if(ex){if(name!==ex.name||time!==ex.workout_time){await sb.from('workouts').update({name,workout_time:time}).eq('id',ex.id);S.data.workouts=S.data.workouts.map(w=>w.id===ex.id?{...w,name,workout_time:time}:w);}}else if(name){const r=await sb.from('workouts').insert({user_id:S.profile.id,day_of_week:d,name,workout_time:time});if(r?.[0])S.data.workouts=[...S.data.workouts||[],...r];}}closeModal();showSuccess('Split saved!');renderHealth();}catch(e){showError(e.message);}}
 function renderSupps(c){
-  const supps=S.data.supplements||[],logs=S.data.supplement_logs||[],today=getTZ().toISOString().split('T')[0];
+  const supps=S.data.supplements||[],logs=S.data.supplement_logs||[],today=getLocalDateStr();
   c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Supplements</span><button class="btn-gold-sm" onclick="addSupp()">+ Add</button></div>
     <div class="card">${supps.length?supps.map(s=>{const taken=logs.some(l=>l.supplement_id===s.id&&l.taken_date===today);return`<div class="supp-row"><div class="schk ${taken?'taken':''}" onclick="${taken?'':'logSupp(\''+s.id+'\')'}" style="cursor:${taken?'default':'pointer'}">${taken?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${s.name}</div><div style="font-size:9px;color:var(--gold);margin-top:1px">${s.dose} \u00b7 ${s.timing}</div></div><button class="btn-white-sm" onclick="editSupp('${s.id}')">Edit</button><span class="del-x" onclick="delSupp('${s.id}')">&#215;</span></div>`;}).join(''):'<div class="supp-row"><span style="opacity:0.4;font-size:12px">No supplements yet.</span></div>'}</div>
     <div style="font-size:15px;font-weight:700;color:var(--white);margin-top:4px">Juliette's Supplements</div>
     <div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:var(--white)">View only</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">Juliette only</span></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Prenatal Vitamins</div><div style="font-size:9px;color:var(--gold)">1 tablet \u00b7 Morning</div></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Creatine</div><div style="font-size:9px;color:var(--gold)">5g \u00b7 Morning</div></div></div></div>`;
 }
-async function logSupp(id){const today=getTZ().toISOString().split('T')[0];try{const r=await sb.from('supplement_logs').insert({supplement_id:id,user_id:S.profile.id,taken_date:today});if(r?.[0])S.data.supplement_logs=[...S.data.supplement_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){if(e.message?.includes('unique'))showSuccess('Already logged!');else showError(e.message);}}
+async function logSupp(id){const today=getLocalDateStr();try{const r=await sb.from('supplement_logs').insert({supplement_id:id,user_id:S.profile.id,taken_date:today});if(r?.[0])S.data.supplement_logs=[...S.data.supplement_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){if(e.message?.includes('unique'))showSuccess('Already logged!');else showError(e.message);}}
 function addSupp(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Supplement</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ns-sn" placeholder="e.g. Magnesium..."></div><div class="field-group"><div class="field-label">Dose</div><input class="field-input" id="ns-dose" placeholder="e.g. 400mg..."></div><div class="field-group"><div class="field-label">Timing</div><input class="field-input" id="ns-timing" placeholder="e.g. Morning with food..."></div><button class="btn-gold" onclick="saveSupp()">Add</button></div>`);}
 async function saveSupp(){const name=document.getElementById('ns-sn')?.value?.trim(),dose=document.getElementById('ns-dose')?.value?.trim(),timing=document.getElementById('ns-timing')?.value?.trim();if(!name||!dose||!timing){showError('BOS-DATA-001');return;}try{const r=await sb.from('supplements').insert({user_id:S.profile.id,name,dose,timing});if(r?.[0])S.data.supplements=[...S.data.supplements||[],...r];closeModal();showSuccess('Added!');renderHealth();}catch(e){showError(e.message);}}
 function editSupp(id){const s=(S.data.supplements||[]).find(x=>x.id===id);if(!s)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Supplement</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="es-sn" value="${s.name}"></div><div class="field-group"><div class="field-label">Dose</div><input class="field-input" id="es-dose" value="${s.dose}"></div><div class="field-group"><div class="field-label">Timing</div><input class="field-input" id="es-timing" value="${s.timing}"></div><button class="btn-gold" onclick="updSupp('${id}')">Save</button></div>`);}
@@ -1658,7 +1681,7 @@ function viewRec(id){const r=(S.data.recipes||[]).find(x=>x.id===id);if(!r)retur
 function renderMinutes(){const meetings=S.data.meetings||[];const filtered=S.meetingFilter==='all'?meetings:meetings.filter(m=>m.category===S.meetingFilter||(S.meetingFilter==='shared'&&m.shared));const openA=meetings.flatMap(m=>(m.action_items||[]).filter(a=>!a.done));document.getElementById('minutes-jarvis-text').textContent=openA.length?openA.length+' open action item'+(openA.length>1?'s':'')+' across your meetings.':'No open action items. All clear.';const filters=[['all','All'],['business','Business'],['ministry','Ministry'],['personal','Personal'],['family','Family'],['shared','Shared']];document.getElementById('meetings-filter').innerHTML=filters.map(([k,l])=>`<div style="padding:4px 10px;border-radius:12px;background:${S.meetingFilter===k?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${S.meetingFilter===k?'var(--gold)':'var(--border)'};cursor:pointer;font-size:10px;font-weight:700;color:${S.meetingFilter===k?'var(--gd)':'var(--white)'}" onclick="setMF('${k}')">${l}</div>`).join('');document.getElementById('meetings-list').innerHTML=filtered.length?filtered.map(m=>{const own=m.owner_id===S.profile.id||m.shared;return`<div class="meet-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div style="flex:1;padding-right:8px"><div class="meet-title">${m.title}</div><div class="meet-meta">${fmt(m.meeting_date)} \u00b7 ${m.attendees||''}</div></div><div style="display:flex;gap:4px"><span class="tag tag-gray" style="font-size:7px">${(m.category||'personal').toUpperCase()}</span>${m.shared?'<span style="font-size:8px;color:var(--green);font-weight:700">SHARED</span>':''}</div></div>${m.notes?`<div class="meet-notes">${m.notes}</div>`:''}<div class="meet-ah">Action Items</div>${(m.action_items||[]).map(a=>`<div class="ai"><div class="chk ${a.done?'checked':''}" onclick="${own?'togAI(\''+m.id+'\',\''+a.id+'\')':''}" style="cursor:${own?'pointer':'default'}">${a.done?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:11px;color:var(--white);${a.done?'text-decoration:line-through;opacity:0.5;':''}flex:1">${a.text}</span></div>`).join('')}<div class="meet-btns">${own?`<button class="btn-white-sm" onclick="editMtg('${m.id}')">Edit</button>`:''}<button class="btn-white-sm" onclick="openJarvisCtx('Summarize this meeting and extract key decisions: Title: ${m.title}. Notes: ${(m.notes||'').slice(0,200)}')">Jarvis</button>${own?`<span class="del-x" onclick="delMtg('${m.id}')">&#215;</span>`:''}</div></div>`;}).join(''):'<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No meetings in this category.</div></div>';}
 function setMF(f){S.meetingFilter=f;renderMinutes();}
 async function togAI(mid,aid){const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=(m.action_items||[]).map(a=>a.id===aid?{...a,done:!a.done}:a);try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);renderMinutes();}catch(e){showError(e.message);}}
-function showAddMeeting(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">New Meeting</div><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px"><div id="own-mine" style="flex:1;background:var(--gold);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('mine')"><div style="font-size:13px;font-weight:700;color:var(--gd)">Mine</div></div><div id="own-shared" style="flex:1;background:var(--bg-dark);border:0.5px solid var(--blue);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('shared')"><div style="font-size:13px;font-weight:700;color:var(--blue)">Both</div></div></div><input type="hidden" id="nm-own" value="mine"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="nm-title" placeholder="e.g. ParkNest sync..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="nm-date" type="date" value="${getTZ().toISOString().split('T')[0]}"></div><div class="field-group"><div class="field-label">Attendees</div><input class="field-input" id="nm-att" placeholder="e.g. AJ, Investor..."></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nm-cat"><option value="business">Business</option><option value="ministry">Ministry</option><option value="personal">Personal</option><option value="family">Family</option></select></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="nm-notes" rows="3" style="resize:none;min-height:60px" placeholder="Key points..."></textarea></div><button class="btn-gold" onclick="saveMtg()">Save Meeting</button></div>`);}
+function showAddMeeting(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">New Meeting</div><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px"><div id="own-mine" style="flex:1;background:var(--gold);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('mine')"><div style="font-size:13px;font-weight:700;color:var(--gd)">Mine</div></div><div id="own-shared" style="flex:1;background:var(--bg-dark);border:0.5px solid var(--blue);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('shared')"><div style="font-size:13px;font-weight:700;color:var(--blue)">Both</div></div></div><input type="hidden" id="nm-own" value="mine"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="nm-title" placeholder="e.g. ParkNest sync..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="nm-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Attendees</div><input class="field-input" id="nm-att" placeholder="e.g. AJ, Investor..."></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nm-cat"><option value="business">Business</option><option value="ministry">Ministry</option><option value="personal">Personal</option><option value="family">Family</option></select></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="nm-notes" rows="3" style="resize:none;min-height:60px" placeholder="Key points..."></textarea></div><button class="btn-gold" onclick="saveMtg()">Save Meeting</button></div>`);}
 function selOwner(v){document.getElementById('nm-own').value=v;document.getElementById('own-mine').style.background=v==='mine'?'var(--gold)':'var(--bg-dark)';document.getElementById('own-shared').style.background=v==='shared'?'transparent':'var(--bg-dark)';}
 async function saveMtg(){const title=document.getElementById('nm-title')?.value?.trim(),date=document.getElementById('nm-date')?.value,att=document.getElementById('nm-att')?.value?.trim(),cat=document.getElementById('nm-cat')?.value,notes=document.getElementById('nm-notes')?.value?.trim(),own=document.getElementById('nm-own')?.value;if(!title||!date){showError('BOS-DATA-001');return;}try{const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile.id,shared:own==='shared',title,meeting_date:date,attendees:att,category:cat,notes,action_items:[]});if(r?.[0])S.data.meetings.unshift(r[0]);closeModal();showSuccess('Meeting saved!');renderMinutes();}catch(e){showError(e.message);}}
 async function delMtg(id){if(!confirm('Delete?'))return;try{await sb.from('meetings').delete().eq('id',id);S.data.meetings=S.data.meetings.filter(m=>m.id!==id);renderMinutes();}catch(e){showError(e.message);}}
@@ -1709,7 +1732,7 @@ async function sendJMsg(text){
     workout_split:wSortedCtx.map(x=>x.day_of_week.slice(0,3).toUpperCase()+': '+x.name).join(' | '),
     total_sessions_logged:(S.data.workout_logs||[]).length,
     this_week_sessions:(S.data.workout_logs||[]).filter(l=>l.logged_date>=getWeekOf(new Date())).length,
-    supps_taken:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getTZ().toISOString().split('T')[0]).length,
+    supps_taken:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getLocalDateStr()).length,
     preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),
     open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,
     grocery_items:(S.data.grocery||[]).filter(g=>!g.checked).length,
@@ -1726,7 +1749,7 @@ async function sendJMsg(text){
 // BABYSITTER
 function launchSitter(){document.getElementById('splash').style.display='none';document.getElementById('main-app').style.display='none';document.getElementById('babysitter-app').style.display='flex';const name=(S.profile?.name||'').split(' ')[0]||'There';document.getElementById('sitter-greeting').textContent='Hi '+name+'! \ud83d\udc4b';document.getElementById('sitter-date').textContent=getTZ().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('sitter-pill').innerHTML=`<div style="background:var(--border);border-radius:10px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--white);opacity:0.5"></div><span style="font-size:8px;font-weight:700;color:var(--white)">${name}</span></div>`;const ds=S.data.diana_schedule;const di=ds?.items||[{time:'7:00 AM',activity:'Wake up'},{time:'8:00 AM',activity:'Breakfast'},{time:'12:00 PM',activity:'Nap time'},{time:'1:30 PM',activity:'Lunch'},{time:'2:00 PM',activity:'Playtime'},{time:'7:00 PM',activity:'Bedtime routine'}];const chores=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,5);document.getElementById('sitter-body').innerHTML=`<div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Diana Today &#128118;</div>${di.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)"><span style="font-size:12px;color:var(--white);font-weight:500">${i.activity}</span><span style="font-size:11px;color:var(--gold);font-weight:700">${i.time}</span></div>`).join('')}</div><div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Chores</div>${chores.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)"><div class="chk" id="sc${i}" onclick="sChk('${c.id}',${i})" style="cursor:pointer"></div><span style="font-size:13px;color:var(--white);font-weight:500;flex:1" id="sct${i}">${c.room} \u2014 ${c.name}</span></div>`).join('')}${!chores.length?'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">All chores done!</div>':''}</div><div class="card"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px">LEAVE A NOTE FOR AJ + JULIETTE</div><textarea id="sit-note" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;color:var(--white);width:100%;min-height:70px;resize:none" placeholder="How did the session go? Any notes about Diana..."></textarea><button class="btn-gold" style="margin-top:8px;padding:10px;font-size:13px" onclick="sendSNote()">Send Note</button></div><button style="background:transparent;border:none;color:var(--red);font-size:12px;font-weight:700;text-align:center;width:100%;padding:10px;cursor:pointer" onclick="logout()">Sign Out</button>`;}
 function sChk(id,i){const el=document.getElementById('sc'+i);const tel=document.getElementById('sct'+i);if(el){el.classList.add('checked');el.innerHTML='<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>';el.onclick=null;}if(tel){tel.style.textDecoration='line-through';tel.style.opacity='0.5';}doneChore(id);}
-async function sendSNote(){const note=document.getElementById('sit-note')?.value?.trim();if(!note){showError('Please write a note first.');return;}try{await sb.from('babysitter_notes').insert({household_id:S.household.id,from_user_id:S.profile.id,note,session_date:getTZ().toISOString().split('T')[0]});document.getElementById('sit-note').value='';showSuccess('Note sent to AJ and Juliette!');}catch(e){showError(e.message);}}
+async function sendSNote(){const note=document.getElementById('sit-note')?.value?.trim();if(!note){showError('Please write a note first.');return;}try{await sb.from('babysitter_notes').insert({household_id:S.household.id,from_user_id:S.profile.id,note,session_date:getLocalDateStr()});document.getElementById('sit-note').value='';showSuccess('Note sent to AJ and Juliette!');}catch(e){showError(e.message);}}
 // INIT
 window.addEventListener('load',async()=>{
   S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
