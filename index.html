@@ -17,7 +17,7 @@ input,textarea{color:#FFFFFF;background:transparent}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 ::-webkit-scrollbar{display:none}
 :root{--bg:#3A3D46;--bg-dark:#2A2D35;--border:#55586A;--gold:#E8BC50;--white:#FFFFFF;--green:#4CAF82;--red:#E24B4A;--purple:#C47AE8;--blue:#7B9EE8;--gd:#2A2D35}
-#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
+#app-root{height:100%;display:flex;flex-direction:column}#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:40px 32px}
 .splash-brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;text-align:center;margin-bottom:8px}
 .splash-line{width:40px;height:2px;background:var(--gold);margin:10px auto;border-radius:2px}
@@ -69,8 +69,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 #babysitter-app{display:none;flex-direction:column;height:100vh;background:var(--bg)}
 .sitter-header{padding:14px 16px;border-bottom:0.5px solid var(--gold)}
 .sitter-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-#main-app{display:none;flex-direction:column;height:100vh;overflow:hidden}
-.top-bar{padding:10px 16px;border-bottom:0.5px solid var(--gold);background:var(--bg);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:100}
+#main-app{display:none;flex-direction:column;height:100%;overflow:hidden}
+.top-bar{padding:10px 16px;border-bottom:0.5px solid var(--gold);background:var(--bg);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:100}#right-panel{flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;min-width:0}
 .menu-btn{background:transparent;border:1.5px solid var(--white);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--white)}
 .os-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase}
 .user-pill{display:inline-flex;align-items:center;gap:5px;border-radius:12px;padding:4px 10px 4px 7px}
@@ -93,7 +93,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
 #page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;height:0;min-height:0}
 .section{padding:14px;display:none;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
-.section.active{display:flex}
+.section.active{display:flex;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
 .card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
 .card-title{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px}
@@ -325,7 +325,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     display: flex !important;
     flex-direction: row !important;
     width: 100% !important;
-    height: 100vh !important;
+    height: 100% !important;
     overflow: hidden !important;
   }
 
@@ -336,7 +336,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     width: 200px !important;
     min-width: 200px !important;
     max-width: 200px !important;
-    height: 100vh !important;
+    height: 100% !important;
     background: #1a1c24 !important;
     border-right: 1px solid var(--border) !important;
     z-index: 1 !important;
@@ -360,7 +360,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
-    height: 100vh !important;
+    height: 100% !important;
     overflow: hidden !important;
     min-width: 0 !important;
   }
