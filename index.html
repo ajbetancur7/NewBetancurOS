@@ -92,7 +92,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .nav-item.active .nav-label{color:var(--gold)}
 .drawer-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border)}
 .logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
-#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;touch-action:pan-y;overscroll-behavior:contain}
+#page-container{flex:1;min-height:0;overflow-y:scroll;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain;position:relative}
 .section{padding:14px;display:none;flex-direction:column;gap:10px}
 .section.active{display:flex;flex-direction:column}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
