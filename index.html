@@ -10,14 +10,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:"Inter",-apple-system,sans-serif;background:#3A3D46;color:#FFFFFF}
+html{height:100%;height:-webkit-fill-available}body{height:100%;height:-webkit-fill-available;overflow:hidden;font-family:"Inter",-apple-system,sans-serif;background:#3A3D46;color:#FFFFFF}
 button,input,textarea,select{font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;color:#FFFFFF}
 button{cursor:pointer;background:transparent;border:none}
 input,textarea{color:#FFFFFF;background:transparent}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 ::-webkit-scrollbar{display:none}
 :root{--bg:#3A3D46;--bg-dark:#2A2D35;--border:#55586A;--gold:#E8BC50;--white:#FFFFFF;--green:#4CAF82;--red:#E24B4A;--purple:#C47AE8;--blue:#7B9EE8;--gd:#2A2D35}
-#app-root{height:100%;display:flex;flex-direction:column}#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
+#app-root{height:100%;min-height:-webkit-fill-available;display:flex;flex-direction:column}#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:40px 32px}
 .splash-brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;text-align:center;margin-bottom:8px}
 .splash-line{width:40px;height:2px;background:var(--gold);margin:10px auto;border-radius:2px}
@@ -91,9 +91,9 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .nav-item.active .nav-label{color:var(--gold)}
 .drawer-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border)}
 .logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
-#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;height:0;min-height:0}
-.section{padding:14px;display:none;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
-.section.active{display:flex;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;height:0}
+.section{padding:14px;display:none;flex-direction:column;gap:10px}
+.section.active{display:flex;flex:1;min-height:0}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
 .card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
 .card-title{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px}
@@ -305,96 +305,47 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 @media(min-width:501px){#app{border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
 
 @media (min-width: 768px) {
-  /* ── DESKTOP: fills full MacBook screen ── */
-  html, body {
-    background: #111318;
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
+  /* DESKTOP ONLY — nothing here touches mobile (<768px) */
+  html, body { background: #111318; overflow: hidden; }
+
   #app {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    height: 100vh !important;
+    height: 100% !important;
     border: none !important;
   }
   #main-app {
-    display: flex !important;
     flex-direction: row !important;
-    width: 100% !important;
     height: 100% !important;
-    overflow: hidden !important;
   }
-
-  /* Sidebar: collapsible with smooth transition */
   #drawer {
     position: relative !important;
     transform: none !important;
     width: 200px !important;
     min-width: 200px !important;
-    max-width: 200px !important;
     height: 100% !important;
     background: #1a1c24 !important;
     border-right: 1px solid var(--border) !important;
     z-index: 1 !important;
     box-shadow: none !important;
-    transition: width 0.25s ease, min-width 0.25s ease, opacity 0.25s ease !important;
+    transition: width 0.25s ease, opacity 0.2s ease !important;
     flex-shrink: 0 !important;
-    overflow: hidden !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
-  /* Collapsed state */
   #main-app.sidebar-closed #drawer {
     width: 0 !important;
     min-width: 0 !important;
     border-right: none !important;
     opacity: 0 !important;
-    overflow: hidden !important;
   }
-
-  /* Right panel = top-bar + scrollable content */
-  #right-panel {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    overflow: hidden !important;
-    min-width: 0 !important;
-  }
-  #page-container {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    height: auto !important;
-    background: var(--bg) !important;
-  }
-  .section {
-    padding: 20px 32px !important;
-    max-width: 900px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Show desktop toggle button, hide mobile overlay */
   #overlay { display: none !important; }
   .hamburger { display: none !important; }
   .desktop-sidebar-toggle { display: flex !important; }
-
-  /* Splash/auth centered */
-  #splash, #auth-screen, #setup-screen, #babysitter-app {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: var(--bg) !important;
-    z-index: 200 !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
-
-  /* Modals */
+  #right-panel { height: 100% !important; }
+  #page-container { background: var(--bg) !important; }
+  .section { padding: 20px 28px !important; max-width: 860px !important; }
   #modal-overlay {
     position: fixed !important;
     inset: 0 !important;
@@ -413,11 +364,17 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     position: fixed !important;
     inset: 0 !important;
     width: 100% !important;
-    align-items: center !important;
-    justify-content: center !important;
   }
-
-  /* Grids */
+  #splash, #auth-screen, #setup-screen, #babysitter-app {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: var(--bg) !important;
+    z-index: 200 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
   .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
   #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
@@ -569,7 +526,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
         <div class="ttab" onclick="switchHealthTab('diana')">Diana</div>
       </div>
-      <div id="health-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
+      <div id="health-content" style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
     <div class="section" id="section-business">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -583,7 +540,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="ttab on" onclick="switchLifeTab('recipes')">Recipes</div>
         <div class="ttab" onclick="switchLifeTab('vehicles')">Vehicles</div>
       </div>
-      <div id="life-content" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
+      <div id="life-content" style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
     <div class="section" id="section-minutes">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1402,7 +1359,7 @@ async function updSav(id){const name=document.getElementById('eg-nm')?.value?.tr
 // HEALTH
 function renderHealth(){switchHTab(S.currentHealthTab);}
 function switchHealthTab(t){switchHTab(t);}
-function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
+function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
 function renderWorkouts(c){
   const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getLocalDateStr();
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
