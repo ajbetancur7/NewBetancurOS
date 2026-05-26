@@ -17,7 +17,7 @@ input,textarea{color:#FFFFFF;background:transparent}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 ::-webkit-scrollbar{display:none}
 :root{--bg:#3A3D46;--bg-dark:#2A2D35;--border:#55586A;--gold:#E8BC50;--white:#FFFFFF;--green:#4CAF82;--red:#E24B4A;--purple:#C47AE8;--blue:#7B9EE8;--gd:#2A2D35}
-#app-root{height:100%;min-height:-webkit-fill-available;display:flex;flex-direction:column}#app{height:100%;display:flex;flex-direction:column;position:relative;max-width:500px;margin:0 auto}
+#app-root{height:100%;min-height:-webkit-fill-available;display:flex;flex-direction:column}#app{height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:40px 32px}
 .splash-brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;text-align:center;margin-bottom:8px}
 .splash-line{width:40px;height:2px;background:var(--gold);margin:10px auto;border-radius:2px}
@@ -69,8 +69,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 #babysitter-app{display:none;flex-direction:column;height:100vh;background:var(--bg)}
 .sitter-header{padding:14px 16px;border-bottom:0.5px solid var(--gold)}
 .sitter-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-#main-app{display:none;flex-direction:column;overflow:hidden}
-.top-bar{padding:10px 16px;border-bottom:0.5px solid var(--gold);background:var(--bg);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:100}#right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#main-app{display:none;flex:1;flex-direction:column;overflow:hidden}
+.top-bar{padding:10px 16px;border-bottom:0.5px solid var(--gold);background:var(--bg);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:100}#right-panel{flex:1;height:100%;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .menu-btn{background:transparent;border:1.5px solid var(--white);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--white)}
 .os-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase}
 .user-pill{display:inline-flex;align-items:center;gap:5px;border-radius:12px;padding:4px 10px 4px 7px}
@@ -91,9 +91,9 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .nav-item.active .nav-label{color:var(--gold)}
 .drawer-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border)}
 .logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
-#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0}
 .section{padding:14px;display:none;flex-direction:column;gap:10px}
-.section.active{display:flex}
+.section.active{display:flex;flex-direction:column}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
 .card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
 .card-title{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px}
@@ -305,79 +305,22 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 @media(min-width:501px){#app{border-left:0.5px solid var(--border);border-right:0.5px solid var(--border)}}
 
 @media (min-width: 768px) {
-  /* DESKTOP ONLY — nothing here touches mobile (<768px) */
-  html, body { background: #111318; overflow: hidden; }
-
-  #app {
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 0 !important;
-    height: 100% !important;
-    border: none !important;
-  }
-  #main-app {
-    flex-direction: row !important;
-    height: 100% !important;
-  }
-  #drawer {
-    position: relative !important;
-    transform: none !important;
-    width: 200px !important;
-    min-width: 200px !important;
-    height: 100% !important;
-    background: #1a1c24 !important;
-    border-right: 1px solid var(--border) !important;
-    z-index: 1 !important;
-    box-shadow: none !important;
-    transition: width 0.25s ease, opacity 0.2s ease !important;
-    flex-shrink: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-  }
-  #main-app.sidebar-closed #drawer {
-    width: 0 !important;
-    min-width: 0 !important;
-    border-right: none !important;
-    opacity: 0 !important;
-  }
-  #overlay { display: none !important; }
-  .hamburger { display: none !important; }
-  .desktop-sidebar-toggle { display: flex !important; }
-  #right-panel { height: 100% !important; }
-  #page-container { background: var(--bg) !important; }
-  .section { padding: 20px 28px !important; max-width: 860px !important; }
-  #modal-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    justify-content: center !important;
-    align-items: flex-end !important;
-  }
-  .bottom-sheet {
-    width: 520px !important;
-    max-width: 520px !important;
-    border-radius: 16px !important;
-    margin-bottom: 40px !important;
-  }
-  #jarvis-modal {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-  }
-  #splash, #auth-screen, #setup-screen, #babysitter-app {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: var(--bg) !important;
-    z-index: 200 !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
-  .grid2 { grid-template-columns: repeat(4, 1fr) !important; }
-  #room-grid { grid-template-columns: repeat(3, 1fr) !important; }
-  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  html, body { background: #111318; }
+  #app { max-width:100% !important; width:100% !important; margin:0 !important; border:none !important; }
+  #main-app { flex-direction: row !important; }
+  #drawer { position:relative !important; transform:none !important; width:200px !important; min-width:200px !important; height:100% !important; background:#1a1c24 !important; border-right:1px solid var(--border) !important; z-index:1 !important; box-shadow:none !important; transition:width 0.25s ease, opacity 0.2s ease !important; flex-shrink:0 !important; overflow-y:auto !important; overflow-x:hidden !important; }
+  #main-app.sidebar-closed #drawer { width:0 !important; min-width:0 !important; border-right:none !important; opacity:0 !important; }
+  #overlay { display:none !important; }
+  .hamburger { display:none !important; }
+  .desktop-sidebar-toggle { display:flex !important; }
+  #splash, #auth-screen, #setup-screen, #babysitter-app { position:fixed !important; inset:0 !important; width:100% !important; height:100% !important; background:var(--bg) !important; z-index:200 !important; justify-content:center !important; align-items:center !important; }
+  .section { padding:20px 28px !important; max-width:860px !important; }
+  #modal-overlay { position:fixed !important; inset:0 !important; width:100% !important; height:100% !important; justify-content:center !important; align-items:flex-end !important; }
+  .bottom-sheet { width:520px !important; max-width:520px !important; border-radius:16px !important; margin-bottom:40px !important; }
+  #jarvis-modal { position:fixed !important; inset:0 !important; width:100% !important; }
+  .grid2 { grid-template-columns:repeat(4,1fr) !important; }
+  #room-grid { grid-template-columns:repeat(3,1fr) !important; }
+  .kpi-grid { grid-template-columns:repeat(4,1fr) !important; }
 }
 .desktop-sidebar-toggle{display:none;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--white);font-size:16px;flex-shrink:0}
 .desktop-sidebar-toggle:hover{background:var(--bg-dark);border-color:var(--gold)}
@@ -454,16 +397,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
-          <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
-          <button class="btn-gold-sm" onclick="addDayNote()">+ Add</button>
-        </div>
-        <div id="day-notes-list" style="padding:0 14px 10px;display:flex;flex-direction:column;gap:4px">
-          <div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>
-        </div>
-      </div>
-
       <div class="card" style="padding:0;overflow:hidden">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
           <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
