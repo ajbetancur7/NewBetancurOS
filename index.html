@@ -17,7 +17,7 @@ input,textarea{color:#FFFFFF;background:transparent}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 ::-webkit-scrollbar{display:none}
 :root{--bg:#3A3D46;--bg-dark:#2A2D35;--border:#55586A;--gold:#E8BC50;--white:#FFFFFF;--green:#4CAF82;--red:#E24B4A;--purple:#C47AE8;--blue:#7B9EE8;--gd:#2A2D35}
-#app{height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
+#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;max-width:500px;margin:0 auto}
 #splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:40px 32px}
 .splash-brand{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.25em;text-transform:uppercase;text-align:center;margin-bottom:8px}
 .splash-line{width:40px;height:2px;background:var(--gold);margin:10px auto;border-radius:2px}
@@ -91,8 +91,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .nav-item.active .nav-label{color:var(--gold)}
 .drawer-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border)}
 .logout-btn{font-size:12px;font-weight:700;color:var(--red);margin-top:10px;display:block;opacity:0.8;background:transparent;border:none;cursor:pointer}
-#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-.section{padding:14px;display:none;flex-direction:column;gap:10px;min-height:100%}
+#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;height:0;min-height:0}
+.section{padding:14px;display:none;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
 .section.active{display:flex}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
 .card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:transparent}
@@ -497,6 +497,25 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
+          <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
+          <button class="btn-gold-sm" onclick="addDayNote()">+ Add</button>
+        </div>
+        <div id="day-notes-list" style="padding:0 14px 10px;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
+          <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
+          <button class="btn-gold-sm" onclick="addDayNote()">+ Add</button>
+        </div>
+        <div id="day-notes-list" style="padding:0 14px 10px;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>
+        </div>
+      </div>
       <div class="jcard" id="home-jarvis" style="cursor:pointer" onclick="openJarvis()">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span class="jlabel">Jarvis</span><span class="jbadge" id="jarvis-alert-count"></span>
@@ -545,6 +564,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     <div class="section" id="section-health" style="padding:0">
       <div class="top-tabs" id="health-tabs">
         <div class="ttab on" onclick="switchHealthTab('workouts')">Workouts</div>
+        <div class="ttab" onclick="switchHealthTab('prs')">PRs</div>
         <div class="ttab" onclick="switchHealthTab('supps')">Supps</div>
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
         <div class="ttab" onclick="switchHealthTab('diana')">Diana</div>
@@ -973,6 +993,95 @@ function openActivityDetail(){
     }).join(''):`<div style="font-size:13px;color:var(--white);opacity:0.4;padding:16px;text-align:center">No activity yet</div>`}
     </div>`);
 }
+// ── DAY NOTES ──
+function renderDayNotes(){
+  const el=document.getElementById('day-notes-list');
+  if(!el)return;
+  const notes=getDayNotes();
+  if(!notes.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>';
+    return;
+  }
+  el.innerHTML=notes.map((n,i)=>{
+    const done=n.done||false;
+    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)">'
+      +'<div onclick="toggleDayNote('+i+')" style="width:16px;height:16px;border-radius:4px;border:1.5px solid '+(done?'var(--green)':'var(--border)')+';background:'+(done?'var(--green)':'transparent')+';flex-shrink:0;cursor:pointer;margin-top:1px;display:flex;align-items:center;justify-content:center">'
+      +(done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':'')
+      +'</div>'
+      +'<div style="flex:1;font-size:12px;color:var(--white);'+(done?'opacity:0.4;text-decoration:line-through':'')+'">'+n.text+'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0">'
+      +'<button class="btn-white-sm" onclick="editDayNote('+i+')">Edit</button>'
+      +'<span class="del-x" onclick="deleteDayNote('+i+')">&#215;</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function getDayNotes(){
+  return JSON.parse(localStorage.getItem('bos_day_notes')||'[]');
+}
+
+function saveDayNotes(notes){
+  localStorage.setItem('bos_day_notes',JSON.stringify(notes));
+  renderDayNotes();
+}
+
+function addDayNote(){
+  showModal('<div class="sheet-handle"></div>'
+    +'<div class="sheet-title">Add Day Note</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<textarea id="dn-text" class="field-input" style="min-height:80px;resize:none" placeholder="What do you need to remember?"></textarea>'
+    +'<button class="btn-gold" onclick="saveDayNoteNew()">Add</button>'
+    +'</div>');
+}
+
+function saveDayNoteNew(){
+  const text=document.getElementById('dn-text')?.value?.trim();
+  if(!text){showError('BOS-DATA-001');return;}
+  const notes=getDayNotes();
+  notes.push({text,done:false,created:getLocalDateStr()});
+  saveDayNotes(notes);
+  closeModal();
+  showSuccess('Note added!');
+}
+
+function editDayNote(i){
+  const notes=getDayNotes();
+  const n=notes[i];
+  if(!n)return;
+  showModal('<div class="sheet-handle"></div>'
+    +'<div class="sheet-title">Edit Note</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<textarea id="dn-edit" class="field-input" style="min-height:80px;resize:none">'+n.text+'</textarea>'
+    +'<button class="btn-gold" onclick="saveDayNoteEdit('+i+')">Save</button>'
+    +'<button class="btn-red-outline" onclick="deleteDayNote('+i+');closeModal()">Delete</button>'
+    +'</div>');
+}
+
+function saveDayNoteEdit(i){
+  const text=document.getElementById('dn-edit')?.value?.trim();
+  if(!text)return;
+  const notes=getDayNotes();
+  if(!notes[i])return;
+  notes[i].text=text;
+  saveDayNotes(notes);
+  closeModal();
+  showSuccess('Note updated!');
+}
+
+function toggleDayNote(i){
+  const notes=getDayNotes();
+  if(!notes[i])return;
+  notes[i].done=!notes[i].done;
+  saveDayNotes(notes);
+}
+
+function deleteDayNote(i){
+  const notes=getDayNotes();
+  notes.splice(i,1);
+  saveDayNotes(notes);
+}
+
 function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';localStorage.setItem('aj_status',s==='home'?'work':'home');renderHome();}
 function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="localStorage.setItem('jul_status','home');closeModal();renderHome()">At Home</button><button class="btn-white" style="flex:1" onclick="localStorage.setItem('jul_status','work');closeModal();renderHome()">At Work</button></div>`);}
 function isDesktop(){return window.innerWidth>=768;}
@@ -1041,7 +1150,24 @@ async function loadAll(){
   Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings,users,tithe,savings});
   // Bill reset handled by checkMonthlyBillReset() in renderBudget
   const wof=getWeekOf(new Date());
-  const mySched=await sb.from('schedules').select('*').eq('user_id',uid).then(r=>r?.find(s=>s.week_of===wof)||null).catch(()=>null);
+  // Load ALL schedule rows — find this week's or most recent, never delete items
+  const allScheds=await sb.from('schedules').select('*').eq('user_id',uid).catch(()=>[]);
+  let mySched=null;
+  if(allScheds&&allScheds.length>0){
+    mySched=allScheds.find(s=>s.week_of===wof)||null;
+    if(!mySched){
+      // New week: find most recent, keep ALL items but uncheck them (Sunday reset)
+      const sorted=[...allScheds].sort((a,b)=>b.week_of.localeCompare(a.week_of));
+      const prev=sorted[0];
+      if(prev&&prev.items&&prev.items.length>0){
+        const resetItems=prev.items.map(i=>({...i,done:false}));
+        try{
+          const r=await sb.from('schedules').insert({user_id:uid,week_of:wof,items:resetItems});
+          mySched=(Array.isArray(r)?r[0]:r)||{...prev,id:undefined,week_of:wof,items:resetItems};
+        }catch(e){mySched={...prev,week_of:wof,items:resetItems};}
+      }
+    }
+  }
   S.data.schedules.mine=mySched;
 }
 // UTILS
@@ -1116,7 +1242,7 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
-  document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  renderDayNotes();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
@@ -1458,7 +1584,12 @@ async function getInlineWorkoutPlan(day,name,daySessions,totalSessions,recentNot
   const historyText=allNotes.length
     ?allNotes.slice(0,5).map(n=>n.date+': '+n.notes).join('\n')
     :'No previous weight data logged yet.';
-  const prompt=`Generate a structured workout plan for: ${name} (${day}).
+  // Get PR data to pass to Jarvis
+  const prs=getPRs();
+  const prText=prs.length?'My max lifts/PRs: '+prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'No PRs logged yet - use intermediate weights.';
+  const prompt=`IMPORTANT - Use these actual max lifts for weight suggestions: ${prText}
+
+Generate a structured workout plan for: ${name} (${day}).
 
 Previous ${day} sessions logged: ${daySessions}
 Weight history:
@@ -1501,11 +1632,65 @@ Use their weight history to suggest specific weights. If no history, use interme
         .replace(/\n/g,'<br>');
       outEl.innerHTML=formatted;
       outEl.style.opacity='1';
+      // Store raw plan text and show action buttons
+      outEl.dataset.rawPlan=reply;
+      outEl.dataset.day=day;
+      outEl.dataset.name=name;
+      const actEl=document.getElementById('wod-jarvis-actions');
+      if(actEl)actEl.style.display='flex';
     }
   }catch(e){
     if(outEl)outEl.textContent='Jarvis is offline. Check your connection.';
   }
 }
+function approveWorkoutPlan(){
+  const outEl=document.getElementById('wod-jarvis-out');
+  if(!outEl)return;
+  const day=outEl.dataset.day||'';
+  const name=outEl.dataset.name||'Workout';
+  const plan=outEl.dataset.rawPlan||outEl.innerText||'';
+  // Save plan as notes for this day
+  const key='bos_workout_notes_'+day;
+  const existing=JSON.parse(localStorage.getItem(key)||'[]');
+  const today=getLocalDateStr();
+  const entry={date:today,notes:'[AI Plan] '+plan.slice(0,500)};
+  const updated=[entry,...existing.filter(n=>n.date!==today)].slice(0,20);
+  localStorage.setItem(key,JSON.stringify(updated));
+  // Find the workout id for this day
+  const wo=(S.data.workouts||[]).find(x=>x.day_of_week===day);
+  if(wo)toggleWorkoutLog(wo.id,day,getDateForDay(day));
+  else{S.data.workout_logs=[...S.data.workout_logs||[],{id:'local-'+Date.now(),logged_date:getDateForDay(day),user_id:S.profile?.id}];}
+  closeModal();
+  showSuccess('Plan saved & session logged!');
+  renderHealth();
+}
+
+function editWorkoutPlan(){
+  const outEl=document.getElementById('wod-jarvis-out');
+  if(!outEl)return;
+  const day=outEl.dataset.day||'';
+  const plan=outEl.dataset.rawPlan||'';
+  showModal('<div class="sheet-handle"></div>'
+    +'<div class="sheet-title">Edit Workout Plan</div>'
+    +'<textarea id="wod-edit-plan" style="width:100%;min-height:200px;background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);resize:vertical;box-sizing:border-box">'+plan+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<button class="btn-gold" style="flex:1" onclick="saveEditedPlan()">Save Edited Plan</button>'
+    +'<button class="btn-white-sm" onclick="closeModal()">Cancel</button>'
+    +'</div>');
+}
+
+function saveEditedPlan(){
+  const newPlan=document.getElementById('wod-edit-plan')?.value?.trim();
+  if(!newPlan)return;
+  const outEl=document.getElementById('wod-jarvis-out');
+  if(outEl){
+    outEl.dataset.rawPlan=newPlan;
+    outEl.textContent=newPlan;
+  }
+  closeModal();
+  showSuccess('Plan updated!');
+}
+
 async function reseedWorkouts(){
   const uid=S.profile.id;
   // Delete existing first to avoid dupes
@@ -1541,6 +1726,108 @@ async function saveSplitDay(id){
 async function logWorkout(){const today=getLocalDateStr();if((S.data.workout_logs||[]).some(l=>l.logged_date===today)){showSuccess('Already logged today!');return;}try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Workout logged!');S.currentSection==='health'?renderHealth():renderHome();}catch(e){showError(e.message);}}
 function editSplit(){const w=S.data.workouts||[];const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Workout Split</div><div style="display:flex;flex-direction:column;gap:8px">${days.map(d=>{const wd=w.find(x=>x.day_of_week===d)||{};return`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--gold);width:32px">${d.slice(0,3).toUpperCase()}</span><input class="field-input" id="ws-${d}" style="flex:1;padding:8px 10px;font-size:12px" value="${wd.name||''}" placeholder="Rest..."><input class="field-input" id="wt-${d}" style="width:70px;padding:8px 10px;font-size:12px" value="${wd.workout_time||'10:00'}"></div>`;}).join('')}<button class="btn-gold" onclick="saveSplit()" style="margin-top:8px">Save Split</button></div>`);}
 async function saveSplit(){const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];try{for(const d of days){const name=document.getElementById('ws-'+d)?.value?.trim(),time=document.getElementById('wt-'+d)?.value?.trim()||'10:00';const ex=(S.data.workouts||[]).find(w=>w.day_of_week===d);if(ex){if(name!==ex.name||time!==ex.workout_time){await sb.from('workouts').update({name,workout_time:time}).eq('id',ex.id);S.data.workouts=S.data.workouts.map(w=>w.id===ex.id?{...w,name,workout_time:time}:w);}}else if(name){const r=await sb.from('workouts').insert({user_id:S.profile.id,day_of_week:d,name,workout_time:time});if(r?.[0])S.data.workouts=[...S.data.workouts||[],...r];}}closeModal();showSuccess('Split saved!');renderHealth();}catch(e){showError(e.message);}}
+function renderPRs(c){
+  const prs=JSON.parse(localStorage.getItem('bos_prs')||'[]');
+  const rows=prs.length
+    ?prs.map((pr,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border)">'
+        +'<div style="flex:1">'
+          +'<div style="font-size:13px;font-weight:600;color:var(--white)">'+pr.lift+'</div>'
+          +'<div style="font-size:10px;color:var(--gold);margin-top:2px">'+pr.weight+' lbs \u00b7 '+pr.reps+' rep'+(pr.reps!=='1'?'s':'')+' '+(pr.notes?'\u00b7 '+pr.notes:'')+'</div>'
+        +'</div>'
+        +'<button class="btn-white-sm" onclick="editPR('+i+')">Edit</button>'
+        +'<span class="del-x" onclick="deletePR('+i+')">&#215;</span>'
+        +'</div>').join('')
+    :'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:12px 0">No PRs logged yet. Add your max lifts so Jarvis can give accurate weight suggestions.</div>';
+
+  c.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<span style="font-size:15px;font-weight:700;color:var(--white)">Max Lifts & PRs</span>'
+    +'<button class="btn-gold-sm" onclick="addPR()">+ Add PR</button>'
+    +'</div>'
+    +'<div class="card">'+rows+'</div>'
+    +'<div class="jcard" style="margin-top:8px">'
+      +'<div class="jlabel">How Jarvis Uses These</div>'
+      +'<div class="jtext">When you generate a workout plan, Jarvis reads your PRs to suggest weights as a percentage of your max — typically 70-85% for hypertrophy, 85-95% for strength work.</div>'
+    +'</div>';
+}
+
+function getPRs(){return JSON.parse(localStorage.getItem('bos_prs')||'[]');}
+function savePRs(prs){localStorage.setItem('bos_prs',JSON.stringify(prs));}
+
+function addPR(){
+  showModal('<div class="sheet-handle"></div>'
+    +'<div class="sheet-title">Add Max Lift / PR</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div class="field-group"><div class="field-label">Lift Name</div>'
+    +'<input class="field-input" id="pr-lift" placeholder="e.g. Bench Press, Squat, Deadlift"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div>'
+    +'<input class="field-input" id="pr-weight" type="number" placeholder="225"></div>'
+    +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div>'
+    +'<input class="field-input" id="pr-reps" type="number" placeholder="1" value="1"></div>'
+    +'</div>'
+    +'<div class="field-group"><div class="field-label">Notes (optional)</div>'
+    +'<input class="field-input" id="pr-notes" placeholder="e.g. paused, belt, raw"></div>'
+    +'<button class="btn-gold" onclick="savePRNew()">Save PR</button>'
+    +'</div>');
+}
+
+function savePRNew(){
+  const lift=document.getElementById('pr-lift')?.value?.trim();
+  const weight=document.getElementById('pr-weight')?.value?.trim();
+  const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
+  const notes=document.getElementById('pr-notes')?.value?.trim()||'';
+  if(!lift||!weight){showError('BOS-DATA-001');return;}
+  const prs=getPRs();
+  prs.push({lift,weight,reps,notes,date:getLocalDateStr()});
+  savePRs(prs);
+  closeModal();
+  showSuccess('PR saved!');
+  renderPRs(document.getElementById('health-content'));
+}
+
+function editPR(i){
+  const prs=getPRs();
+  const pr=prs[i];
+  if(!pr)return;
+  showModal('<div class="sheet-handle"></div>'
+    +'<div class="sheet-title">Edit PR</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div class="field-group"><div class="field-label">Lift Name</div>'
+    +'<input class="field-input" id="pr-lift" value="'+pr.lift+'"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div>'
+    +'<input class="field-input" id="pr-weight" type="number" value="'+pr.weight+'"></div>'
+    +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div>'
+    +'<input class="field-input" id="pr-reps" type="number" value="'+pr.reps+'"></div>'
+    +'</div>'
+    +'<div class="field-group"><div class="field-label">Notes</div>'
+    +'<input class="field-input" id="pr-notes" value="'+(pr.notes||'')+'"></div>'
+    +'<button class="btn-gold" onclick="savePREdit('+i+')">Save</button>'
+    +'<button class="btn-red-outline" onclick="deletePR('+i+');closeModal()">Delete</button>'
+    +'</div>');
+}
+
+function savePREdit(i){
+  const lift=document.getElementById('pr-lift')?.value?.trim();
+  const weight=document.getElementById('pr-weight')?.value?.trim();
+  const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
+  const notes=document.getElementById('pr-notes')?.value?.trim()||'';
+  if(!lift||!weight)return;
+  const prs=getPRs();
+  prs[i]={...prs[i],lift,weight,reps,notes};
+  savePRs(prs);
+  closeModal();
+  showSuccess('PR updated!');
+  renderPRs(document.getElementById('health-content'));
+}
+
+function deletePR(i){
+  const prs=getPRs();
+  prs.splice(i,1);
+  savePRs(prs);
+  renderPRs(document.getElementById('health-content'));
+}
+
 function renderSupps(c){
   const supps=S.data.supplements||[],logs=S.data.supplement_logs||[],today=getLocalDateStr();
   c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Supplements</span><button class="btn-gold-sm" onclick="addSupp()">+ Add</button></div>
