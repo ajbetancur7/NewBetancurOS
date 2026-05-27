@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { weight_lbs, body_fat_pct, sleep_hrs, steps, resting_hr, active_cal, date, token } = req.body || {};
+  const { weight_lbs, body_fat_pct, sleep_hrs, steps, resting_cal, active_cal, date, token } = req.body || {};
   if (token !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
   const logDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
   if (body_fat_pct != null && !isNaN(parseFloat(body_fat_pct))) row.body_fat_pct = parseFloat(parseFloat(body_fat_pct).toFixed(1));
   if (sleep_hrs != null && !isNaN(parseFloat(sleep_hrs))) row.sleep_hrs = parseFloat(parseFloat(sleep_hrs).toFixed(2));
   if (steps != null && !isNaN(parseInt(steps))) row.steps = parseInt(steps);
-  if (resting_hr != null && !isNaN(parseInt(resting_hr))) row.resting_hr = parseInt(resting_hr);
+  if (resting_cal != null && !isNaN(parseInt(resting_cal))) row.resting_cal = parseInt(resting_cal);
   if (active_cal != null && !isNaN(parseInt(active_cal))) row.active_cal = parseInt(active_cal);
 
   const payload = JSON.stringify([row]);
