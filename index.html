@@ -326,6 +326,19 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 }
 .desktop-sidebar-toggle{display:none;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--white);font-size:16px;flex-shrink:0}
 .desktop-sidebar-toggle:hover{background:var(--bg-dark);border-color:var(--gold)}
+.workout-timer{font-size:32px;font-weight:700;color:var(--gold);text-align:center;padding:12px 0;font-variant-numeric:tabular-nums;letter-spacing:2px}
+.energy-row{display:flex;gap:10px;justify-content:center;margin:10px 0}
+.energy-btn{width:44px;height:44px;border-radius:50%;border:2px solid var(--border);background:transparent;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.energy-btn.sel{border-color:var(--gold);background:rgba(232,188,80,0.18)}
+.anchor-item{background:var(--bg-dark);border-left:3px solid var(--gold);border-radius:9px;padding:11px 13px;margin-bottom:7px}
+.anchor-text{font-size:13px;color:var(--white);line-height:1.55;font-style:italic;opacity:0.9}
+.body-log-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.body-log-row:last-child{border-bottom:none}
+.goals-subtab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.gstab{padding:5px 12px;border-radius:8px;background:var(--bg-dark);border:0.5px solid var(--border);font-size:10px;font-weight:700;color:var(--white);cursor:pointer}
+.gstab.on{background:var(--gold);color:var(--gd);border-color:var(--gold)}
+.preprompt-area{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:52px;resize:none;box-sizing:border-box;margin-bottom:8px}
+.preprompt-area::placeholder{color:rgba(255,255,255,0.3)}
 </style>
 </head>
 <body><div id="app-root">
@@ -458,6 +471,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="ttab on" onclick="switchHealthTab('workouts')">Workouts</div>
         <div class="ttab" onclick="switchHealthTab('prs')">PRs</div>
         <div class="ttab" onclick="switchHealthTab('supps')">Supps</div>
+        <div class="ttab" onclick="switchHealthTab('goals')">Goals</div>
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
         <div class="ttab" onclick="switchHealthTab('diana')">Diana</div>
       </div>
@@ -540,7 +554,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 <script>
 const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
-let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,diana_schedule:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,diana_schedule:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
 const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -1294,7 +1308,7 @@ async function updSav(id){const name=document.getElementById('eg-nm')?.value?.tr
 // HEALTH
 function renderHealth(){switchHTab(S.currentHealthTab);}
 function switchHealthTab(t){switchHTab(t);}
-function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
+function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','goals','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='goals')renderGoals(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
 function renderWorkouts(c){
   const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getLocalDateStr();
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
@@ -1374,6 +1388,105 @@ function renderWorkouts(c){
       }).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Tap \u2713 Log Today after each workout.</div>`}
     </div>`;
 }
+function renderGoals(c){
+  const sub=S.goalsSubTab||'goal';
+  const tabs=[['goal','My Goal'],['body','Body Log'],['nutrition','Nutrition'],['fasting','Fasting'],['anchors','Anchors']];
+  const tabBar=`<div class="goals-subtab-row">${tabs.map(([k,l])=>`<div class="gstab${sub===k?' on':''}" onclick="S.goalsSubTab='${k}';renderGoals(document.getElementById('health-content'))">${l}</div>`).join('')}</div>`;
+
+  if(sub==='goal'){
+    const goal=localStorage.getItem('bos_main_goal')||'';
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Main Goal</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis reads this to guide every recommendation.</div>
+      <textarea id="goal-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:110px;resize:none;box-sizing:border-box" placeholder="e.g. Cut from 215 to 195 lbs by August 2026 while maintaining strength. Stay lean, athletic, and disciplined.">${goal}</textarea>
+      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_main_goal',document.getElementById('goal-input').value.trim());showSuccess('Goal saved \u2014 Jarvis now knows.')">Save Goal</button>
+      ${goal?`<div class="jcard" style="margin-top:10px"><div class="jlabel">Current Goal</div><div class="jtext">${goal}</div><div class="jcta" onclick="openJarvisCtx('Based on my goal: ${goal.replace(/'/g,'')}. How should I train and eat this week?')">Ask Jarvis how to hit it &#8594;</div></div>`:''}
+    `;
+  }else if(sub==='body'){
+    const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+    const today=getLocalDateStr();
+    const todayEntry=log.find(e=>e.date===today)||{};
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY</div>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Weight (lbs)</div><input id="bl-weight" class="field-input" type="number" step="0.1" placeholder="215.5" value="${todayEntry.weight||''}"></div>
+          <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Body Fat %</div><input id="bl-bf" class="field-input" type="number" step="0.1" placeholder="18.5" value="${todayEntry.bf||''}"></div>
+        </div>
+        <button class="btn-gold" style="width:100%;padding:11px;font-size:13px" onclick="saveBodyLog()">Save Today</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:6px">History</div>
+      <div class="card">
+        ${log.length?log.slice(0,14).map(e=>`<div class="body-log-row">
+          <span style="font-size:10px;color:var(--gold);font-weight:700;width:76px;flex-shrink:0">${e.date}</span>
+          ${e.weight?`<span style="font-size:13px;font-weight:700;color:var(--white);flex:1">${e.weight} lbs</span>`:'<span style="flex:1"></span>'}
+          ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}% BF`:''}
+        </div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No entries yet. Log your weight daily.</div>`}
+      </div>
+    `;
+  }else if(sub==='nutrition'){
+    const rules=localStorage.getItem('bos_nutrition_rules')||'';
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Nutrition Rules</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis references these when you ask about food, meals, or discipline.</div>
+      <textarea id="nutrition-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:160px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 No processed sugar. Zero tolerance.&#10;\u2022 Protein first at every meal (180g/day target)&#10;\u2022 No snacking after 8pm&#10;\u2022 Cheat meal max once/week, never a cheat day&#10;\u2022 Alcohol only on special occasions">${rules}</textarea>
+      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_nutrition_rules',document.getElementById('nutrition-input').value.trim());showSuccess('Nutrition rules saved.')">Save Rules</button>
+    `;
+  }else if(sub==='fasting'){
+    const fasting=localStorage.getItem('bos_fasting')||'';
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Fasting Schedule</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis factors your fasting window into meal and energy advice.</div>
+      <textarea id="fasting-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:130px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 16:8 daily: eating window 12pm\u20138pm&#10;\u2022 No calories before noon (black coffee ok)&#10;\u2022 Break fast with protein, not carbs&#10;\u2022 24hr fast occasionally on Sundays">${fasting}</textarea>
+      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_fasting',document.getElementById('fasting-input').value.trim());showSuccess('Fasting schedule saved.')">Save Schedule</button>
+    `;
+  }else if(sub==='anchors'){
+    const defaultAnchors=['I am disciplined. What I eat today shapes who I am tomorrow.','I can want the food and still choose not to eat it. That is power.','Every rep and every clean meal is a vote for the man I am becoming.','My family is watching. My body is the example I set.','The discomfort of discipline is lighter than the weight of regret.'];
+    const customAnchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
+    const allAnchors=[...defaultAnchors,...customAnchors];
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">NLP Anchors</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:12px">Read one before you eat something off-plan. These rewire the moment.</div>
+      ${allAnchors.map((a,i)=>`<div class="anchor-item" style="${i<defaultAnchors.length?'border-color:var(--gold)':'border-color:var(--purple)'}">
+        <div class="anchor-text">&ldquo;${a}&rdquo;</div>
+        ${i>=defaultAnchors.length?`<button class="btn-red-outline" style="margin-top:8px;padding:4px 10px;font-size:10px;width:auto" onclick="deleteAnchor(${i-defaultAnchors.length})">Remove</button>`:''}
+      </div>`).join('')}
+      <div class="card" style="margin-top:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">Add Your Own Anchor</div>
+        <textarea id="anchor-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:60px;resize:none;box-sizing:border-box" placeholder="Write your personal discipline anchor..."></textarea>
+        <button class="btn-gold-outline" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="addAnchor()">+ Add Anchor</button>
+      </div>
+    `;
+  }
+}
+function saveBodyLog(){
+  const weight=parseFloat(document.getElementById('bl-weight')?.value)||0;
+  const bf=parseFloat(document.getElementById('bl-bf')?.value)||0;
+  if(!weight&&!bf){showError('Enter weight or body fat %.');return;}
+  const today=getLocalDateStr();
+  const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+  const entry={date:today,weight:weight||null,bf:bf||null};
+  const updated=[entry,...log.filter(e=>e.date!==today)].slice(0,90);
+  localStorage.setItem('bos_body_log',JSON.stringify(updated));
+  showSuccess('Logged!');
+  renderGoals(document.getElementById('health-content'));
+}
+function addAnchor(){
+  const text=document.getElementById('anchor-input')?.value?.trim();
+  if(!text)return;
+  const anchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
+  anchors.push(text);
+  localStorage.setItem('bos_anchors',JSON.stringify(anchors));
+  showSuccess('Anchor saved.');
+  renderGoals(document.getElementById('health-content'));
+}
+function deleteAnchor(i){
+  const anchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
+  anchors.splice(i,1);
+  localStorage.setItem('bos_anchors',JSON.stringify(anchors));
+  renderGoals(document.getElementById('health-content'));
+}
 async function toggleWorkoutLog(wid,day,targetDate){
   // targetDate: specific date for that day (not forced to today)
   const dateToLog=targetDate||getLocalDateStr();
@@ -1408,6 +1521,7 @@ function openWorkoutDay(id,day,name){
   const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
   const lastNote=allNotes[0]||null;
 
+  const timerRunning=S.workoutStartTime!==null;
   showModal(`<div class="sheet-handle"></div>
     <div style="margin-bottom:10px">
       <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
@@ -1416,33 +1530,47 @@ function openWorkoutDay(id,day,name){
     </div>
 
     <div class="card" style="margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">LOG SESSION</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        ${isLogged
-          ?`<div style="flex:1;text-align:center;padding:10px;background:var(--green);border-radius:8px"><div style="font-size:12px;font-weight:700;color:var(--white)">\u2714 Logged Today</div></div>
-            <button class="btn-white" style="flex:0;white-space:nowrap" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo</button>`
-          :`<button class="btn-gold" style="flex:1;padding:11px;font-size:13px" onclick="logAndSaveWorkout('${id}','${day}')">+ Log This Session</button>`
-        }
-        <button class="btn-white-sm" onclick="editSplitDay('${id}','${day}','${name.replace(/'/g,'')}','${workout.workout_time||'10:00'}')">Edit</button>
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">&#9201; WORKOUT TIMER</div>
+      ${isLogged
+        ?`<div style="text-align:center;padding:10px;background:rgba(76,175,130,0.15);border-radius:8px;border:1px solid var(--green)"><div style="font-size:13px;font-weight:700;color:var(--green)">\u2714 Session Logged</div></div>
+          <button class="btn-white" style="width:100%;margin-top:8px;padding:9px;font-size:12px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo Log</button>`
+        :timerRunning
+          ?`<div id="wod-timer-display" class="workout-timer">00:00</div>
+            <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>`
+          :`<button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="startWorkoutTimer('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#9654; Start Workout</button>
+            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Tap when you begin — tracks duration</div>`
+      }
+    </div>
+
+    <div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--gold)">SESSION NOTES</span>
+        <button class="btn-white-sm" onclick="editSplitDay('${id}','${day}','${name.replace(/'/g,'')}','${workout.workout_time||'10:00'}')">Edit Split</button>
       </div>
-      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:64px;resize:none;box-sizing:border-box" placeholder="Log your weights & reps... e.g. Bench: 185x8, 195x6, 200x4">${lastNote?lastNote.notes:''}</textarea>
+      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:64px;resize:none;box-sizing:border-box" placeholder="Log weights &amp; reps... e.g. Bench: 185x8, 195x6">${lastNote&&lastNote.notes?lastNote.notes:''}</textarea>
       <button class="btn-white" style="margin-top:6px;width:100%;padding:8px;font-size:12px" onclick="saveWorkoutNotes('${day}')">Save Notes</button>
     </div>
 
     <div class="card" style="margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">&#129302; JARVIS \u2014 AI COACH</div>
-      <div id="wod-jarvis-out" style="font-size:12px;color:var(--white);line-height:1.5;min-height:40px;opacity:0.6">Tap below to get your personalized workout plan with progressive overload based on your history.</div>
-      <button class="btn-gold" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length},'${allNotes.slice(0,3).map(n=>n.date+': '+n.notes.slice(0,80)).join(' | ').replace(/'/g,'')}')">&#129302; Generate My Workout Plan</button>
+      <textarea id="wod-jarvis-preprompt" class="preprompt-area" placeholder="Tell Jarvis anything first (optional) — e.g. skip chest, feeling tight, focus on back, want something brutal..."></textarea>
+      <div id="wod-jarvis-out" style="font-size:12px;color:var(--white);line-height:1.55;min-height:36px;opacity:0.5">Tap below — Jarvis reads your notes &amp; PRs to build your exact plan.</div>
+      <button class="btn-gold" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Generate My Workout Plan</button>
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px">${name} History (${dayLogs.length} sessions)</div>
     <div class="card">
       ${allNotes.length
-        ?allNotes.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</div><div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px">${n.notes}</div></div>`).join('')
-        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No notes logged yet. Start tracking your weights above.</div>`
+        ?allNotes.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>${n.energy?`<span style="font-size:11px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n.energy]||''} ${n.duration||''}</span>`:''}</div>
+          <div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px">${n.notes||''}</div>
+          ${n.feedback?`<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-top:2px;font-style:italic">"${n.feedback}"</div>`:''}
+          </div>`).join('')
+        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Start tracking above.</div>`
       }
     </div>
   `);
+  if(timerRunning&&!isLogged)startTimerDisplay();
 }
 
 async function logAndSaveWorkout(id,day){
@@ -1459,27 +1587,90 @@ function saveWorkoutNotes(day){
   const key='bos_workout_notes_'+day;
   const existing=JSON.parse(localStorage.getItem(key)||'[]');
   const today=getLocalDateStr();
-  // Update today's entry if exists, otherwise prepend
   const updated=[{date:today,notes},...existing.filter(n=>n.date!==today)].slice(0,20);
   localStorage.setItem(key,JSON.stringify(updated));
   showSuccess('Notes saved!');
 }
+function startWorkoutTimer(id,day,name){
+  S.workoutStartTime=Date.now();
+  openWorkoutDay(id,day,name);
+}
+function startTimerDisplay(){
+  clearInterval(S.workoutTimer);
+  S.workoutTimer=setInterval(()=>{
+    const el=document.getElementById('wod-timer-display');
+    if(!el){clearInterval(S.workoutTimer);return;}
+    const elapsed=Math.floor((Date.now()-S.workoutStartTime)/1000);
+    const m=String(Math.floor(elapsed/60)).padStart(2,'0');
+    const s=String(elapsed%60).padStart(2,'0');
+    el.textContent=m+':'+s;
+  },1000);
+}
+function finishWorkoutPrompt(id,day,name){
+  clearInterval(S.workoutTimer);
+  const elapsed=Math.floor((Date.now()-S.workoutStartTime)/1000);
+  const m=Math.floor(elapsed/60),s=elapsed%60;
+  const timeStr=m+'m '+(s<10?'0'+s:s)+'s';
+  S.selectedEnergy=3;
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Workout Complete!</div>
+    <div style="text-align:center;background:rgba(76,175,130,0.15);border:1px solid var(--green);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:var(--green);opacity:0.8;letter-spacing:0.08em">DURATION</div>
+      <div style="font-size:30px;font-weight:700;color:var(--white)">${timeStr}</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="field-label" style="margin-bottom:8px">Energy Level</div>
+      <div class="energy-row" id="energy-selector">
+        ${['&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'].map((e,i)=>`<button class="energy-btn${i+1===3?' sel':''}" onclick="selectEnergy(${i+1})" id="energy-${i+1}">${e}</button>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--white);opacity:0.35;padding:0 4px"><span>Dead</span><span>Average</span><span>Beast</span></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="field-label" style="margin-bottom:6px">Feedback (Optional)</div>
+      <textarea id="workout-feedback" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:60px;resize:none;box-sizing:border-box" placeholder="How did it feel? What crushed you? What to push next time?"></textarea>
+    </div>
+    <button class="btn-gold" style="width:100%;padding:13px;font-size:14px" onclick="saveWorkoutFinish('${id}','${day}','${timeStr}')">Save &amp; Log Session</button>
+    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="closeModal()">Cancel</button>
+  `);
+}
+function selectEnergy(level){
+  S.selectedEnergy=level;
+  for(let i=1;i<=5;i++){const el=document.getElementById('energy-'+i);if(el)el.classList.toggle('sel',i===level);}
+}
+async function saveWorkoutFinish(id,day,timeStr){
+  const energy=S.selectedEnergy||3;
+  const feedback=document.getElementById('workout-feedback')?.value?.trim()||'';
+  const notes=document.getElementById('wod-notes')?.value?.trim()||'';
+  const key='bos_workout_notes_'+day;
+  const existing=JSON.parse(localStorage.getItem(key)||'[]');
+  const today=getLocalDateStr();
+  const entry={date:today,duration:timeStr,energy,feedback,notes};
+  const updated=[entry,...existing.filter(n=>n.date!==today)].slice(0,20);
+  localStorage.setItem(key,JSON.stringify(updated));
+  S.workoutStartTime=null;
+  await toggleWorkoutLog(id,day,getDateForDay(day));
+  closeModal();
+  showSuccess('Session logged!');
+  renderHealth();
+}
 
-async function getInlineWorkoutPlan(day,name,daySessions,totalSessions,recentNotes){
+async function getInlineWorkoutPlan(day,name,daySessions,totalSessions){
   const outEl=document.getElementById('wod-jarvis-out');
   if(!outEl)return;
+  const customPrompt=document.getElementById('wod-jarvis-preprompt')?.value?.trim()||'';
   outEl.textContent='Jarvis is thinking\u2026';
   outEl.style.opacity='1';
-  // Build context from stored notes
   const notesKey='bos_workout_notes_'+day;
   const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
   const historyText=allNotes.length
-    ?allNotes.slice(0,5).map(n=>n.date+': '+n.notes).join('\n')
+    ?allNotes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join('\n')
     :'No previous weight data logged yet.';
-  // Get PR data to pass to Jarvis
   const prs=getPRs();
   const prText=prs.length?'My max lifts/PRs: '+prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'No PRs logged yet - use intermediate weights.';
+  const mainGoal=localStorage.getItem('bos_main_goal')||'';
   const prompt=`IMPORTANT - Use these actual max lifts for weight suggestions: ${prText}
+${mainGoal?'\nMy main physique goal: '+mainGoal:''}
+${customPrompt?'\nSpecific request for today: '+customPrompt:''}
 
 Generate a structured workout plan for: ${name} (${day}).
 
@@ -1892,26 +2083,62 @@ async function removeU(id){if(!confirm('Remove this user?'))return;try{await sb.
 function openJarvis(){document.getElementById('jarvis-modal').style.display='flex';document.getElementById('jarvis-input')?.focus();if(!S.jarvisMessages.length)addJMsg('ai','Hi! I\'m Jarvis \u2014 your family AI. I know your home, health, businesses, and schedule. What can I help with?');}
 function openJarvisCtx(ctx){S.jarvisMessages=[];openJarvis();sendJMsg('Help me with: '+ctx);}
 function closeJarvis(){document.getElementById('jarvis-modal').style.display='none';}
-function addJMsg(role,text){S.jarvisMessages.push({role,text});const msgs=document.getElementById('jarvis-messages');const div=document.createElement('div');div.className=role==='user'?'jm-user':'jm-ai';div.textContent=text;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+function fmtJarvisText(text){
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<div style="font-size:13px;font-weight:700;color:var(--gd);margin:10px 0 4px">$1</div>')
+    .replace(/^\d+\.\s+(.+)$/gm,'<div style="padding:3px 0 3px 10px;border-left:2px solid rgba(42,45,53,0.4);margin:3px 0">$1</div>')
+    .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 10px">&#8226; $1</div>')
+    .replace(/\n\n/g,'<div style="height:6px"></div>')
+    .replace(/\n/g,'<br>');
+}
+function addJMsg(role,text){
+  S.jarvisMessages.push({role,text});
+  const msgs=document.getElementById('jarvis-messages');
+  const div=document.createElement('div');
+  div.className=role==='user'?'jm-user':'jm-ai';
+  if(role==='ai'){div.innerHTML=fmtJarvisText(text);}
+  else{div.textContent=text;}
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
 async function sendJarvis(){const input=document.getElementById('jarvis-input');const text=input?.value?.trim();if(!text)return;input.value='';sendJMsg(text);}
 async function sendJMsg(text){
+  // Build conversation history BEFORE adding the new user message to avoid duplication
+  const historyMessages=S.jarvisMessages
+    .filter(m=>m.role==='user'||m.role==='assistant')
+    .map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}))
+    .slice(-10);
+  const messages=[...historyMessages,{role:'user',content:text}];
+
   addJMsg('user',text);
-  const msgs=document.getElementById('jarvis-messages');const ld=document.createElement('div');ld.className='jm-ai';ld.id='jld';ld.innerHTML='<span style="color:var(--gd);font-size:12px;opacity:0.7">Thinking\u2026</span>';msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;
+  const msgs=document.getElementById('jarvis-messages');
+  const ld=document.createElement('div');ld.className='jm-ai';ld.id='jld';
+  ld.innerHTML='<span style="opacity:0.6">Thinking\u2026</span>';
+  msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;
+
+  const tz=getTZ();
+  const todayDay=tz.toLocaleDateString('en-US',{weekday:'long'});
+  const todayDate=getLocalDateStr();
   const ajInc=parseInt(localStorage.getItem('aj_income')||'4550');
   const julInc=parseInt(localStorage.getItem('jul_income')||'4550');
   const dayOrder2=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   const wSortedCtx=[...(S.data.workouts||[])].sort((a,b)=>dayOrder2.indexOf(a.day_of_week)-dayOrder2.indexOf(b.day_of_week));
-  // Build full workout history from localStorage notes
   const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   const workoutHistory={};
-  days.forEach(day=>{
-    const notes=JSON.parse(localStorage.getItem('bos_workout_notes_'+day)||'[]');
-    if(notes.length>0) workoutHistory[day]=notes.slice(0,5).map(n=>n.date+': '+n.notes).join(' | ');
+  days.forEach(d=>{
+    const notes=JSON.parse(localStorage.getItem('bos_workout_notes_'+d)||'[]');
+    if(notes.length>0)workoutHistory[d]=notes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join(' | ');
   });
   const prs=JSON.parse(localStorage.getItem('bos_prs')||'[]');
   const prSummary=prs.length?prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'none logged';
   const recentLogs=[...(S.data.workout_logs||[])].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10);
+  const bodyLog=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+  const latestBody=bodyLog[0]||{};
   const ctx={
+    today_date:todayDate,
+    today_day:todayDay,
     family:'AJ Betancur (admin, founder of ParkNest & Poof), Juliette Betancur (pregnant week '+getPregWeek('2026-02-09')+', due Nov 23 2026), Diana (baby '+getDianaAge()+' months)',
     location:'Tallahassee, FL, Eastern Time',
     income_aj:ajInc,income_juliette:julInc,household_income:ajInc+julInc,
@@ -1922,21 +2149,29 @@ async function sendJMsg(text){
     total_sessions_logged:(S.data.workout_logs||[]).length,
     this_week_sessions:(S.data.workout_logs||[]).filter(l=>l.logged_date>=getWeekOf(new Date())).length,
     recent_sessions:recentLogs.map(l=>{const dow=new Date(l.logged_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();const wo=(S.data.workouts||[]).find(w=>w.day_of_week===dow);return l.logged_date+': '+(wo?wo.name:'workout');}).join(', '),
-    workout_notes_by_day:Object.keys(workoutHistory).length?workoutHistory:'No workout notes logged yet - user needs to tap a workout day and log weights/reps',
+    workout_notes_by_day:Object.keys(workoutHistory).length?workoutHistory:'No workout notes logged yet',
     personal_records:prSummary,
-    supps_today:(S.data.supplement_logs||[]).filter(l=>l.taken_date===getLocalDateStr()).length+' of '+(S.data.supplements||[]).length+' taken',
+    supps_today:(S.data.supplement_logs||[]).filter(l=>l.taken_date===todayDate).length+' of '+(S.data.supplements||[]).length+' taken',
     supplements:(S.data.supplements||[]).map(s=>s.name+' '+s.dose+' '+s.timing).join(', ')||'none',
     preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),
     open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,
     grocery_items:(S.data.grocery||[]).filter(g=>!g.checked).length,
+    main_goal:localStorage.getItem('bos_main_goal')||'Not set',
+    nutrition_rules:localStorage.getItem('bos_nutrition_rules')||'Not set',
+    fasting:localStorage.getItem('bos_fasting')||'Not set',
+    current_weight:latestBody.weight?latestBody.weight+' lbs ('+latestBody.date+')':'Not logged',
+    current_bf:latestBody.bf?latestBody.bf+'% ('+latestBody.date+')':'Not logged',
   };
-  const messages=[...S.jarvisMessages.filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text})).slice(-8),{role:'user',content:text}];
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:ctx})});
     const data=await r.json();document.getElementById('jld')?.remove();
     if(data.error){addJMsg('ai','Jarvis is having trouble. Please try again.');return;}
-    const reply=data.content?.[0]?.text||'I\'m not sure about that. Please rephrase.';
-    addJMsg('ai',reply);S.jarvisMessages.push({role:'assistant',text:reply});
+    const reply=data.content?.[0]?.text||'I\'m not sure. Please rephrase.';
+    // Push to history as 'assistant' role (for conversation continuity), then render as 'ai'
+    S.jarvisMessages.push({role:'assistant',text:reply});
+    const replyMsgs=document.getElementById('jarvis-messages');
+    const div=document.createElement('div');div.className='jm-ai';div.innerHTML=fmtJarvisText(reply);
+    replyMsgs.appendChild(div);replyMsgs.scrollTop=replyMsgs.scrollHeight;
   }catch(e){document.getElementById('jld')?.remove();addJMsg('ai','Jarvis is offline. Check your connection.');}
 }
 // BABYSITTER
