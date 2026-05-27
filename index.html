@@ -1103,7 +1103,7 @@ function getLocalDateStr(d){
   const dd=String(dt.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+dd;
 }
-function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}-${m}-${y}`;}
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${m}-${day}-${y}`;}
 function getWeekOf(d){
   const dt=new Date(d);
   const day=dt.getDay(); // 0=Sun
