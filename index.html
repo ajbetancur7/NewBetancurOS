@@ -1391,7 +1391,7 @@ function renderWorkouts(c){
 }
 function renderGoals(c){
   const sub=S.goalsSubTab||'goal';
-  const tabs=[['goal','My Goal'],['body','Body Log'],['nutrition','Nutrition'],['fasting','Fasting'],['anchors','Anchors']];
+  const tabs=[['goal','My Goal'],['body','Body Log'],['targets','Targets'],['nutrition','Nutrition'],['fasting','Fasting'],['anchors','Anchors']];
   const tabBar=`<div class="goals-subtab-row">${tabs.map(([k,l])=>`<div class="gstab${sub===k?' on':''}" onclick="S.goalsSubTab='${k}';renderGoals(document.getElementById('health-content'))">${l}</div>`).join('')}</div>`;
 
   if(sub==='goal'){
@@ -1412,6 +1412,7 @@ function renderGoals(c){
       c.innerHTML=tabBar+`
         <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
         <div style="font-size:10px;color:var(--white);opacity:0.35;margin-bottom:8px;margin-top:-6px">Auto-syncs from Apple Health each morning via Shortcut</div>
+        ${(()=>{const tgt=JSON.parse(localStorage.getItem('bos_health_targets')||'{}');const bar=(label,val,goal,unit,color)=>goal&&val?`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:10px;color:var(--white);opacity:0.6">${label}</span><span style="font-size:10px;color:${color||'var(--white)'};font-weight:700">${val}${unit} / ${goal}${unit}</span></div><div style="background:var(--border);border-radius:4px;height:4px"><div style="background:${color||'var(--gold)'};border-radius:4px;height:4px;width:${Math.min(100,Math.round(val/goal*100))}%"></div></div></div>`:'';const bars=[bar('Steps',te.steps,tgt.steps,'','#5ac8fa'),bar('Sleep',te.sleep,tgt.sleep,'h','#a78bfa'),bar('Active Cal',te.active_cal,tgt.active_cal,' cal','var(--gold)'),bar('Weight',te.weight,tgt.weight,' lbs','var(--white)'),bar('Body Fat',te.bf,tgt.bf,'%','#ff6b6b')].filter(Boolean).join('');return bars?`<div class="card" style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:8px">TODAY\'S PROGRESS</div>${bars}</div>`:''})()}
         <div class="card" style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY \u2014 ${fmtDate(today)}</div>
           <div style="display:flex;gap:10px;margin-bottom:10px">
@@ -1461,6 +1462,29 @@ function renderGoals(c){
       <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis references these when you ask about food, meals, or discipline.</div>
       <textarea id="nutrition-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:160px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 No processed sugar. Zero tolerance.&#10;\u2022 Protein first at every meal (180g/day target)&#10;\u2022 No snacking after 8pm&#10;\u2022 Cheat meal max once/week, never a cheat day&#10;\u2022 Alcohol only on special occasions">${rules}</textarea>
       <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_nutrition_rules',document.getElementById('nutrition-input').value.trim());showSuccess('Nutrition rules saved.')">Save Rules</button>
+    `;
+  }else if(sub==='targets'){
+    const t=JSON.parse(localStorage.getItem('bos_health_targets')||'{}');
+    const field=(label,key,placeholder,unit)=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--white)">${label}</div>
+          <div style="font-size:10px;color:var(--white);opacity:0.4">${unit}</div>
+        </div>
+        <input id="tgt-${key}" class="field-input" type="number" step="any" placeholder="${placeholder}" value="${t[key]||''}" style="width:90px;text-align:right">
+      </div>`;
+    c.innerHTML=tabBar+`
+      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Daily Targets</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Set your daily health goals. Shown as progress in Body Log.</div>
+      <div class="card">
+        ${field('Steps','steps','10000','steps/day')}
+        ${field('Sleep','sleep','8','hours/night')}
+        ${field('Active Calories','active_cal','500','cal/day')}
+        ${field('Resting Calories','resting_cal','1800','cal/day')}
+        ${field('Weight Goal','weight','195','lbs')}
+        ${field('Body Fat Goal','bf','15','%')}
+      </div>
+      <button class="btn-gold" style="width:100%;padding:12px;margin-top:10px;font-size:13px" onclick="saveHealthTargets()">Save Targets</button>
     `;
   }else if(sub==='fasting'){
     const fasting=localStorage.getItem('bos_fasting')||'';
@@ -1529,6 +1553,13 @@ async function saveBodyLog(){
   }
   showSuccess('Logged!');
   renderGoals(document.getElementById('health-content'));
+}
+function saveHealthTargets(){
+  const keys=['steps','sleep','active_cal','resting_cal','weight','bf'];
+  const t={};
+  keys.forEach(k=>{const v=parseFloat(document.getElementById('tgt-'+k)?.value);if(v)t[k]=v;});
+  localStorage.setItem('bos_health_targets',JSON.stringify(t));
+  showSuccess('Targets saved!');
 }
 function showBodyLogDetail(i){
   const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
