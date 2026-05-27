@@ -1403,28 +1403,39 @@ function renderGoals(c){
       ${goal?`<div class="jcard" style="margin-top:10px"><div class="jlabel">Current Goal</div><div class="jtext">${goal}</div><div class="jcta" onclick="openJarvisCtx('Based on my goal: ${goal.replace(/'/g,'')}. How should I train and eat this week?')">Ask Jarvis how to hit it &#8594;</div></div>`:''}
     `;
   }else if(sub==='body'){
-    const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
     const today=getLocalDateStr();
-    const todayEntry=log.find(e=>e.date===today)||{};
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
-      <div class="card" style="margin-bottom:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY</div>
-        <div style="display:flex;gap:10px;margin-bottom:10px">
-          <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Weight (lbs)</div><input id="bl-weight" class="field-input" type="number" step="0.1" placeholder="215.5" value="${todayEntry.weight||''}"></div>
-          <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Body Fat %</div><input id="bl-bf" class="field-input" type="number" step="0.1" placeholder="18.5" value="${todayEntry.bf||''}"></div>
+    const cachedLog=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+    const todayEntry=cachedLog.find(e=>e.date===today)||{};
+    const renderBodyTab=(log)=>{
+      const te=log.find(e=>e.date===today)||{};
+      c.innerHTML=tabBar+`
+        <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
+        <div style="font-size:10px;color:var(--white);opacity:0.35;margin-bottom:8px;margin-top:-6px">Auto-syncs from Apple Health each morning via Shortcut</div>
+        <div class="card" style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY \u2014 ${today}</div>
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Weight (lbs)</div><input id="bl-weight" class="field-input" type="number" step="0.1" placeholder="215.5" value="${te.weight||''}"></div>
+            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Body Fat %</div><input id="bl-bf" class="field-input" type="number" step="0.1" placeholder="18.5" value="${te.bf||''}"></div>
+          </div>
+          <button class="btn-gold" style="width:100%;padding:11px;font-size:13px" onclick="saveBodyLog()">Save Today</button>
         </div>
-        <button class="btn-gold" style="width:100%;padding:11px;font-size:13px" onclick="saveBodyLog()">Save Today</button>
-      </div>
-      <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:6px">History</div>
-      <div class="card">
-        ${log.length?log.slice(0,14).map(e=>`<div class="body-log-row">
-          <span style="font-size:10px;color:var(--gold);font-weight:700;width:76px;flex-shrink:0">${e.date}</span>
-          ${e.weight?`<span style="font-size:13px;font-weight:700;color:var(--white);flex:1">${e.weight} lbs</span>`:'<span style="flex:1"></span>'}
-          ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}% BF`:''}
-        </div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No entries yet. Log your weight daily.</div>`}
-      </div>
-    `;
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--white)">History</span>
+          ${log[0]?.source==='apple_health'?'<span style="font-size:9px;color:var(--green);font-weight:700">&#9654; Apple Health synced</span>':''}
+        </div>
+        <div class="card">
+          ${log.length?log.slice(0,30).map(e=>`<div class="body-log-row">
+            <span style="font-size:10px;color:var(--gold);font-weight:700;width:80px;flex-shrink:0">${e.date}</span>
+            ${e.weight?`<span style="font-size:13px;font-weight:700;color:var(--white);flex:1">${e.weight} lbs</span>`:'<span style="flex:1"></span>'}
+            ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}%</span>`:''}
+            ${e.source==='apple_health'?'<span style="font-size:8px;color:var(--green);font-weight:700;margin-left:4px">AH</span>':''}
+          </div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No entries yet. Log manually above or set up the Apple Health Shortcut.</div>`}
+        </div>
+      `;
+    };
+    // Show cached data immediately, then refresh from Supabase
+    renderBodyTab(cachedLog);
+    loadBodyLogs().then(fresh=>{ if(JSON.stringify(fresh)!==JSON.stringify(cachedLog))renderBodyTab(fresh); }).catch(()=>{});
   }else if(sub==='nutrition'){
     const rules=localStorage.getItem('bos_nutrition_rules')||'';
     c.innerHTML=tabBar+`
@@ -1460,15 +1471,36 @@ function renderGoals(c){
     `;
   }
 }
-function saveBodyLog(){
+async function loadBodyLogs(){
+  const uid=S.profile?.id;
+  if(!uid)return JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/body_logs?select=logged_date,weight_lbs,body_fat_pct,source&user_id=eq.'+uid+'&order=logged_date.desc&limit=60',{headers:{'apikey':SUPABASE_ANON_KEY}});
+    const rows=await r.json();
+    if(!Array.isArray(rows))throw new Error('bad response');
+    const normalized=rows.map(r=>({date:r.logged_date,weight:r.weight_lbs,bf:r.body_fat_pct,source:r.source}));
+    localStorage.setItem('bos_body_log',JSON.stringify(normalized));
+    return normalized;
+  }catch(e){
+    return JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+  }
+}
+async function saveBodyLog(){
   const weight=parseFloat(document.getElementById('bl-weight')?.value)||0;
   const bf=parseFloat(document.getElementById('bl-bf')?.value)||0;
   if(!weight&&!bf){showError('Enter weight or body fat %.');return;}
   const today=getLocalDateStr();
   const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  const entry={date:today,weight:weight||null,bf:bf||null};
+  const entry={date:today,weight:weight||null,bf:bf||null,source:'manual'};
   const updated=[entry,...log.filter(e=>e.date!==today)].slice(0,90);
   localStorage.setItem('bos_body_log',JSON.stringify(updated));
+  // Sync to Supabase
+  if(S.profile?.id){
+    const row={user_id:S.profile.id,household_id:S.household?.id,logged_date:today,source:'manual'};
+    if(weight)row.weight_lbs=weight;
+    if(bf)row.body_fat_pct=bf;
+    fetch(SUPABASE_URL+'/rest/v1/body_logs',{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([row])}).catch(()=>{});
+  }
   showSuccess('Logged!');
   renderGoals(document.getElementById('health-content'));
 }
