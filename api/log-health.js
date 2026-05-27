@@ -19,12 +19,12 @@ module.exports = async (req, res) => {
   const logDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
   const row = { user_id: AJ_USER_ID, household_id: AJ_HOUSEHOLD_ID, logged_date: logDate, source: 'apple_health' };
-  if (weight_lbs != null && !isNaN(parseFloat(weight_lbs))) row.weight_lbs = parseFloat(parseFloat(weight_lbs).toFixed(1));
-  if (body_fat_pct != null && !isNaN(parseFloat(body_fat_pct))) row.body_fat_pct = parseFloat(parseFloat(body_fat_pct).toFixed(1));
-  if (sleep_hrs != null && !isNaN(parseFloat(sleep_hrs))) row.sleep_hrs = parseFloat(parseFloat(sleep_hrs).toFixed(2));
-  if (steps != null && !isNaN(parseInt(steps))) row.steps = parseInt(steps);
-  if (resting_cal != null && !isNaN(parseInt(resting_cal))) row.resting_cal = parseInt(resting_cal);
-  if (active_cal != null && !isNaN(parseInt(active_cal))) row.active_cal = parseInt(active_cal);
+  if (parseFloat(weight_lbs) > 0) row.weight_lbs = parseFloat(parseFloat(weight_lbs).toFixed(1));
+  if (parseFloat(body_fat_pct) > 0) row.body_fat_pct = parseFloat(parseFloat(body_fat_pct).toFixed(1));
+  if (parseFloat(sleep_hrs) > 0) row.sleep_hrs = parseFloat(parseFloat(sleep_hrs).toFixed(2));
+  if (parseInt(steps) > 0) row.steps = parseInt(steps);
+  if (parseInt(resting_cal) > 0) row.resting_cal = parseInt(resting_cal);
+  if (parseInt(active_cal) > 0) row.active_cal = parseInt(active_cal);
 
   const payload = JSON.stringify([row]);
 
