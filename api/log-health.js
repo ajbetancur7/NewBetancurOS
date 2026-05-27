@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
   return new Promise(resolve => {
     const r = https.request({
       hostname: SUPABASE_HOST,
-      path: '/rest/v1/body_logs',
+      path: '/rest/v1/body_logs?on_conflict=user_id,logged_date',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
