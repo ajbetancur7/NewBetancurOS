@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { weight_lbs, body_fat_pct, date, token } = req.body || {};
+  const { weight_lbs, body_fat_pct, sleep_hrs, date, token } = req.body || {};
   if (token !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
   const logDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -21,6 +21,7 @@ module.exports = async (req, res) => {
   const row = { user_id: AJ_USER_ID, household_id: AJ_HOUSEHOLD_ID, logged_date: logDate, source: 'apple_health' };
   if (weight_lbs != null && !isNaN(parseFloat(weight_lbs))) row.weight_lbs = parseFloat(parseFloat(weight_lbs).toFixed(1));
   if (body_fat_pct != null && !isNaN(parseFloat(body_fat_pct))) row.body_fat_pct = parseFloat(parseFloat(body_fat_pct).toFixed(1));
+  if (sleep_hrs != null && !isNaN(parseFloat(sleep_hrs))) row.sleep_hrs = parseFloat(parseFloat(sleep_hrs).toFixed(2));
 
   const payload = JSON.stringify([row]);
 
