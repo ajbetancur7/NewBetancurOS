@@ -1103,6 +1103,7 @@ function getLocalDateStr(d){
   const dd=String(dt.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+dd;
 }
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}-${m}-${y}`;}
 function getWeekOf(d){
   const dt=new Date(d);
   const day=dt.getDay(); // 0=Sun
@@ -1412,14 +1413,18 @@ function renderGoals(c){
         <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
         <div style="font-size:10px;color:var(--white);opacity:0.35;margin-bottom:8px;margin-top:-6px">Auto-syncs from Apple Health each morning via Shortcut</div>
         <div class="card" style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY \u2014 ${today}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY \u2014 ${fmtDate(today)}</div>
           <div style="display:flex;gap:10px;margin-bottom:10px">
             <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Weight (lbs)</div><input id="bl-weight" class="field-input" type="number" step="0.1" placeholder="215.5" value="${te.weight||''}"></div>
             <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Body Fat %</div><input id="bl-bf" class="field-input" type="number" step="0.1" placeholder="18.5" value="${te.bf||''}"></div>
           </div>
           <div style="display:flex;gap:10px;margin-bottom:10px">
             <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Sleep (hrs)</div><input id="bl-sleep" class="field-input" type="number" step="0.25" placeholder="7.5" value="${te.sleep||''}"></div>
-            <div style="flex:1"></div>
+            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Resting HR (bpm)</div><input id="bl-hr" class="field-input" type="number" step="1" placeholder="62" value="${te.resting_hr||''}"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Steps</div><input id="bl-steps" class="field-input" type="number" step="1" placeholder="8500" value="${te.steps||''}"></div>
+            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Active Cal</div><input id="bl-cal" class="field-input" type="number" step="1" placeholder="450" value="${te.active_cal||''}"></div>
           </div>
           <button class="btn-gold" style="width:100%;padding:11px;font-size:13px" onclick="saveBodyLog()">Save Today</button>
         </div>
@@ -1429,11 +1434,19 @@ function renderGoals(c){
         </div>
         <div class="card">
           ${log.length?log.slice(0,30).map((e,i)=>`<div class="body-log-row" style="cursor:pointer" onclick="showBodyLogDetail(${i})">
-            <span style="font-size:10px;color:var(--gold);font-weight:700;width:80px;flex-shrink:0">${e.date}</span>
-            ${e.weight?`<span style="font-size:13px;font-weight:700;color:var(--white);flex:1">${e.weight} lbs</span>`:'<span style="flex:1"></span>'}
-            ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}%</span>`:''}
-            ${e.sleep?`<span style="font-size:11px;color:#5ac8fa;margin-left:4px">${e.sleep}h</span>`:''}
-            ${e.source==='apple_health'?'<span style="font-size:8px;color:var(--green);font-weight:700;margin-left:4px">AH</span>':''}
+            <div style="display:flex;flex-direction:column;width:76px;flex-shrink:0">
+              <span style="font-size:10px;color:var(--gold);font-weight:700">${fmtDate(e.date)}</span>
+              ${e.source==='apple_health'?'<span style="font-size:8px;color:var(--green);font-weight:700">Apple Health</span>':'<span style="font-size:8px;color:var(--white);opacity:0.35">Manual</span>'}
+            </div>
+            <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              ${e.weight?`<span style="font-size:12px;font-weight:700;color:var(--white)">${e.weight}lbs</span>`:''}
+              ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}%bf</span>`:''}
+              ${e.sleep?`<span style="font-size:11px;color:#5ac8fa">${e.sleep}h</span>`:''}
+              ${e.resting_hr?`<span style="font-size:11px;color:#ff6b6b">${e.resting_hr}bpm</span>`:''}
+              ${e.steps?`<span style="font-size:11px;color:var(--white);opacity:0.6">${Number(e.steps).toLocaleString()}steps</span>`:''}
+              ${e.active_cal?`<span style="font-size:11px;color:var(--gold);opacity:0.8">${e.active_cal}cal</span>`:''}
+            </div>
+            <span style="font-size:14px;color:var(--white);opacity:0.3">&#8250;</span>
           </div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No entries yet. Log manually above or set up the Apple Health Shortcut.</div>`}
         </div>
       `;
@@ -1480,10 +1493,10 @@ async function loadBodyLogs(){
   const uid=S.profile?.id;
   if(!uid)return JSON.parse(localStorage.getItem('bos_body_log')||'[]');
   try{
-    const r=await fetch(SUPABASE_URL+'/rest/v1/body_logs?select=logged_date,weight_lbs,body_fat_pct,sleep_hrs,source&user_id=eq.'+uid+'&order=logged_date.desc&limit=60',{headers:{'apikey':SUPABASE_ANON_KEY}});
+    const r=await fetch(SUPABASE_URL+'/rest/v1/body_logs?select=logged_date,weight_lbs,body_fat_pct,sleep_hrs,steps,resting_hr,active_cal,source&user_id=eq.'+uid+'&order=logged_date.desc&limit=60',{headers:{'apikey':SUPABASE_ANON_KEY}});
     const rows=await r.json();
     if(!Array.isArray(rows))throw new Error('bad response');
-    const normalized=rows.map(r=>({date:r.logged_date,weight:r.weight_lbs,bf:r.body_fat_pct,sleep:r.sleep_hrs,source:r.source}));
+    const normalized=rows.map(r=>({date:r.logged_date,weight:r.weight_lbs,bf:r.body_fat_pct,sleep:r.sleep_hrs,steps:r.steps,resting_hr:r.resting_hr,active_cal:r.active_cal,source:r.source}));
     localStorage.setItem('bos_body_log',JSON.stringify(normalized));
     return normalized;
   }catch(e){
@@ -1494,10 +1507,13 @@ async function saveBodyLog(){
   const weight=parseFloat(document.getElementById('bl-weight')?.value)||0;
   const bf=parseFloat(document.getElementById('bl-bf')?.value)||0;
   const sleep=parseFloat(document.getElementById('bl-sleep')?.value)||0;
-  if(!weight&&!bf&&!sleep){showError('Enter at least one value.');return;}
+  const hr=parseInt(document.getElementById('bl-hr')?.value)||0;
+  const steps=parseInt(document.getElementById('bl-steps')?.value)||0;
+  const cal=parseInt(document.getElementById('bl-cal')?.value)||0;
+  if(!weight&&!bf&&!sleep&&!hr&&!steps&&!cal){showError('Enter at least one value.');return;}
   const today=getLocalDateStr();
   const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  const entry={date:today,weight:weight||null,bf:bf||null,sleep:sleep||null,source:'manual'};
+  const entry={date:today,weight:weight||null,bf:bf||null,sleep:sleep||null,resting_hr:hr||null,steps:steps||null,active_cal:cal||null,source:'manual'};
   const updated=[entry,...log.filter(e=>e.date!==today)].slice(0,90);
   localStorage.setItem('bos_body_log',JSON.stringify(updated));
   // Sync to Supabase
@@ -1506,6 +1522,9 @@ async function saveBodyLog(){
     if(weight)row.weight_lbs=weight;
     if(bf)row.body_fat_pct=bf;
     if(sleep)row.sleep_hrs=sleep;
+    if(hr)row.resting_hr=hr;
+    if(steps)row.steps=steps;
+    if(cal)row.active_cal=cal;
     fetch(SUPABASE_URL+'/rest/v1/body_logs',{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([row])}).catch(()=>{});
   }
   showSuccess('Logged!');
@@ -1514,11 +1533,15 @@ async function saveBodyLog(){
 function showBodyLogDetail(i){
   const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
   const e=log[i];if(!e)return;
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${e.date}</div>
+  const row=(label,val,color)=>val?`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--white);opacity:0.6;font-size:12px">${label}</span><span style="color:${color||'var(--white)'};font-weight:700;font-size:15px">${val}</span></div>`:'';
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${fmtDate(e.date)}</div>
     <div class="card" style="margin-top:12px">
-      ${e.weight?`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--white);opacity:0.6;font-size:12px">Weight</span><span style="color:var(--white);font-weight:700;font-size:15px">${e.weight} lbs</span></div>`:''}
-      ${e.bf?`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--white);opacity:0.6;font-size:12px">Body Fat</span><span style="color:var(--white);font-weight:700;font-size:15px">${e.bf}%</span></div>`:''}
-      ${e.sleep?`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--white);opacity:0.6;font-size:12px">Sleep</span><span style="color:#5ac8fa;font-weight:700;font-size:15px">${e.sleep} hrs</span></div>`:''}
+      ${row('Weight',e.weight?e.weight+' lbs':null)}
+      ${row('Body Fat',e.bf?e.bf+'%':null)}
+      ${row('Sleep',e.sleep?e.sleep+' hrs':null,'#5ac8fa')}
+      ${row('Resting HR',e.resting_hr?e.resting_hr+' bpm':null,'#ff6b6b')}
+      ${row('Steps',e.steps?Number(e.steps).toLocaleString():null)}
+      ${row('Active Calories',e.active_cal?e.active_cal+' cal':null,'var(--gold)')}
       <div style="display:flex;justify-content:space-between;padding:9px 0"><span style="color:var(--white);opacity:0.6;font-size:12px">Source</span><span style="color:var(--white);font-size:12px">${e.source==='apple_health'?'Apple Health':'Manual'}</span></div>
     </div>
     <button class="btn-white" style="width:100%;padding:12px;margin-top:10px;font-size:13px" onclick="closeModal()">Close</button>`);
