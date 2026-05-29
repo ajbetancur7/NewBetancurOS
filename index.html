@@ -1635,32 +1635,28 @@ function openWorkoutDay(id,day,name){
     </div>
 
     <div class="card" style="margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">&#9201; WORKOUT TIMER</div>
       ${isLogged
-        ?`<div style="text-align:center;padding:10px;background:rgba(76,175,130,0.15);border-radius:8px;border:1px solid var(--green)"><div style="font-size:13px;font-weight:700;color:var(--green)">\u2714 Session Logged</div></div>
+        ?`<div style="text-align:center;padding:10px;background:rgba(76,175,130,0.15);border-radius:8px;border:1px solid var(--green)"><div style="font-size:13px;font-weight:700;color:var(--green)">\u2714 Session Logged Today</div></div>
           <button class="btn-white" style="width:100%;margin-top:8px;padding:9px;font-size:12px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo Log</button>`
         :timerRunning
           ?`<div id="wod-timer-display" class="workout-timer">00:00</div>
             <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>`
           :`<button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="startWorkoutTimer('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#9654; Start Workout</button>
-            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Tap when you begin — tracks duration</div>`
+            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Tap when you begin — tracks your duration</div>`
       }
     </div>
 
     <div class="card" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--gold)">SESSION NOTES</span>
+        <span style="font-size:11px;font-weight:700;color:var(--gold)">PLAN &amp; NOTES</span>
         <button class="btn-white-sm" onclick="editSplitDay('${id}','${day}','${name.replace(/'/g,'')}','${workout.workout_time||'10:00'}')">Edit Split</button>
       </div>
-      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:64px;resize:none;box-sizing:border-box" placeholder="Log weights &amp; reps... e.g. Bench: 185x8, 195x6">${lastNote&&lastNote.notes?lastNote.notes:''}</textarea>
-      <button class="btn-white" style="margin-top:6px;width:100%;padding:8px;font-size:12px" onclick="saveWorkoutNotes('${day}')">Save Notes</button>
-    </div>
-
-    <div class="card" style="margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">&#129302; JARVIS \u2014 AI COACH</div>
-      <textarea id="wod-jarvis-preprompt" class="preprompt-area" placeholder="Tell Jarvis anything first (optional) — e.g. skip chest, feeling tight, focus on back, want something brutal..."></textarea>
-      <div id="wod-jarvis-out" style="font-size:12px;color:var(--white);line-height:1.55;min-height:36px;opacity:0.5">Tap below — Jarvis reads your notes &amp; PRs to build your exact plan.</div>
-      <button class="btn-gold" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Generate My Workout Plan</button>
+      <input id="wod-context" type="text" class="field-input" style="margin-bottom:8px;font-size:12px" placeholder="Context for Jarvis (optional) — e.g. skip chest, feeling tight...">
+      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:140px;resize:none;box-sizing:border-box" placeholder="Generate a plan below, then edit it here as you train. Log your actual weights &amp; reps.">${lastNote&&lastNote.notes?lastNote.notes:''}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-white" style="flex:1;padding:9px;font-size:12px" onclick="saveWorkoutNotes('${day}')">Save Notes</button>
+        <button class="btn-gold" style="flex:1;padding:9px;font-size:12px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Generate Plan</button>
+      </div>
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px">${name} History (${dayLogs.length} sessions)</div>
@@ -1668,23 +1664,16 @@ function openWorkoutDay(id,day,name){
       ${allNotes.length
         ?allNotes.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>${n.energy?`<span style="font-size:11px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n.energy]||''} ${n.duration||''}</span>`:''}</div>
-          <div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px">${n.notes||''}</div>
+          <div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px;white-space:pre-line">${n.notes||''}</div>
           ${n.feedback?`<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-top:2px;font-style:italic">"${n.feedback}"</div>`:''}
           </div>`).join('')
-        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Start tracking above.</div>`
+        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet.</div>`
       }
     </div>
   `);
   if(timerRunning&&!isLogged)startTimerDisplay();
 }
 
-async function logAndSaveWorkout(id,day){
-  await toggleWorkoutLog(id,day,getDateForDay(day));
-  const notes=document.getElementById('wod-notes')?.value?.trim();
-  if(notes)saveWorkoutNotes(day);
-  closeModal();
-  renderHealth();
-}
 
 function saveWorkoutNotes(day){
   const notes=document.getElementById('wod-notes')?.value?.trim();
@@ -1712,6 +1701,7 @@ function startTimerDisplay(){
   },1000);
 }
 function finishWorkoutPrompt(id,day,name){
+  S.pendingWorkoutNotes=document.getElementById('wod-notes')?.value?.trim()||'';
   clearInterval(S.workoutTimer);
   const elapsed=Math.floor((Date.now()-S.workoutStartTime)/1000);
   const m=Math.floor(elapsed/60),s=elapsed%60;
@@ -1745,7 +1735,8 @@ function selectEnergy(level){
 async function saveWorkoutFinish(id,day,timeStr){
   const energy=S.selectedEnergy||3;
   const feedback=document.getElementById('workout-feedback')?.value?.trim()||'';
-  const notes=document.getElementById('wod-notes')?.value?.trim()||'';
+  const notes=S.pendingWorkoutNotes||'';
+  S.pendingWorkoutNotes='';
   const key='bos_workout_notes_'+day;
   const existing=JSON.parse(localStorage.getItem(key)||'[]');
   const today=getLocalDateStr();
@@ -1760,11 +1751,11 @@ async function saveWorkoutFinish(id,day,timeStr){
 }
 
 async function getInlineWorkoutPlan(day,name,daySessions,totalSessions){
-  const outEl=document.getElementById('wod-jarvis-out');
-  if(!outEl)return;
-  const customPrompt=document.getElementById('wod-jarvis-preprompt')?.value?.trim()||'';
-  outEl.textContent='Jarvis is thinking\u2026';
-  outEl.style.opacity='1';
+  const notesEl=document.getElementById('wod-notes');
+  if(!notesEl)return;
+  const customPrompt=document.getElementById('wod-context')?.value?.trim()||'';
+  notesEl.value='Jarvis is thinking\u2026';
+  notesEl.style.opacity='0.5';
   const notesKey='bos_workout_notes_'+day;
   const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
   const historyText=allNotes.length
@@ -1809,74 +1800,20 @@ Use their weight history to suggest specific weights. If no history, use interme
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],context:{workout_day:day,workout_name:name}})});
     const data=await r.json();
     const reply=data.content?.[0]?.text||'Could not get a plan. Try again.';
-    if(outEl){
-      // Format the response as clean HTML
-      const formatted=reply
-        .replace(/\*\*([^*]+)\*\*/g,'<strong style="color:var(--gold)">$1</strong>')
-        .replace(/^#{1,3}\s+(.+)$/gm,'<div style="font-size:13px;font-weight:700;color:var(--gold);margin:10px 0 4px">$1</div>')
-        .replace(/^\d+\.\s+(.+)$/gm,'<div style="padding:3px 0;padding-left:8px;border-left:2px solid var(--gold);margin:3px 0;font-size:12px">$1</div>')
-        .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;font-size:12px;color:var(--white)">&#8226; $1</div>')
-        .replace(/\n\n/g,'<div style="height:8px"></div>')
-        .replace(/\n/g,'<br>');
-      outEl.innerHTML=formatted;
-      outEl.style.opacity='1';
-      // Store raw plan text and show action buttons
-      outEl.dataset.rawPlan=reply;
-      outEl.dataset.day=day;
-      outEl.dataset.name=name;
-      const actEl=document.getElementById('wod-jarvis-actions');
-      if(actEl)actEl.style.display='flex';
+    if(notesEl){
+      // Strip markdown to plain editable text
+      const plain=reply
+        .replace(/^#{1,3}\s+(.+)$/gm,'── $1 ──')
+        .replace(/\*\*([^*]+)\*\*/g,'$1')
+        .replace(/\*/g,'')
+        .trim();
+      notesEl.value=plain;
+      notesEl.style.opacity='1';
+      notesEl.style.minHeight='220px';
     }
   }catch(e){
-    if(outEl)outEl.textContent='Jarvis is offline. Check your connection.';
+    if(notesEl){notesEl.value='Jarvis is offline. Check your connection.';notesEl.style.opacity='1';}
   }
-}
-function approveWorkoutPlan(){
-  const outEl=document.getElementById('wod-jarvis-out');
-  if(!outEl)return;
-  const day=outEl.dataset.day||'';
-  const name=outEl.dataset.name||'Workout';
-  const plan=outEl.dataset.rawPlan||outEl.innerText||'';
-  // Save plan as notes for this day
-  const key='bos_workout_notes_'+day;
-  const existing=JSON.parse(localStorage.getItem(key)||'[]');
-  const today=getLocalDateStr();
-  const entry={date:today,notes:'[AI Plan] '+plan.slice(0,500)};
-  const updated=[entry,...existing.filter(n=>n.date!==today)].slice(0,20);
-  localStorage.setItem(key,JSON.stringify(updated));
-  // Find the workout id for this day
-  const wo=(S.data.workouts||[]).find(x=>x.day_of_week===day);
-  if(wo)toggleWorkoutLog(wo.id,day,getDateForDay(day));
-  else{S.data.workout_logs=[...S.data.workout_logs||[],{id:'local-'+Date.now(),logged_date:getDateForDay(day),user_id:S.profile?.id}];}
-  closeModal();
-  showSuccess('Plan saved & session logged!');
-  renderHealth();
-}
-
-function editWorkoutPlan(){
-  const outEl=document.getElementById('wod-jarvis-out');
-  if(!outEl)return;
-  const day=outEl.dataset.day||'';
-  const plan=outEl.dataset.rawPlan||'';
-  showModal('<div class="sheet-handle"></div>'
-    +'<div class="sheet-title">Edit Workout Plan</div>'
-    +'<textarea id="wod-edit-plan" style="width:100%;min-height:200px;background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);resize:vertical;box-sizing:border-box">'+plan+'</textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="btn-gold" style="flex:1" onclick="saveEditedPlan()">Save Edited Plan</button>'
-    +'<button class="btn-white-sm" onclick="closeModal()">Cancel</button>'
-    +'</div>');
-}
-
-function saveEditedPlan(){
-  const newPlan=document.getElementById('wod-edit-plan')?.value?.trim();
-  if(!newPlan)return;
-  const outEl=document.getElementById('wod-jarvis-out');
-  if(outEl){
-    outEl.dataset.rawPlan=newPlan;
-    outEl.textContent=newPlan;
-  }
-  closeModal();
-  showSuccess('Plan updated!');
 }
 
 async function reseedWorkouts(){
@@ -1891,25 +1828,6 @@ async function reseedWorkouts(){
   S.data.workouts=rows||[];
   showSuccess('Workout split loaded!');
   renderHealth();
-}
-async function toggleWorkoutLog(wid,day,targetDate){
-  // targetDate: specific date for that day (not forced to today)
-  const dateToLog=targetDate||getLocalDateStr();
-  const existing=(S.data.workout_logs||[]).find(l=>l.logged_date===dateToLog);
-  if(existing){
-    try{await sb.from('workout_logs').delete().eq('id',existing.id);S.data.workout_logs=S.data.workout_logs.filter(l=>l.id!==existing.id);showSuccess('Unlogged — '+dateToLog);renderHealth();}
-    catch(e){showError(e.message);}
-  }else{
-    try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:dateToLog});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Logged ✔ — '+dateToLog);renderHealth();}
-    catch(e){showError(e.message);}
-  }
-}
-function editSplitDay(id,day,name,time){
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${day.charAt(0).toUpperCase()+day.slice(1)}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Workout Name</div><input class="field-input" id="esd-name" value="${name}" placeholder="e.g. Upper Body, Rest..."></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esd-time" value="${time}" placeholder="10:00"></div><div class="field-group"><div class="field-label">Jarvis suggestions</div><button class="btn-white" style="width:100%;padding:10px" onclick="openJarvisCtx('Suggest a '+day+' workout for my 7-day resistance split. Give me exercises, sets and reps.')">&#129302; Ask Jarvis</button></div><button class="btn-gold" onclick="saveSplitDay('${id}')">Save</button></div>`);
-}
-async function saveSplitDay(id){
-  const name=document.getElementById('esd-name')?.value?.trim(),time=document.getElementById('esd-time')?.value?.trim()||'10:00';
-  try{await sb.from('workouts').update({name,workout_time:time}).eq('id',id);S.data.workouts=S.data.workouts.map(w=>w.id===id?{...w,name,workout_time:time}:w);closeModal();showSuccess('Saved!');renderHealth();}catch(e){showError(e.message);}
 }
 async function logWorkout(){const today=getLocalDateStr();if((S.data.workout_logs||[]).some(l=>l.logged_date===today)){showSuccess('Already logged today!');return;}try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:today});if(r?.[0])S.data.workout_logs=[...S.data.workout_logs||[],...r];showSuccess('Workout logged!');S.currentSection==='health'?renderHealth():renderHome();}catch(e){showError(e.message);}}
 function editSplit(){const w=S.data.workouts||[];const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Workout Split</div><div style="display:flex;flex-direction:column;gap:8px">${days.map(d=>{const wd=w.find(x=>x.day_of_week===d)||{};return`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--gold);width:32px">${d.slice(0,3).toUpperCase()}</span><input class="field-input" id="ws-${d}" style="flex:1;padding:8px 10px;font-size:12px" value="${wd.name||''}" placeholder="Rest..."><input class="field-input" id="wt-${d}" style="width:70px;padding:8px 10px;font-size:12px" value="${wd.workout_time||'10:00'}"></div>`;}).join('')}<button class="btn-gold" onclick="saveSplit()" style="margin-top:8px">Save Split</button></div>`);}
