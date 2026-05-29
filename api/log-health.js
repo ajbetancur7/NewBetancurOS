@@ -46,7 +46,7 @@ module.exports = async (req, res) => {
         if (apiRes.statusCode >= 400) {
           res.status(500).json({ error: 'Database error', detail: d });
         } else {
-          res.status(200).json({ ok: true, date: logDate, weight_lbs: row.weight_lbs, body_fat_pct: row.body_fat_pct });
+          res.status(200).json({ ok: true, date: logDate, saved: row, received: { weight_lbs, body_fat_pct, sleep_hrs, steps, resting_cal, active_cal } });
         }
         resolve();
       });
