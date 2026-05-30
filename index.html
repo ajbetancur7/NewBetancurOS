@@ -1274,7 +1274,8 @@ function renderBudget(){
     const past=sDate<=now;
     const paid=rec?.paid;
     const onclick=paid?'unmarkTithe(\''+s+'\')':past?'markTithe(\''+s+'\')':'';
-    return`<div class="ri"><div class="chk ${paid?'checked':''}" onclick="${onclick}" style="cursor:${past||paid?'pointer':'default'}">${paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span class="rtext">Sunday ${fmt(s)}</span><span class="rtime" style="${paid?'color:var(--green)':''}">$100</span></div>`;
+    const display=sDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return`<div class="ri"><div class="chk ${paid?'checked':''}" onclick="${onclick}" style="cursor:${past||paid?'pointer':'default'}">${paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span class="rtext">Sunday ${display}</span><span class="rtime" style="${paid?'color:var(--green)':''}">$100</span></div>`;
   }).join('');
   const savs=S.data.savings||[];
   document.getElementById('savings-section').innerHTML=savs.length?savs.map(g=>{const p=Math.min(100,Math.round(((g.current_amount||0)/(g.target_amount||1))*100));return`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:700;color:var(--white)">${g.name}</span><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editSav('${g.id}')">Edit</button><span class="del-x" onclick="delSav('${g.id}')">&#215;</span></div></div><div class="pb-bg"><div class="pb-g" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6">$${(g.current_amount||0).toLocaleString()} of $${(g.target_amount||0).toLocaleString()}</div></div>`;}).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:6px 0">No savings goals yet.</div>';
