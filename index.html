@@ -1353,13 +1353,14 @@ function renderWorkouts(c){
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   const dayNames=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
   const todayDay=dayNames[getTZ().getDay()];
-  const wof=getWeekOf(new Date()),wofD=new Date(wof);
+  const wof=getWeekOf(new Date());
+  const wofP=wof.split('-');const wofBase=new Date(parseInt(wofP[0]),parseInt(wofP[1])-1,parseInt(wofP[2]));
   const wSorted=[...w].sort((a,b)=>dayOrder.indexOf(a.day_of_week)-dayOrder.indexOf(b.day_of_week));
 
   // Week streak dots
   const dots=['M','T','W','T','F','S','S'].map((d,i)=>{
-    const dt=new Date(wofD);dt.setDate(dt.getDate()+i);
-    const ds=dt.toISOString().split('T')[0];
+    const dt=new Date(wofBase.getFullYear(),wofBase.getMonth(),wofBase.getDate()+i);
+    const ds=getLocalDateStr(dt);
     const logged=logs.some(l=>l.logged_date===ds);
     const isT=ds===today,isR=i>=5;
     return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;
@@ -2176,7 +2177,7 @@ function saveSpiritBook(){
   books.unshift({title,author,notes,read:false,added:getLocalDateStr()});
   lsSet('bos_spiritual_books',JSON.stringify(books));
   syncPreference('spiritual_books',JSON.stringify(books));
-  closeModal();showSuccess('Book added!');renderSpiritual(document.getElementById('health-content'));
+  closeModal();showSuccess('Book added!');renderHomeSpirit();
 }
 function toggleSpiritBook(i){
   const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
@@ -2184,14 +2185,14 @@ function toggleSpiritBook(i){
   books[i].read=!books[i].read;
   lsSet('bos_spiritual_books',JSON.stringify(books));
   syncPreference('spiritual_books',JSON.stringify(books));
-  renderSpiritual(document.getElementById('health-content'));
+  renderHomeSpirit();
 }
 function deleteSpiritBook(i){
   const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
   books.splice(i,1);
   lsSet('bos_spiritual_books',JSON.stringify(books));
   syncPreference('spiritual_books',JSON.stringify(books));
-  renderSpiritual(document.getElementById('health-content'));
+  renderHomeSpirit();
 }
 function showAddSpiritNote(){
   showModal(`<div class="sheet-handle"></div>
@@ -2206,14 +2207,14 @@ function saveSpiritNote(){
   notes.unshift({date:getLocalDateStr(),text});
   lsSet('bos_spiritual_notes',JSON.stringify(notes));
   syncPreference('spiritual_notes',JSON.stringify(notes));
-  closeModal();showSuccess('Note saved!');renderSpiritual(document.getElementById('health-content'));
+  closeModal();showSuccess('Note saved!');renderHomeSpirit();
 }
 function deleteSpiritNote(i){
   const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
   notes.splice(i,1);
   lsSet('bos_spiritual_notes',JSON.stringify(notes));
   syncPreference('spiritual_notes',JSON.stringify(notes));
-  renderSpiritual(document.getElementById('health-content'));
+  renderHomeSpirit();
 }
 function showSendEncouragement(partnerName){
   if(!partnerName){const uid=S.profile?.id||'';const pu=(S.data.users||[]).find(u=>u.id!==uid&&u.role==='admin');partnerName=pu?.name?.split(' ')[0]||'Spouse';}
