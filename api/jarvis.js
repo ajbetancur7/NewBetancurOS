@@ -84,10 +84,11 @@ Stack: ${ctx.supplements || 'none logged'}
 - Reference ${user}'s main goal and nutrition rules when relevant to keep them on track
 - Be concise for mobile, warm, real — you know this family personally`;
 
+  const finalSystem = ctx._system_override || system;
   const payload = JSON.stringify({
     model: 'claude-opus-4-5',
     max_tokens: 1024,
-    system,
+    system: finalSystem,
     messages
   });
 

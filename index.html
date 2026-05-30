@@ -472,6 +472,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="ttab" onclick="switchHealthTab('prs')">PRs</div>
         <div class="ttab" onclick="switchHealthTab('supps')">Supps</div>
         <div class="ttab" onclick="switchHealthTab('goals')">Goals</div>
+        <div class="ttab" onclick="switchHealthTab('spirit')">Spirit</div>
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
       </div>
       <div id="health-content" style="flex:1;min-height:0;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
@@ -1170,19 +1171,21 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const day=now.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
   const tasks=[];
   if(day==='thursday')tasks.push({text:'Trash out \u2014 early AM',time:'AM',r:'rdot-r'});
-  (S.data.bills||[]).filter(b=>!b.paid&&billSt(b)==='overdue').slice(0,2).forEach(b=>tasks.push({text:'Pay '+b.name+' \u2014 overdue',time:'Now',r:'rdot-r'}));
-  (S.data.bills||[]).filter(b=>!b.paid&&billSt(b)==='soon').slice(0,2).forEach(b=>tasks.push({text:b.name+' due',time:b.due_day+'th',r:'rdot'}));
+  const _todayD=now.getDate();
+  const _isEffPaid=b=>b.paid||(b.auto_pay&&(!b.due_day||_todayD>=b.due_day));
+  (S.data.bills||[]).filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').slice(0,2).forEach(b=>tasks.push({text:'Pay '+b.name+' \u2014 overdue',time:'Now',r:'rdot-r'}));
+  (S.data.bills||[]).filter(b=>!_isEffPaid(b)&&billSt(b)==='soon').slice(0,2).forEach(b=>tasks.push({text:b.name+' due',time:b.due_day+'th',r:'rdot'}));
   document.getElementById('home-tasks').innerHTML=tasks.length?tasks.map(t=>`<div class="ri" style="cursor:pointer" onclick="go('budget')"><span class="rdot ${t.r}"></span><span class="rtext">${t.text}</span>${t.time?`<span class="rtime">${t.time}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">No urgent tasks today</span></div>';
   const today=now.toISOString().split('T')[0],wof=getWeekOf(now),wofD=new Date(wof);
   const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofD);dt.setDate(dt.getDate()+i);const ds=dt.toISOString().split('T')[0];const logged=(S.data.workout_logs||[]).some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
   document.getElementById('home-streak').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;cursor:pointer" onclick="go('health')"><span style="font-size:10px;font-weight:700;color:var(--white)">Workout Streak</span><button class="check-btn" onclick="logWorkout()">\u2713 Log today</button></div><div class="streak-row">${dots}</div>`;
-  const bills=S.data.bills||[],ov=bills.filter(b=>!b.paid&&billSt(b)==='overdue').length,rem=9100-5984;
+  const bills=S.data.bills||[],ov=bills.filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').length,rem=9100-5984;
   document.getElementById('home-budget').innerHTML=`<div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Bills</div><div class="sval" style="font-size:14px;color:${ov>0?'var(--red)':'var(--white)'}">${ov>0?ov+' overdue':'All current'}</div><div class="ssub">${bills.filter(b=>!b.paid).length} remaining</div></div><div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Remaining</div><div class="sval" style="font-size:14px;color:var(--green)">$${rem.toLocaleString()}</div><div class="ssub">After all bills</div></div>`;
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
   renderDayNotes();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
-  const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' bill'+(ov>1?'s':'')+' overdue');
+  const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
 }
@@ -1265,7 +1268,14 @@ function renderBudget(){
   document.getElementById('budget-progress').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--gold)">Bills Progress</span><span style="font-size:11px;font-weight:700;color:var(--white)">$${paidA.toFixed(0)} / $${total.toFixed(0)}</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6;margin-top:3px">${pct}% of bills paid</div></div>`;
   document.getElementById('budget-categories').innerHTML='';
   const sundays=getSundays(now.getFullYear(),now.getMonth());const titheRecs=S.data.tithe||[];
-  document.getElementById('tithe-tracker').innerHTML=sundays.map(s=>{const rec=titheRecs.find(t=>t.sunday_date===s),past=new Date(s)<=now;return`<div class="ri"><div class="chk ${rec?.paid?'checked':''}" onclick="${past&&!rec?.paid?'markTithe(\''+s+'\')':''}" style="cursor:${past&&!rec?.paid?'pointer':'default'}">${rec?.paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span class="rtext">Sunday ${fmt(s)}</span><span class="rtime" style="${rec?.paid?'color:var(--green)':''}">$100</span></div>`;}).join('');
+  document.getElementById('tithe-tracker').innerHTML=sundays.map(s=>{
+    const rec=titheRecs.find(t=>t.sunday_date===s);
+    const p=s.split('-');const sDate=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+    const past=sDate<=now;
+    const paid=rec?.paid;
+    const onclick=paid?'unmarkTithe(\''+s+'\')':past?'markTithe(\''+s+'\')':'';
+    return`<div class="ri"><div class="chk ${paid?'checked':''}" onclick="${onclick}" style="cursor:${past||paid?'pointer':'default'}">${paid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><span class="rtext">Sunday ${fmt(s)}</span><span class="rtime" style="${paid?'color:var(--green)':''}">$100</span></div>`;
+  }).join('');
   const savs=S.data.savings||[];
   document.getElementById('savings-section').innerHTML=savs.length?savs.map(g=>{const p=Math.min(100,Math.round(((g.current_amount||0)/(g.target_amount||1))*100));return`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:700;color:var(--white)">${g.name}</span><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editSav('${g.id}')">Edit</button><span class="del-x" onclick="delSav('${g.id}')">&#215;</span></div></div><div class="pb-bg"><div class="pb-g" style="width:${p}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6">$${(g.current_amount||0).toLocaleString()} of $${(g.target_amount||0).toLocaleString()}</div></div>`;}).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:6px 0">No savings goals yet.</div>';
   const cats2={faith:'Faith',home:'Home',transport:'Transportation',debt:'Debt / Loans',living:'Living Expenses',pets:'Pets',subscriptions:'Subscriptions',misc:'Misc'};let bHTML='';
@@ -1298,7 +1308,26 @@ function renderBudget(){
   document.getElementById('bills-list').innerHTML=bHTML;
 }
 async function payBill(id){const b=(S.data.bills||[]).find(x=>x.id===id);if(!b)return;const upd=b.paid?{paid:false,paid_by:null,paid_at:null}:{paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()};S.data.bills=S.data.bills.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_BILL',id,upd);if(!b.paid)logActivity('paid '+b.name,'budget',b.name);renderBudget();showSuccess(b.paid?'Unmarked':'Marked as paid!');}
-async function markTithe(date){try{const r=await sb.from('tithe_records').insert({household_id:S.household.id,sunday_date:date,amount:100,paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()});if(r?.[0])S.data.tithe=[...S.data.tithe||[],...r];renderBudget();showSuccess('Tithe recorded!');}catch(e){showError(e.message);}}
+async function markTithe(date){
+  // Optimistic update — show checked immediately
+  const paid_at=new Date().toISOString();
+  const tempRec={id:'tmp_'+date,household_id:S.household.id,sunday_date:date,amount:100,paid:true,paid_by:S.profile.id,paid_at};
+  S.data.tithe=[...(S.data.tithe||[]).filter(t=>t.sunday_date!==date),tempRec];
+  renderBudget();
+  try{
+    const r=await sb.from('tithe_records').insert({household_id:S.household.id,sunday_date:date,amount:100,paid:true,paid_by:S.profile.id,paid_at});
+    if(r?.[0]?.id)S.data.tithe=S.data.tithe.map(t=>t.id==='tmp_'+date?{...t,id:r[0].id}:t);
+    showSuccess('Tithe recorded!');
+  }catch(e){S.data.tithe=(S.data.tithe||[]).filter(t=>t.id!=='tmp_'+date);renderBudget();showError(e.message);}
+}
+async function unmarkTithe(date){
+  const rec=(S.data.tithe||[]).find(t=>t.sunday_date===date);
+  if(!rec)return;
+  S.data.tithe=(S.data.tithe||[]).filter(t=>t.sunday_date!==date);
+  renderBudget();
+  try{await sb.from('tithe_records').delete().eq('sunday_date',date).eq('household_id',S.household.id);showSuccess('Tithe unmarked.');}
+  catch(e){S.data.tithe=[...(S.data.tithe||[]),rec];renderBudget();showError(e.message);}
+}
 function showAddBill(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Bill</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="nb-name" placeholder="e.g. Netflix..."></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="nb-amt" type="number" step="0.01" placeholder="0.00"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nb-cat"><option value="home">Home</option><option value="transport">Transportation</option><option value="debt">Debt</option><option value="living">Living</option><option value="pets">Pets</option><option value="subscriptions">Subscriptions</option><option value="faith">Faith</option><option value="misc">Misc</option></select></div><div class="field-group"><div class="field-label">Due Day (1-31)</div><input class="field-input" id="nb-due" type="number" min="1" max="31" placeholder="e.g. 15"></div><div class="field-group"><div class="field-label">Payment Source</div><input class="field-input" id="nb-src" placeholder="e.g. Credit Card..."></div><div class="field-group"><div class="field-label">Auto Pay?</div><select class="field-input" id="nb-auto"><option value="false">No \u2014 Manual</option><option value="true">Yes \u2014 Auto Pay</option></select></div><button class="btn-gold" onclick="saveBill()">Add Bill</button></div>`);}
 async function saveBill(){const name=document.getElementById('nb-name')?.value?.trim(),amt=parseFloat(document.getElementById('nb-amt')?.value),cat=document.getElementById('nb-cat')?.value,due=parseInt(document.getElementById('nb-due')?.value)||null,src=document.getElementById('nb-src')?.value?.trim(),auto=document.getElementById('nb-auto')?.value==='true';if(!name||isNaN(amt)||amt<=0){showError('BOS-DATA-001');return;}try{const r=await sb.from('bills').insert({household_id:S.household.id,name,amount:amt,category:cat,due_day:due,payment_source:src,auto_pay:auto,paid:false});if(r?.[0])S.data.bills.push(r[0]);closeModal();showSuccess('Bill added!');renderBudget();}catch(e){showError(e.message);}}
 async function delBill(id){if(!confirm('Delete?'))return;try{await sb.from('bills').delete().eq('id',id);S.data.bills=S.data.bills.filter(b=>b.id!==id);renderBudget();}catch(e){showError(e.message);}}
@@ -1313,7 +1342,7 @@ async function updSav(id){const name=document.getElementById('eg-nm')?.value?.tr
 // HEALTH
 function renderHealth(){switchHTab(S.currentHealthTab);}
 function switchHealthTab(t){switchHTab(t);}
-function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','goals','pregnancy'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='goals')renderGoals(c);else if(tab==='pregnancy')renderPregnancy(c);}
+function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','goals','spirit','pregnancy'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='goals')renderGoals(c);else if(tab==='spirit')renderSpiritual(c);else if(tab==='pregnancy')renderPregnancy(c);}
 function renderWorkouts(c){
   const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getLocalDateStr();
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
@@ -1481,7 +1510,6 @@ function openWorkoutDay(id,day,name){
   const logs=S.data.workout_logs||[];
   const w=S.data.workouts||[];
   const workout=w.find(x=>x.id===id)||{};
-  const today=getLocalDateStr();
   const dayLogs=[...logs].filter(l=>{
     const p=l.logged_date.split('-');
     const ld=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
@@ -1490,65 +1518,67 @@ function openWorkoutDay(id,day,name){
   const isLogged=dayLogs.some(l=>l.logged_date===getDateForDay(day));
   const notesKey=lsKey('bos_workout_notes_'+day);
   const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
-  // Load persisted current plan first, fall back to last session notes
   const planKey=lsKey('bos_current_plan_'+day);
-  const savedPlan=localStorage.getItem(planKey)||'';
-  const initialNotes=savedPlan||(allNotes[0]?.notes||'');
+  const currentPlan=localStorage.getItem(planKey)||'';
   const timerRunning=S.workoutStartTime!==null;
-  showModal(`<div class="sheet-handle"></div>
-    <div style="margin-bottom:10px">
-      <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
-      <div style="font-size:18px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.45;margin-top:3px">${workout.description||''}</div>
-    </div>
 
-    <div class="card" style="margin-bottom:8px">
-      ${isLogged
-        ?`<div style="text-align:center;padding:10px;background:rgba(76,175,130,0.15);border-radius:8px;border:1px solid var(--green)"><div style="font-size:13px;font-weight:700;color:var(--green)">\u2714 Session Logged Today</div></div>
-          <button class="btn-white" style="width:100%;margin-top:8px;padding:9px;font-size:12px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo Log</button>`
-        :timerRunning
-          ?`<div id="wod-timer-display" class="workout-timer">00:00</div>
-            <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>`
-          :`<button class="btn-gold" style="width:100%;padding:14px;font-size:15px;font-weight:700" onclick="smartStartWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">&#9889; Plan &amp; Start</button>
-            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Jarvis will build your plan then start the timer</div>`
-      }
-    </div>
-
-    <div class="card" style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--gold)">TODAY'S PLAN</span>
+  if(timerRunning&&!isLogged){
+    // Active workout view
+    showModal(`<div class="sheet-handle"></div>
+      <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase">${day.toUpperCase()}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--white);margin-top:1px">${name}</div>
+        </div>
+        <button class="btn-white-sm" onclick="showQuickGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">Re-Plan</button>
+      </div>
+      <div id="wod-timer-display" class="workout-timer" style="margin-bottom:10px">00:00</div>
+      <div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;max-height:200px;overflow-y:auto;font-size:11px;color:var(--white);white-space:pre-line;line-height:1.6">${currentPlan||'No plan generated yet. Tap Re-Plan to create one.'}</div>
+      <div style="background:var(--bg-card);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:6px">&#129302; ADJUST WITH JARVIS</div>
+        <div id="wod-chat-msgs" style="max-height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:6px"></div>
         <div style="display:flex;gap:6px">
-          <button class="btn-white-sm" onclick="saveWorkoutNotes('${day}')">Save</button>
-          <button class="btn-gold-sm" onclick="showQuickGenerate('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Re-Plan</button>
+          <input id="wod-chat-input" class="field-input" style="flex:1;padding:7px 9px;font-size:11px" placeholder="Swap an exercise, need a tip...">
+          <button class="btn-gold-sm" onclick="sendWorkoutChat('${day}','${name}')">Go</button>
         </div>
       </div>
-      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:180px;resize:none;box-sizing:border-box" placeholder="Tap \u26a1 Plan &amp; Start above \u2014 Jarvis will generate your full workout plan here.">${initialNotes}</textarea>
-    </div>
+      <button class="btn-gold" style="width:100%;padding:14px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>
+    `);
+    S.workoutChat=[];
+    renderWorkoutChat();
+    startTimerDisplay();
+    return;
+  }
 
-    <div class="card" style="margin-bottom:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">&#129302; ASK JARVIS LIVE</div>
-      <div id="wod-chat-msgs" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-      <div style="display:flex;gap:6px">
-        <input id="wod-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="e.g. swap bench for incline, I'm tired today...">
-        <button class="btn-gold-sm" onclick="sendWorkoutChat('${day}','${name}')">Send</button>
-      </div>
+  // Pre-workout view — minimal
+  showModal(`<div class="sheet-handle"></div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
+      <div style="font-size:22px;font-weight:700;color:var(--white);margin-top:3px">${name}</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.45;margin-top:4px;line-height:1.4">${workout.description||''}</div>
     </div>
-
-    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px">${name} History (${dayLogs.length} sessions)</div>
+    ${isLogged
+      ?`<div style="text-align:center;padding:14px;background:rgba(76,175,130,0.15);border-radius:10px;border:1px solid var(--green);margin-bottom:10px">
+          <div style="font-size:14px;font-weight:700;color:var(--green)">\u2714 Session Logged Today</div>
+        </div>
+        <button class="btn-white" style="width:100%;margin-bottom:14px;padding:10px;font-size:12px" onclick="toggleWorkoutLog('${id}','${day}',getDateForDay('${day}'));closeModal();renderHealth()">Undo Log</button>`
+      :`<button class="btn-gold" style="width:100%;padding:18px;font-size:17px;font-weight:700;margin-bottom:14px;letter-spacing:0.02em" onclick="smartStartWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">\u26a1 Start Workout</button>`
+    }
+    <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:6px;opacity:0.5;text-transform:uppercase;letter-spacing:0.05em">${name} History (${dayLogs.length} sessions)</div>
     <div class="card">
       ${allNotes.length
-        ?allNotes.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>${n.energy?`<span style="font-size:11px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n.energy]||''} ${n.duration||''}</span>`:''}</div>
-          <div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:2px;white-space:pre-line">${n.notes||''}</div>
-          ${n.feedback?`<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-top:2px;font-style:italic">"${n.feedback}"</div>`:''}
+        ?allNotes.slice(0,3).map(n=>`<div style="padding:7px 0;border-bottom:0.5px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>
+              ${n.energy?`<span style="font-size:11px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n.energy]||''} ${n.duration?`<span style="font-size:9px;color:var(--white);opacity:0.5">${n.duration}</span>`:''}</span>`:''}
+            </div>
+            <div style="font-size:11px;color:var(--white);opacity:0.8;margin-top:3px;white-space:pre-line;max-height:56px;overflow:hidden;line-height:1.4">${(n.notes||'').slice(0,140)}${(n.notes||'').length>140?'…':''}</div>
+            ${n.feedback?`<div style="font-size:10px;color:var(--gold);opacity:0.65;margin-top:3px;font-style:italic">"${n.feedback}"</div>`:''}
           </div>`).join('')
-        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet.</div>`
+        :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:10px 0">No sessions logged yet.</div>`
       }
     </div>
   `);
-  S.workoutChat=[];
-  renderWorkoutChat();
-  if(timerRunning&&!isLogged)startTimerDisplay();
 }
 
 
@@ -1572,17 +1602,17 @@ function startWorkoutTimer(id,day,name){
   openWorkoutDay(id,day,name);
 }
 function smartStartWorkout(id,day,name,daySessions,totalSessions){
-  // Show a quick 1-step sheet: optional context → generate plan → start timer
   showModal(`<div class="sheet-handle"></div>
     <div class="sheet-title">&#9889; ${name}</div>
-    <div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:14px">Jarvis will build your plan. Any notes first?</div>
-    <div class="field-group" style="margin-bottom:12px">
-      <div class="field-label">Notes for Jarvis (optional)</div>
-      <textarea id="smart-ctx" class="field-input" style="min-height:70px;resize:none" placeholder="e.g. Skip incline today, left shoulder tight. Focus on back width..."></textarea>
-    </div>
-    <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="runSmartGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate Plan &amp; Start</button>
-    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="closeModal();openWorkoutDay('${id}','${day}','${name.replace(/'/g,"\\'")}')">Just Start Without Plan</button>
+    <div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:14px">Any notes for Jarvis today? (optional)</div>
+    <textarea id="smart-ctx" class="field-input" style="min-height:80px;resize:none;margin-bottom:14px" placeholder="e.g. Skip incline, left shoulder tight. Focus on back width..."></textarea>
+    <button class="btn-gold" style="width:100%;padding:14px;font-size:14px;font-weight:700" onclick="runSmartGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate Plan &amp; Start</button>
+    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="startJustTimer('${id}','${day}','${name.replace(/'/g,"\\'")}')">Start Without Plan</button>
   `);
+}
+function startJustTimer(id,day,name){
+  S.workoutStartTime=Date.now();
+  openWorkoutDay(id,day,name);
 }
 async function runSmartGenerate(id,day,name,daySessions,totalSessions){
   const ctx=document.getElementById('smart-ctx')?.value?.trim()||'';
@@ -1591,15 +1621,19 @@ async function runSmartGenerate(id,day,name,daySessions,totalSessions){
   S.workoutStartTime=Date.now();
   openWorkoutDay(id,day,name);
 }
-function showQuickGenerate(day,name,daySessions,totalSessions){
+function showQuickGenerate(id,day,name,daySessions,totalSessions){
   showModal(`<div class="sheet-handle"></div>
-    <div class="sheet-title">&#129302; Re-Plan ${name}</div>
-    <div class="field-group" style="margin-bottom:12px">
-      <div class="field-label">Any notes for Jarvis? (optional)</div>
-      <textarea id="regen-ctx" class="field-input" style="min-height:70px;resize:none" placeholder="e.g. More volume on arms, feeling strong today..."></textarea>
-    </div>
-    <button class="btn-gold" style="width:100%;padding:12px;font-size:13px" onclick="(async()=>{const ctx=document.getElementById('regen-ctx')?.value?.trim()||'';closeModal();await getInlineWorkoutPlanCtx('${day}','${name}',${daySessions},${totalSessions},ctx);})()">Generate New Plan</button>
+    <div class="sheet-title">&#129302; New Plan</div>
+    <div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:12px">Any notes for Jarvis?</div>
+    <textarea id="regen-ctx" class="field-input" style="min-height:70px;resize:none;margin-bottom:12px" placeholder="e.g. More volume on arms, feeling strong today..."></textarea>
+    <button class="btn-gold" style="width:100%;padding:12px;font-size:13px;font-weight:700" onclick="regenPlan('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate New Plan</button>
   `);
+}
+async function regenPlan(id,day,name,daySessions,totalSessions){
+  const ctx=document.getElementById('regen-ctx')?.value?.trim()||'';
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">&#129302; Building plan...</div><div style="padding:24px;text-align:center;font-size:12px;color:var(--white);opacity:0.6">Jarvis is generating your ${name} plan.</div>`);
+  await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,ctx);
+  openWorkoutDay(id,day,name);
 }
 function startTimerDisplay(){
   clearInterval(S.workoutTimer);
@@ -1775,12 +1809,24 @@ async function sendWorkoutChat(day,name){
   S.workoutChat=S.workoutChat||[];
   S.workoutChat.push({role:'user',content:text});
   renderWorkoutChat();
-  // Build workout context for Jarvis
-  const currentPlan=document.getElementById('wod-notes')?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
+  const currentPlan=localStorage.getItem(lsKey('bos_current_plan_'+day))||'No plan generated.';
   const prs=getPRs();
-  const prText=prs.length?prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'None logged';
+  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps).join(', '):'None logged';
   const jarvisMemory=lsGet('bos_jarvis_memory')||'';
-  const systemCtx=`You are Jarvis, a world-class fitness coach. The athlete is currently doing ${name} (${day}). ${jarvisMemory?'What they always want you to know: '+jarvisMemory+'. ':''}Current workout plan:\n${currentPlan}\nMax lifts: ${prText}. Respond in 1-3 short, direct sentences. If they want to swap an exercise, modify the plan, or ask for advice — give a clear answer. Be like a coach standing right next to them.`;
+  // Focused system: modify THIS plan, short answers, no full rewrite
+  const systemCtx=`You are a gym coach standing next to the athlete mid-workout. They are doing ${name} on ${day}.${jarvisMemory?' Notes: '+jarvisMemory:''}
+
+THEIR CURRENT PLAN:
+${currentPlan}
+
+MAX LIFTS: ${prText}
+
+RULES:
+- Keep answers to 1-3 sentences max.
+- If they ask to swap an exercise, give ONLY the replacement line (e.g. "3. Cable Row — 4x10 @ 120lbs | Rest: 60s").
+- If they need advice or a tip, be direct and practical.
+- NEVER generate a whole new plan — adjust only what they ask about.
+- Speak like a coach right next to them, not a chatbot.`;
   const msgs=[...S.workoutChat];
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -1969,6 +2015,155 @@ async function savePregAppt(){
   const preg_appointments=[...(diana.preg_appointments||[]),{title,date}];
   try{await sb.from('diana_health').update({preg_appointments}).eq('id',diana.id);S.data.diana={...diana,preg_appointments};closeModal();showSuccess('OB appointment added!');renderPregnancy(document.getElementById('health-content'));}
   catch(e){showError(e.message);}
+}
+// SPIRITUAL
+function renderSpiritual(c){
+  const uid=S.profile?.id||'';
+  const myName=(S.profile?.name||'').split(' ')[0]||'You';
+  const partnerUser=(S.data.users||[]).find(u=>u.id!==uid&&u.role==='admin');
+  const partnerName=partnerUser?.name?.split(' ')[0]||'Spouse';
+
+  // Load per-user books and notes from syncPreference (stored in localStorage)
+  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
+  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
+
+  // Load encouragements from activity table (category='spirit')
+  const acts=S.data.activity||[];
+  const encouragements=acts.filter(a=>a.category==='spirit').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,10);
+
+  const bookHTML=books.length
+    ?books.map((b,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+        <div class="chk ${b.read?'checked':''}" onclick="toggleSpiritBook(${i})" style="cursor:pointer;flex-shrink:0">${b.read?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--white);font-weight:${b.read?'400':'600'};${b.read?'opacity:0.5;text-decoration:line-through':''}">${b.title}</div>
+          ${b.author?`<div style="font-size:10px;color:var(--gold);opacity:0.7">${b.author}</div>`:''}
+          ${b.notes?`<div style="font-size:10px;color:var(--white);opacity:0.5;margin-top:2px;font-style:italic">"${b.notes}"</div>`:''}
+        </div>
+        <span class="del-x" onclick="deleteSpiritBook(${i})">&#215;</span>
+      </div>`).join('')
+    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No books tracked yet.</div>`;
+
+  const notesHTML=notes.length
+    ?notes.slice(0,5).map((n,i)=>`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>
+          <span class="del-x" onclick="deleteSpiritNote(${i})">&#215;</span>
+        </div>
+        <div style="font-size:12px;color:var(--white);opacity:0.85;margin-top:4px;line-height:1.5">${n.text}</div>
+      </div>`).join('')
+    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No notes yet.</div>`;
+
+  const encHTML=encouragements.length
+    ?encouragements.map(a=>{
+        const sender=(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone';
+        return`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)">
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-size:10px;font-weight:700;color:var(--gold)">${sender}</span>
+            <span style="font-size:9px;color:var(--white);opacity:0.4">${fmt(a.created_at)}</span>
+          </div>
+          <div style="font-size:12px;color:var(--white);opacity:0.85;margin-top:3px;line-height:1.5">${(a.action||'').replace(/^sent encouragement: /,'')}</div>
+        </div>`;
+      }).join('')
+    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No encouragements yet. Send the first one!</div>`;
+
+  c.innerHTML=`
+    <div class="jcard" onclick="openJarvisCtx('Give me a scripture or encouragement for today.')" style="cursor:pointer">
+      <div class="jlabel">Jarvis &mdash; Faith</div>
+      <div class="jtext">Tap for a scripture, prayer idea, or spiritual encouragement for today.</div>
+      <div class="jcta">Ask Jarvis &#8594;</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:14px;font-weight:700;color:var(--white)">&#128218; Books</span>
+      <button class="btn-gold-sm" onclick="showAddSpiritBook()">+ Add Book</button>
+    </div>
+    <div class="card" style="margin-bottom:4px">${bookHTML}</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;margin-top:4px">
+      <span style="font-size:14px;font-weight:700;color:var(--white)">&#128221; Notes &amp; Prayer</span>
+      <button class="btn-gold-sm" onclick="showAddSpiritNote()">+ Add Note</button>
+    </div>
+    <div class="card" style="margin-bottom:4px">${notesHTML}</div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;margin-top:4px">
+      <span style="font-size:14px;font-weight:700;color:var(--white)">&#9993; Encouragement</span>
+      <button class="btn-gold-sm" onclick="showSendEncouragement('${partnerName}')">Send to ${partnerName}</button>
+    </div>
+    <div class="card">${encHTML}</div>
+  `;
+}
+function showAddSpiritBook(){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Add Book</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="field-group"><div class="field-label">Book Title</div><input class="field-input" id="sb-title" placeholder="e.g. The Purpose Driven Life"></div>
+      <div class="field-group"><div class="field-label">Author (optional)</div><input class="field-input" id="sb-author" placeholder="e.g. Rick Warren"></div>
+      <div class="field-group"><div class="field-label">Notes (optional)</div><input class="field-input" id="sb-notes" placeholder="e.g. Currently reading, chapter 3..."></div>
+      <button class="btn-gold" onclick="saveSpiritBook()">Add Book</button>
+    </div>`);
+}
+function saveSpiritBook(){
+  const title=document.getElementById('sb-title')?.value?.trim();
+  if(!title){showError('BOS-DATA-001');return;}
+  const author=document.getElementById('sb-author')?.value?.trim()||'';
+  const notes=document.getElementById('sb-notes')?.value?.trim()||'';
+  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
+  books.unshift({title,author,notes,read:false,added:getLocalDateStr()});
+  lsSet('bos_spiritual_books',JSON.stringify(books));
+  syncPreference('spiritual_books',JSON.stringify(books));
+  closeModal();showSuccess('Book added!');renderSpiritual(document.getElementById('health-content'));
+}
+function toggleSpiritBook(i){
+  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
+  if(!books[i])return;
+  books[i].read=!books[i].read;
+  lsSet('bos_spiritual_books',JSON.stringify(books));
+  syncPreference('spiritual_books',JSON.stringify(books));
+  renderSpiritual(document.getElementById('health-content'));
+}
+function deleteSpiritBook(i){
+  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
+  books.splice(i,1);
+  lsSet('bos_spiritual_books',JSON.stringify(books));
+  syncPreference('spiritual_books',JSON.stringify(books));
+  renderSpiritual(document.getElementById('health-content'));
+}
+function showAddSpiritNote(){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Add Note / Prayer</div>
+    <textarea class="field-input" id="sn-text" style="min-height:100px;resize:none;margin-bottom:12px" placeholder="Write a prayer, reflection, or note..."></textarea>
+    <button class="btn-gold" onclick="saveSpiritNote()">Save Note</button>`);
+}
+function saveSpiritNote(){
+  const text=document.getElementById('sn-text')?.value?.trim();
+  if(!text){showError('BOS-DATA-001');return;}
+  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
+  notes.unshift({date:getLocalDateStr(),text});
+  lsSet('bos_spiritual_notes',JSON.stringify(notes));
+  syncPreference('spiritual_notes',JSON.stringify(notes));
+  closeModal();showSuccess('Note saved!');renderSpiritual(document.getElementById('health-content'));
+}
+function deleteSpiritNote(i){
+  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
+  notes.splice(i,1);
+  lsSet('bos_spiritual_notes',JSON.stringify(notes));
+  syncPreference('spiritual_notes',JSON.stringify(notes));
+  renderSpiritual(document.getElementById('health-content'));
+}
+function showSendEncouragement(partnerName){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Send to ${partnerName}</div>
+    <textarea class="field-input" id="enc-text" style="min-height:90px;resize:none;margin-bottom:12px" placeholder="A scripture, prayer, or word of encouragement..."></textarea>
+    <button class="btn-gold" onclick="sendEncouragement()">Send &#9825;</button>`);
+}
+async function sendEncouragement(){
+  const text=document.getElementById('enc-text')?.value?.trim();
+  if(!text){showError('BOS-DATA-001');return;}
+  try{
+    await logActivity('sent encouragement: '+text,'spirit',text);
+    closeModal();showSuccess('Encouragement sent!');
+    renderSpiritual(document.getElementById('health-content'));
+  }catch(e){showError(e.message);}
 }
 // BUSINESS
 function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;const ownerName=userName(b.owner_id)||'AJ';return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}${!own?` <span style="font-size:8px;color:var(--white);opacity:0.4">&middot; ${ownerName}'s</span>`:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${b.stage.toUpperCase()}</span><button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button></div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div></div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
