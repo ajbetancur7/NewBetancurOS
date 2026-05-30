@@ -412,6 +412,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
+      <div class="sec-label">&#9996;&#65039; Spirit</div>
+      <div id="home-spirit"></div>
       <div class="card" style="padding:0;overflow:hidden">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
           <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
@@ -432,12 +434,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <span class="gfab-text">&#128722; Grocery List</span>
         <span class="gfab-count" id="grocery-count">0 items</span>
       </div>
-      <div class="sec-label" onclick="go('chores')" style="cursor:pointer">Chores &#8250;</div><div id="home-chores" style="cursor:pointer" onclick="go('chores')"></div>
-      <div class="sec-label" onclick="go('budget')" style="cursor:pointer">Today's Tasks &#8250;</div><div class="card" id="home-tasks" style="cursor:pointer" onclick="go('budget')"></div>
       <div class="sec-label" onclick="go('health')" style="cursor:pointer">Health Streak &#8250;</div><div class="card" id="home-streak" style="cursor:pointer" onclick="go('health')"></div>
-      <div class="sec-label">&#9996;&#65039; Spirit</div>
-      <div id="home-spirit"></div>
-      <div class="sec-label" onclick="go('budget')" style="cursor:pointer">Budget &#8250;</div><div class="grid2" id="home-budget" style="cursor:pointer" onclick="go('budget')"></div>
       <div class="sec-label" onclick="openActivityDetail()" style="cursor:pointer">Activity &#8250;</div><div class="card" id="home-activity" style="cursor:pointer" onclick="go('minutes')"></div>
       <div class="sec-label" onclick="go('schedule')" style="cursor:pointer">Reminders &#8250;</div><div class="card" id="home-reminders" style="cursor:pointer" onclick="go('schedule')"></div>
     </div>
@@ -1167,22 +1164,14 @@ function renderHome(){
 document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">${pn1}${isMe1?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">${pn2}${isMe2?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
   const gu=(S.data.grocery||[]).filter(g=>!g.checked).length;
   document.getElementById('grocery-count').textContent=gu+' item'+(gu===1?'':'s');const gc=document.getElementById('grocery-count');if(gc)gc.closest&&gc.closest('.fab-grocery')&&(gc.closest('.fab-grocery').onclick=()=>go('grocery'));
-  const ac=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,3);
-  document.getElementById('home-chores').innerHTML=ac.length?ac.map(c=>{const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,has=steps.length>0;return`<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="go('chores')""><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="card-title">${c.room}</div><div class="card-main">${c.name}${has?' \u2014 Step '+(cur+1)+' of '+steps.length:''}</div></div><span class="tag ${c.status==='in_progress'?'tag-gold':'tag-outline'}">${c.status==='in_progress'?'In Progress':'Pending'}</span></div>${has?`<div class="step-row" style="margin-top:8px">${steps.map((s,i)=>`<span class="sc ${i<cur?'sc-done':i===cur?'sc-next':'sc-pend'}">${s}</span>${i<steps.length-1?'<span class="sarr">&#8250;</span>':''}`).join('')}</div>`:''}<div style="margin-top:8px;display:flex;gap:6px"><button class="check-btn" onclick="${has?'advanceStep(\''+c.id+'\')':'doneChore(\''+c.id+'\')'}">${has?'\u2713 Step':'\u2713 Done'}</button><button class="btn-white-sm" onclick="go('chores')">View all</button></div></div>`;}).join(''):'<div class="card"><div style="color:var(--green);text-align:center;font-weight:700;padding:4px 0">All chores done! \u{1F389}</div></div>';
   const day=now.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
-  const tasks=[];
-  if(day==='thursday')tasks.push({text:'Trash out \u2014 early AM',time:'AM',r:'rdot-r'});
   const _todayD=now.getDate();
   const _isEffPaid=b=>b.paid||(b.auto_pay&&(!b.due_day||_todayD>=b.due_day));
-  (S.data.bills||[]).filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').slice(0,2).forEach(b=>tasks.push({text:'Pay '+b.name+' \u2014 overdue',time:'Now',r:'rdot-r'}));
-  (S.data.bills||[]).filter(b=>!_isEffPaid(b)&&billSt(b)==='soon').slice(0,2).forEach(b=>tasks.push({text:b.name+' due',time:b.due_day+'th',r:'rdot'}));
-  document.getElementById('home-tasks').innerHTML=tasks.length?tasks.map(t=>`<div class="ri" style="cursor:pointer" onclick="go('budget')"><span class="rdot ${t.r}"></span><span class="rtext">${t.text}</span>${t.time?`<span class="rtime">${t.time}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">No urgent tasks today</span></div>';
   const today=getLocalDateStr(),wof=getWeekOf(now);
   const wofP=wof.split('-');const wofBase=new Date(parseInt(wofP[0]),parseInt(wofP[1])-1,parseInt(wofP[2]));
   const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofBase.getFullYear(),wofBase.getMonth(),wofBase.getDate()+i);const ds=getLocalDateStr(dt);const logged=(S.data.workout_logs||[]).some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
   document.getElementById('home-streak').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;cursor:pointer" onclick="go('health')"><span style="font-size:10px;font-weight:700;color:var(--white)">Workout Streak</span><button class="check-btn" onclick="logWorkout()">\u2713 Log today</button></div><div class="streak-row">${dots}</div>`;
-  const bills=S.data.bills||[],ov=bills.filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').length,rem=9100-5984;
-  document.getElementById('home-budget').innerHTML=`<div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Bills</div><div class="sval" style="font-size:14px;color:${ov>0?'var(--red)':'var(--white)'}">${ov>0?ov+' overdue':'All current'}</div><div class="ssub">${bills.filter(b=>!b.paid).length} remaining</div></div><div class="mini-card" style="cursor:pointer" onclick="go('budget')"><div class="slabel">Remaining</div><div class="sval" style="font-size:14px;color:var(--green)">$${rem.toLocaleString()}</div><div class="ssub">After all bills</div></div>`;
+  const bills=S.data.bills||[],ov=bills.filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').length;
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
