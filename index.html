@@ -473,7 +473,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="ttab" onclick="switchHealthTab('supps')">Supps</div>
         <div class="ttab" onclick="switchHealthTab('goals')">Goals</div>
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
-        <div class="ttab" onclick="switchHealthTab('diana')">Diana</div>
       </div>
       <div id="health-content" style="flex:1;min-height:0;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
@@ -554,7 +553,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 <script>
 const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
-let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,diana_schedule:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',workoutChat:[],data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
 const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -604,6 +603,12 @@ const sb=(()=>{
 S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
 async function safeSave(type,id,data){try{if(type==='UPDATE_CHORE')await sb.from('chores').update(data).eq('id',id);else if(type==='UPDATE_BILL')await sb.from('bills').update(data).eq('id',id);else if(type==='UPDATE_GROCERY')await sb.from('grocery_items').update(data).eq('id',id);}catch(e){if(e.message==='BOS-SYNC-002'){S.offlineQueue.push({type,id,data,ts:Date.now()});localStorage.setItem('bos_queue',JSON.stringify(S.offlineQueue));}else showError(e.message||'BOS-SYNC-001');}}
 function logActivity(action,section,item){if(!S.household)return;sb.from('activity_feed').insert({household_id:S.household.id,user_id:S.profile?.id,action,section,item_name:item}).catch(()=>{});}
+// User-scoped localStorage — keeps each person's personal data separate on the same device
+function lsKey(k){return k+'_'+(localStorage.getItem('bos_uid')||'default');}
+function lsGet(k){return localStorage.getItem(lsKey(k));}
+function lsSet(k,v){localStorage.setItem(lsKey(k),v);}
+// Lookup a user's first name by their ID
+function userName(id){return(S.data.users||[]).find(u=>u.id===id)?.name?.split(' ')[0]||null;}
 
 // AUTH
 function backToSplash(){document.getElementById('auth-screen').style.display='none';document.getElementById('splash').style.display='flex';}
@@ -618,8 +623,8 @@ function renderSignUp(step){
     document.getElementById('auth-body').innerHTML=`<div class="auth-title">Create account</div><div class="auth-subtitle">Choose a username and password</div><div class="auth-error" id="auth-error"></div><div class="field-group"><div class="field-label">Your Name</div><input class="field-input" id="su-name" placeholder="First and last name..."></div><div class="field-group"><div class="field-label">Username</div><input class="field-input" id="su-email" type="text" placeholder="e.g. aj_betancur (no spaces)"></div><div class="field-group"><div class="field-label">Password</div><input class="field-input" id="su-pass" type="password" placeholder="At least 6 characters..."></div><div class="field-group"><div class="field-label">Confirm Password</div><input class="field-input" id="su-pass2" type="password" placeholder="Repeat password..."></div><button class="btn-primary" onclick="validateStep1()" style="margin-top:8px">Next &#8594;</button><div class="auth-link" style="margin-top:8px">Have account? <span onclick="renderSignIn()">Sign in</span></div>`;
   }else{
     document.getElementById('auth-step-label').textContent='Step 2 of 2';
-    const roles=[['admin','Admin','Full access · Household owner'],['babysitter','Babysitter',"Diana's needs · Chores only"],['mom','Mom','Family view · Future phase'],['custom','Custom','Admin defines access']];
-    document.getElementById('auth-body').innerHTML=`<div class="auth-title">Who are you?</div><div class="auth-subtitle">Sets what you see in the app</div><div class="auth-error" id="auth-error"></div>${roles.map(([v,n,d])=>`<div class="role-opt ${S.selectedRole===v?'sel':''}" onclick="selectRole('${v}')" style="margin-top:8px;${v==='custom'?'border-color:var(--blue)':''}"><div><div class="r-name" style="${v==='custom'?'color:var(--blue)':''}">${n}</div><div class="r-desc" style="${v==='custom'?'color:var(--blue);opacity:0.8':''}">${d}</div></div>${S.selectedRole===v?'<span style="font-size:18px;color:var(--gd);font-weight:700">&#10003;</span>':''}</div>`).join('')}<div style="display:flex;gap:10px;margin-top:14px"><button class="btn-white" onclick="renderSignUp(1)" style="flex:1">&#8249; Back</button><button class="btn-primary" onclick="doSignUp()" style="flex:2">Create Account &#8594;</button></div>`;
+    const roles=[['admin','Admin','Full access — sees everything in the OS'],['babysitter','Babysitter',"Diana's schedule and chores only"]];
+    document.getElementById('auth-body').innerHTML=`<div class="auth-title">Who are you?</div><div class="auth-subtitle">Sets what you can see in the app</div><div class="auth-error" id="auth-error"></div>${roles.map(([v,n,d])=>`<div class="role-opt ${S.selectedRole===v?'sel':''}" onclick="selectRole('${v}')" style="margin-top:8px"><div><div class="r-name">${n}</div><div class="r-desc">${d}</div></div>${S.selectedRole===v?'<span style="font-size:18px;color:var(--gd);font-weight:700">&#10003;</span>':''}</div>`).join('')}<div style="display:flex;gap:10px;margin-top:14px"><button class="btn-white" onclick="renderSignUp(1)" style="flex:1">&#8249; Back</button><button class="btn-primary" onclick="doSignUp()" style="flex:2">Create Account &#8594;</button></div>`;
   }
 }
 function selectRole(r){S.selectedRole=r;renderSignUp(2);}
@@ -652,7 +657,12 @@ async function doSignIn(){
     S.household=hhs?.[0]||null;
     document.getElementById('auth-screen').style.display='none';
     if(profile.role==='babysitter'){launchSitter();}
-    else if(!localStorage.getItem('bos_setup_done')&&profile.role==='admin'){launchSetup();}
+    else if(!localStorage.getItem('bos_setup_done')&&profile.role==='admin'){
+      // Check if household already has data — skip setup for existing households (e.g. Juliette joining)
+      const eb=await sb.from('bills').select('id').eq('household_id',S.household.id).catch(()=>[]);
+      if(eb&&eb.length>0){localStorage.setItem('bos_setup_done','1');launchApp();}
+      else{launchSetup();}
+    }
     else{launchApp();}
   }catch(e){showAuthError('BOS-AUTH-001');if(btn){btn.textContent='Sign In';btn.disabled=false;}}
 }
@@ -856,23 +866,6 @@ async function finishSetup(){
     launchApp();
   }
 }
-
-
-async function finishSetup(){
-  const btn=document.querySelector('#setup-body .btn-gold');if(btn){btn.textContent='Setting up...';btn.disabled=true;}
-  try{
-    await seedData();
-    localStorage.setItem('bos_setup_done','1');
-    document.getElementById('setup-screen').style.display='none';
-    launchApp();
-  }
-  catch(e){
-    // Even if seed fails partially, mark done and launch to prevent re-runs
-    localStorage.setItem('bos_setup_done','1');
-    document.getElementById('setup-screen').style.display='none';
-    launchApp();
-  }
-}
 async function launchApp(){
   document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
@@ -905,30 +898,28 @@ function renderDayNotes(){
   if(!el)return;
   const notes=getDayNotes();
   if(!notes.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--white);opacity:0.35;padding:4px 0">Tap + Add to jot something down...</div>';
     return;
   }
-  el.innerHTML=notes.map((n,i)=>{
-    const done=n.done||false;
-    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)">'
-      +'<div onclick="toggleDayNote('+i+')" style="width:16px;height:16px;border-radius:4px;border:1.5px solid '+(done?'var(--green)':'var(--border)')+';background:'+(done?'var(--green)':'transparent')+';flex-shrink:0;cursor:pointer;margin-top:1px;display:flex;align-items:center;justify-content:center">'
-      +(done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':'')
-      +'</div>'
-      +'<div style="flex:1;font-size:12px;color:var(--white);'+(done?'opacity:0.4;text-decoration:line-through':'')+'">'+n.text+'</div>'
-      +'<div style="display:flex;gap:6px;flex-shrink:0">'
-      +'<button class="btn-white-sm" onclick="editDayNote('+i+')">Edit</button>'
-      +'<span class="del-x" onclick="deleteDayNote('+i+')">&#215;</span>'
-      +'</div>'
-      +'</div>';
-  }).join('');
+  const sorted=[...notes.map((n,i)=>({...n,i}))].sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  el.innerHTML=sorted.map(n=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:0.5px solid rgba(255,255,255,0.07)">
+      <div onclick="toggleDayNote(${n.i})" style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${n.done?'var(--green)':'rgba(255,255,255,0.25)'};background:${n.done?'var(--green)':'transparent'};flex-shrink:0;cursor:pointer;margin-top:2px;display:flex;align-items:center;justify-content:center">
+        ${n.done?'<span style="color:#fff;font-size:11px;font-weight:700">&#10003;</span>':''}
+      </div>
+      <div style="flex:1;cursor:pointer;min-width:0" onclick="editDayNote(${n.i})">
+        <div style="font-size:13px;line-height:1.45;color:var(--white);${n.done?'opacity:0.35;text-decoration:line-through':'word-break:break-word'}">${n.text}</div>
+      </div>
+      <span onclick="deleteDayNote(${n.i})" style="font-size:20px;color:var(--white);opacity:0.2;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1">&#215;</span>
+    </div>`).join('');
 }
 
 function getDayNotes(){
-  return JSON.parse(localStorage.getItem('bos_day_notes')||'[]');
+  return JSON.parse(lsGet('bos_day_notes')||'[]');
 }
 
 function saveDayNotes(notes){
-  localStorage.setItem('bos_day_notes',JSON.stringify(notes));
+  lsSet('bos_day_notes',JSON.stringify(notes));
   renderDayNotes();
 }
 
@@ -1031,7 +1022,7 @@ function go(sec){
 }
 async function loadAll(){
   if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
-  const[chores,bills,pets,vehicles,businesses,grocery,activity,diana,ds]=await Promise.all([
+  const[chores,bills,pets,vehicles,businesses,grocery,activity,diana]=await Promise.all([
     sb.from('chores').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('bills').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('pets').select('*').eq('household_id',hid).catch(()=>[]),
@@ -1040,9 +1031,8 @@ async function loadAll(){
     sb.from('grocery_items').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('activity_feed').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('diana_health').select('*').eq('household_id',hid).then(r=>r?.[0]||null).catch(()=>null),
-    sb.from('diana_schedule').select('*').eq('household_id',hid).then(r=>r?.[0]||null).catch(()=>null),
   ]);
-  Object.assign(S.data,{chores,bills,pets,vehicles,businesses,grocery,activity,diana,diana_schedule:ds});
+  Object.assign(S.data,{chores,bills,pets,vehicles,businesses,grocery,activity,diana});
   const[workouts,wlogs,supps,slogs,meetings,users,tithe,savings]=await Promise.all([
     sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('workout_logs').select('*').eq('user_id',uid).catch(()=>[]),
@@ -1054,16 +1044,24 @@ async function loadAll(){
     sb.from('savings_goals').select('*').eq('household_id',hid).catch(()=>[]),
   ]);
   Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings,users,tithe,savings});
+  // Load partner (other admin) supplements for the Supps tab view-only section
+  const partnerUser=(users||[]).find(u=>u.id!==uid&&u.role==='admin');
+  S.data.partner=partnerUser||null;
+  if(partnerUser){const ps=await sb.from('supplements').select('*').eq('user_id',partnerUser.id).catch(()=>[]);S.data.partner_supplements=ps||[];}
+  else{S.data.partner_supplements=[];}
   // Bill reset handled by checkMonthlyBillReset() in renderBudget
   const wof=getWeekOf(new Date());
   // Load ALL schedule rows — find this week's or most recent, never delete items
   const allScheds=await sb.from('schedules').select('*').eq('user_id',uid).catch(()=>[]);
+  // Separate preferences sentinel row (week_of='9999-01-01') from actual schedule rows
+  const prefRow=allScheds.find(s=>s.week_of==='9999-01-01')||null;
+  const schedRows=allScheds.filter(s=>s.week_of!=='9999-01-01');
   let mySched=null;
-  if(allScheds&&allScheds.length>0){
-    mySched=allScheds.find(s=>s.week_of===wof)||null;
+  if(schedRows.length>0){
+    mySched=schedRows.find(s=>s.week_of===wof)||null;
     if(!mySched){
       // New week: find most recent, keep ALL items but uncheck them (Sunday reset)
-      const sorted=[...allScheds].sort((a,b)=>b.week_of.localeCompare(a.week_of));
+      const sorted=[...schedRows].sort((a,b)=>b.week_of.localeCompare(a.week_of));
       const prev=sorted[0];
       if(prev&&prev.items&&prev.items.length>0){
         const resetItems=prev.items.map(i=>({...i,done:false}));
@@ -1074,7 +1072,37 @@ async function loadAll(){
       }
     }
   }
+  if(!S.data.schedules)S.data.schedules={};
   S.data.schedules.mine=mySched;
+  // Load preferences from Supabase into localStorage — survives cache clears & device changes
+  S.data.schedules._pref_id=prefRow?.id||null;
+  S.data.schedules.prefs=prefRow?.items||[];
+  if(prefRow&&prefRow.items){
+    prefRow.items.forEach(({key,value})=>{
+      // Only restore if localStorage doesn't already have a value (e.g. after cache clear)
+      const storageKey='bos_'+key+'_'+uid;
+      if(!localStorage.getItem(storageKey))localStorage.setItem(storageKey,value);
+    });
+  }
+}
+// Sync a preference key+value to Supabase (fire-and-forget, localStorage is source of truth for reads)
+async function syncPreference(key,value){
+  if(!S.profile)return;
+  const uid=S.profile.id;
+  const prefs=S.data.schedules?.prefs||[];
+  const updated=prefs.filter(i=>i.key!==key);
+  updated.push({key,value});
+  if(S.data.schedules)S.data.schedules.prefs=updated;
+  try{
+    const prefId=S.data.schedules?._pref_id;
+    if(prefId){
+      await sb.from('schedules').update({items:updated}).eq('id',prefId);
+    }else{
+      const r=await sb.from('schedules').insert({user_id:uid,week_of:'9999-01-01',items:updated});
+      const newId=(Array.isArray(r)?r[0]:r)?.id||null;
+      if(newId&&S.data.schedules)S.data.schedules._pref_id=newId;
+    }
+  }catch(e){/* silent — localStorage still has it */}
 }
 // UTILS
 function getDateForDay(dayName){
@@ -1126,11 +1154,15 @@ function closeModal(){document.getElementById('modal-overlay').classList.remove(
 // HOME
 function renderHome(){
   const now=getTZ(),hr=now.getHours(),gr=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
-  const name=(S.profile?.name||'').split(' ')[0]||'AJ';
+  const name=(S.profile?.name||'').split(' ')[0]||'there';
   document.getElementById('home-greeting').textContent=gr+', '+name;
   document.getElementById('home-date').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' \u00b7 Tallahassee, FL';
   const ajStatus=localStorage.getItem('aj_status')||'home';const julStatus=localStorage.getItem('jul_status')||'home';
-document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">AJ</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">Juliette</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
+  const adminUsers=(S.data.users||[]).filter(u=>u.role==='admin').slice(0,2);
+  const pu1=adminUsers[0],pu2=adminUsers[1];
+  const pn1=pu1?.name?.split(' ')[0]||'AJ',pn2=pu2?.name?.split(' ')[0]||'Partner';
+  const isMe1=pu1?.id===S.profile?.id,isMe2=pu2?.id===S.profile?.id;
+document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">${pn1}${isMe1?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">${pn2}${isMe2?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
   const gu=(S.data.grocery||[]).filter(g=>!g.checked).length;
   document.getElementById('grocery-count').textContent=gu+' item'+(gu===1?'':'s');const gc=document.getElementById('grocery-count');if(gc)gc.closest&&gc.closest('.fab-grocery')&&(gc.closest('.fab-grocery').onclick=()=>go('grocery'));
   const ac=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,3);
@@ -1168,7 +1200,7 @@ function showRoom(re){
   const room=decodeURIComponent(re);const tasks=(S.data.chores||[]).filter(c=>c.room===room);
   document.getElementById('room-grid').style.display='none';
   const det=document.getElementById('chores-room-detail');det.style.display='block';
-  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><button class="btn-white-sm" onclick="closeRoom()">&#8249; Rooms</button><button class="btn-gold-sm" onclick="addTaskInRoom('${encodeURIComponent(room)}')">+ Task</button></div><div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px">${room}</div><div class="card">${tasks.length?tasks.map(t=>{const steps=Array.isArray(t.steps)?t.steps:[],cur=t.current_step||0,has=steps.length>0;return`<div class="task-item ${t.status==='done'?'td':''}"><div class="chk ${t.status==='done'?'checked':''}" onclick="${t.status!=='done'?(has?'advanceStep(\''+t.id+'\')':'doneChore(\''+t.id+'\')'):'void(0)'}" style="cursor:${t.status==='done'?'default':'pointer'}">${t.status==='done'?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="t-name ${t.status==='done'?'stk':''}">${t.name}</div><div class="t-meta">${t.recurrence||''}${t.estimated_time?' \u00b7 ~'+t.estimated_time:''}</div>${has&&t.status!=='done'?`<div class="step-row">${steps.map((s,i)=>`<span class="sc ${i<cur?'sc-done':i===cur?'sc-next':'sc-pend'}">${s}</span>${i<steps.length-1?'<span class="sarr">&#8250;</span>':''}`).join('')}</div>`:''}</div><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editC('${t.id}')">Edit</button><span class="del-x" onclick="delC('${t.id}')">&#215;</span></div></div>`;}).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No tasks yet.</span></div>'}</div>`;
+  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><button class="btn-white-sm" onclick="closeRoom()">&#8249; Rooms</button><button class="btn-gold-sm" onclick="addTaskInRoom('${encodeURIComponent(room)}')">+ Task</button></div><div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px">${room}<span style="font-size:8px;font-weight:700;color:var(--gold);background:rgba(232,188,80,0.12);border:0.5px solid var(--gold);border-radius:5px;padding:2px 7px;margin-left:8px">HOUSEHOLD</span></div><div class="card">${tasks.length?tasks.map(t=>{const steps=Array.isArray(t.steps)?t.steps:[],cur=t.current_step||0,has=steps.length>0;const doneBy=t.status==='done'&&t.completed_by?userName(t.completed_by):null;return`<div class="task-item ${t.status==='done'?'td':''}"><div class="chk ${t.status==='done'?'checked':''}" onclick="${t.status!=='done'?(has?'advanceStep(\''+t.id+'\')':'doneChore(\''+t.id+'\')'):'void(0)'}" style="cursor:${t.status==='done'?'default':'pointer'}">${t.status==='done'?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="t-name ${t.status==='done'?'stk':''}">${t.name}</div><div class="t-meta">${t.recurrence||''}${t.estimated_time?' \u00b7 ~'+t.estimated_time:''}${doneBy?' \u00b7 Done by '+doneBy:''}</div>${has&&t.status!=='done'?`<div class="step-row">${steps.map((s,i)=>`<span class="sc ${i<cur?'sc-done':i===cur?'sc-next':'sc-pend'}">${s}</span>${i<steps.length-1?'<span class="sarr">&#8250;</span>':''}`).join('')}</div>`:''}</div><div style="display:flex;gap:5px"><button class="btn-white-sm" onclick="editC('${t.id}')">Edit</button><span class="del-x" onclick="delC('${t.id}')">&#215;</span></div></div>`;}).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No tasks yet.</span></div>'}</div>`;
 }
 function closeRoom(){document.getElementById('room-grid').style.display='grid';document.getElementById('chores-room-detail').style.display='none';}
 async function doneChore(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const isDone=c.status==='done';const upd=isDone?{status:'not_started',current_step:0,completed_by:null,completed_at:null}:{status:'done',completed_by:S.profile.id,completed_at:new Date().toISOString()};S.data.chores=S.data.chores.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_CHORE',id,upd);if(!isDone)logActivity('completed '+c.name,'chores',c.name);S.currentSection==='chores'?renderChores():renderHome();}
@@ -1193,31 +1225,6 @@ function saveIncome(key){
   if(!val||val<=0){showError('BOS-DATA-001');return;}
   localStorage.setItem(key,val.toString());
   closeModal();showSuccess('Income updated!');renderBudget();
-}
-function saveIncome(){
-  const val=parseInt(document.getElementById('aj-inc')?.value)||0;
-  if(val<=0){showError('BOS-DATA-001');return;}
-  localStorage.setItem('aj_income',val);
-  closeModal();showSuccess('Income updated!');renderBudget();
-}
-
-function editIncomeModal(who){
-  const isAJ=who==='aj';
-  const key=isAJ?'aj_income':'jul_income';
-  const cur=parseInt(localStorage.getItem(key)||'4550');
-  const label=isAJ?"AJ's Income":"Juliette's Income";
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${label}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Monthly Income ($)</div><input class="field-input" id="inc-val" type="number" value="${cur}"></div><button class="btn-gold" onclick="saveIncome('${key}')">Save</button></div>`);
-}
-function saveIncome(key){
-  const val=parseInt(document.getElementById('inc-val')?.value);
-  if(!val||val<=0){showError('BOS-DATA-001');return;}
-  localStorage.setItem(key,val.toString());
-  closeModal();showSuccess('Income updated!');renderBudget();
-}
-function saveIncome(){
-  const val=parseInt(document.getElementById('aj-inc')?.value)||0;
-  if(val<=0){showError('BOS-DATA-001');return;}
-  localStorage.setItem('aj_income',val);closeModal();showSuccess('Income updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
   // Only resets on the 1st of a new month. Never fires mid-month.
@@ -1274,13 +1281,15 @@ function renderBudget(){
       const effectivePaid=b.paid||autoChecked;
       const isManual=!b.auto_pay;
       const canToggle=isManual;
+      const payerName=b.paid_by?userName(b.paid_by):null;
+      const paidMeta=effectivePaid&&autoChecked?'Auto processed':effectivePaid&&payerName?'Paid by '+payerName+(b.paid_at?' \u00b7 '+fmt(b.paid_at):''):effectivePaid?'Paid \u2714':b.due_day?'Due '+b.due_day+'th'+(b.payment_source?' \u00b7 '+b.payment_source:''):(b.payment_source||'');
       bHTML+=`<div class="bill-row bill-${effectivePaid?'paid':st==='overdue'?'ov':st==='soon'?'soon':'man'}">
         <div class="chk ${effectivePaid?'checked':''}" onclick="${canToggle?'payBill(\''+b.id+'\')':''}" style="cursor:${canToggle?'pointer':'default'}">
           ${effectivePaid?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':b.auto_pay?'<span style="font-size:8px;color:var(--border)">&#128274;</span>':''}
         </div>
         <div class="binfo">
           <div class="bname ${effectivePaid?'bname-stk':''}">${b.name}${b.auto_pay?'<span class="autotag">AUTO</span>':''}</div>
-          <div class="${!effectivePaid&&st==='overdue'?'bmeta-r':'bmeta'}">${effectivePaid&&autoChecked?'Auto ✔ Processed':effectivePaid?'Paid ✔':b.due_day?'Due '+b.due_day+'th'+(b.payment_source?' · '+b.payment_source:''):(b.payment_source||'')}</div>
+          <div class="${!effectivePaid&&st==='overdue'?'bmeta-r':'bmeta'}">${paidMeta}</div>
         </div>
         <div class="bright"><span class="bamt ${effectivePaid?'bamt-g':''}">$${(b.amount||0).toFixed(2)}</span></div>
         <button class="btn-white-sm" onclick="editBill('${b.id}')">Edit</button>
@@ -1288,12 +1297,7 @@ function renderBudget(){
       </div>`;});});
   document.getElementById('bills-list').innerHTML=bHTML;
 }
-function saveIncome(){
-  const val=parseInt(document.getElementById('aj-inc')?.value)||0;
-  localStorage.setItem('aj_income',val);
-  closeModal();showSuccess('Income updated!');renderBudget();
-}
-async function payBill(id){const b=(S.data.bills||[]).find(x=>x.id===id);if(!b)return;const upd=b.paid?{paid:false,paid_by:null,paid_at:null}:{paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()};S.data.bills=S.data.bills.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_BILL',id,upd);renderBudget();showSuccess(b.paid?'Unmarked':'Marked as paid!');}
+async function payBill(id){const b=(S.data.bills||[]).find(x=>x.id===id);if(!b)return;const upd=b.paid?{paid:false,paid_by:null,paid_at:null}:{paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()};S.data.bills=S.data.bills.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_BILL',id,upd);if(!b.paid)logActivity('paid '+b.name,'budget',b.name);renderBudget();showSuccess(b.paid?'Unmarked':'Marked as paid!');}
 async function markTithe(date){try{const r=await sb.from('tithe_records').insert({household_id:S.household.id,sunday_date:date,amount:100,paid:true,paid_by:S.profile.id,paid_at:new Date().toISOString()});if(r?.[0])S.data.tithe=[...S.data.tithe||[],...r];renderBudget();showSuccess('Tithe recorded!');}catch(e){showError(e.message);}}
 function showAddBill(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Bill</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="nb-name" placeholder="e.g. Netflix..."></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="nb-amt" type="number" step="0.01" placeholder="0.00"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nb-cat"><option value="home">Home</option><option value="transport">Transportation</option><option value="debt">Debt</option><option value="living">Living</option><option value="pets">Pets</option><option value="subscriptions">Subscriptions</option><option value="faith">Faith</option><option value="misc">Misc</option></select></div><div class="field-group"><div class="field-label">Due Day (1-31)</div><input class="field-input" id="nb-due" type="number" min="1" max="31" placeholder="e.g. 15"></div><div class="field-group"><div class="field-label">Payment Source</div><input class="field-input" id="nb-src" placeholder="e.g. Credit Card..."></div><div class="field-group"><div class="field-label">Auto Pay?</div><select class="field-input" id="nb-auto"><option value="false">No \u2014 Manual</option><option value="true">Yes \u2014 Auto Pay</option></select></div><button class="btn-gold" onclick="saveBill()">Add Bill</button></div>`);}
 async function saveBill(){const name=document.getElementById('nb-name')?.value?.trim(),amt=parseFloat(document.getElementById('nb-amt')?.value),cat=document.getElementById('nb-cat')?.value,due=parseInt(document.getElementById('nb-due')?.value)||null,src=document.getElementById('nb-src')?.value?.trim(),auto=document.getElementById('nb-auto')?.value==='true';if(!name||isNaN(amt)||amt<=0){showError('BOS-DATA-001');return;}try{const r=await sb.from('bills').insert({household_id:S.household.id,name,amount:amt,category:cat,due_day:due,payment_source:src,auto_pay:auto,paid:false});if(r?.[0])S.data.bills.push(r[0]);closeModal();showSuccess('Bill added!');renderBudget();}catch(e){showError(e.message);}}
@@ -1309,7 +1313,7 @@ async function updSav(id){const name=document.getElementById('eg-nm')?.value?.tr
 // HEALTH
 function renderHealth(){switchHTab(S.currentHealthTab);}
 function switchHealthTab(t){switchHTab(t);}
-function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','goals','pregnancy','diana'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='goals')renderGoals(c);else if(tab==='pregnancy')renderPregnancy(c);else if(tab==='diana')renderDiana(c);}
+function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['workouts','prs','supps','goals','pregnancy'][i]===tab));const c=document.getElementById('health-content');if(tab==='workouts')renderWorkouts(c);else if(tab==='prs')renderPRs(c);else if(tab==='supps')renderSupps(c);else if(tab==='goals')renderGoals(c);else if(tab==='pregnancy')renderPregnancy(c);}
 function renderWorkouts(c){
   const w=S.data.workouts||[],logs=S.data.workout_logs||[],today=getLocalDateStr();
   const dayOrder=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
@@ -1383,213 +1387,75 @@ function renderWorkouts(c){
     <div style="font-size:14px;font-weight:700;color:var(--white);margin-top:4px">Workout Log History</div>
     <div class="card">
       ${logs.length?[...logs].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10).map(l=>{
-        const dayName=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
+        const _p=l.logged_date.split('-');const dayName=new Date(parseInt(_p[0]),parseInt(_p[1])-1,parseInt(_p[2])).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
         const wo=w.find(x=>x.day_of_week===dayName);
         return`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">${wo?wo.name:'Workout'}</span><span class="rtime">${fmt(l.logged_date)}</span></div>`;
       }).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Tap \u2713 Log Today after each workout.</div>`}
     </div>`;
 }
 function renderGoals(c){
-  const sub=S.goalsSubTab||'goal';
-  const tabs=[['goal','My Goal'],['body','Body Log'],['targets','Targets'],['nutrition','Nutrition'],['fasting','Fasting'],['anchors','Anchors']];
-  const tabBar=`<div class="goals-subtab-row">${tabs.map(([k,l])=>`<div class="gstab${sub===k?' on':''}" onclick="S.goalsSubTab='${k}';renderGoals(document.getElementById('health-content'))">${l}</div>`).join('')}</div>`;
+  const goal=lsGet('bos_main_goal')||'';
+  const rules=lsGet('bos_nutrition_rules')||'';
+  const fasting=lsGet('bos_fasting')||'';
+  const jmem=lsGet('bos_jarvis_memory')||'';
+  const defaultAnchors=['I am disciplined. What I eat today shapes who I am tomorrow.','I can want the food and still choose not to eat it. That is power.','Every rep and every clean meal is a vote for the man I am becoming.','My family is watching. My body is the example I set.','The discomfort of discipline is lighter than the weight of regret.'];
+  const customAnchors=JSON.parse(lsGet('bos_anchors')||'[]');
+  const allAnchors=[...defaultAnchors,...customAnchors];
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  c.innerHTML=`
+    <div style="font-size:9px;font-weight:700;color:var(--blue);background:rgba(123,158,232,0.12);border:0.5px solid var(--blue);border-radius:7px;padding:4px 10px;display:inline-block;margin-bottom:10px">PERSONAL \u2014 Only you see this data</div>
 
-  if(sub==='goal'){
-    const goal=localStorage.getItem('bos_main_goal')||'';
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Main Goal</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis reads this to guide every recommendation.</div>
-      <textarea id="goal-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:110px;resize:none;box-sizing:border-box" placeholder="e.g. Cut from 215 to 195 lbs by August 2026 while maintaining strength. Stay lean, athletic, and disciplined.">${goal}</textarea>
-      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_main_goal',document.getElementById('goal-input').value.trim());showSuccess('Goal saved \u2014 Jarvis now knows.')">Save Goal</button>
-      ${goal?`<div class="jcard" style="margin-top:10px"><div class="jlabel">Current Goal</div><div class="jtext">${goal}</div><div class="jcta" onclick="openJarvisCtx('Based on my goal: ${goal.replace(/'/g,'')}. How should I train and eat this week?')">Ask Jarvis how to hit it &#8594;</div></div>`:''}
-    `;
-  }else if(sub==='body'){
-    const today=getLocalDateStr();
-    const cachedLog=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-    const todayEntry=cachedLog.find(e=>e.date===today)||{};
-    const renderBodyTab=(log)=>{
-      const te=log.find(e=>e.date===today)||{};
-      c.innerHTML=tabBar+`
-        <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:10px">Daily Body Log</div>
-        <div style="font-size:10px;color:var(--white);opacity:0.35;margin-bottom:8px;margin-top:-6px">Auto-syncs from Apple Health each morning via Shortcut</div>
-        ${(()=>{const tgt=JSON.parse(localStorage.getItem('bos_health_targets')||'{}');const bar=(label,val,goal,unit,color)=>goal&&val?`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:10px;color:var(--white);opacity:0.6">${label}</span><span style="font-size:10px;color:${color||'var(--white)'};font-weight:700">${val}${unit} / ${goal}${unit}</span></div><div style="background:var(--border);border-radius:4px;height:4px"><div style="background:${color||'var(--gold)'};border-radius:4px;height:4px;width:${Math.min(100,Math.round(val/goal*100))}%"></div></div></div>`:'';const bars=[bar('Steps',te.steps,tgt.steps,'','#5ac8fa'),bar('Sleep',te.sleep,tgt.sleep,'h','#a78bfa'),bar('Active Cal',te.active_cal,tgt.active_cal,' cal','var(--gold)'),bar('Weight',te.weight,tgt.weight,' lbs','var(--white)'),bar('Body Fat',te.bf,tgt.bf,'%','#ff6b6b')].filter(Boolean).join('');return bars?`<div class="card" style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:8px">TODAY\'S PROGRESS</div>${bars}</div>`:''})()}
-        <div class="card" style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px">TODAY \u2014 ${fmtDate(today)}</div>
-          <div style="display:flex;gap:10px;margin-bottom:10px">
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Weight (lbs)</div><input id="bl-weight" class="field-input" type="number" step="0.1" placeholder="215.5" value="${te.weight||''}"></div>
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Body Fat %</div><input id="bl-bf" class="field-input" type="number" step="0.1" placeholder="18.5" value="${te.bf||''}"></div>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:10px">
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Sleep (hrs)</div><input id="bl-sleep" class="field-input" type="number" step="0.25" placeholder="7.5" value="${te.sleep||''}"></div>
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Resting Energy (cal)</div><input id="bl-hr" class="field-input" type="number" step="1" placeholder="1800" value="${te.resting_cal||''}"></div>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:10px">
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Steps</div><input id="bl-steps" class="field-input" type="number" step="1" placeholder="8500" value="${te.steps||''}"></div>
-            <div style="flex:1"><div class="field-label" style="margin-bottom:4px">Active Cal</div><input id="bl-cal" class="field-input" type="number" step="1" placeholder="450" value="${te.active_cal||''}"></div>
-          </div>
-          <button class="btn-gold" style="width:100%;padding:11px;font-size:13px" onclick="saveBodyLog()">Save Today</button>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:12px;font-weight:700;color:var(--white)">History</span>
-          ${log[0]?.source==='apple_health'?'<span style="font-size:9px;color:var(--green);font-weight:700">&#9654; Apple Health synced</span>':''}
-        </div>
-        <div class="card">
-          ${log.length?log.slice(0,30).map((e,i)=>`<div class="body-log-row" style="cursor:pointer" onclick="showBodyLogDetail(${i})">
-            <div style="display:flex;flex-direction:column;width:76px;flex-shrink:0">
-              <span style="font-size:10px;color:var(--gold);font-weight:700">${fmtDate(e.date)}</span>
-              ${e.source==='apple_health'?'<span style="font-size:8px;color:var(--green);font-weight:700">Apple Health</span>':'<span style="font-size:8px;color:var(--white);opacity:0.35">Manual</span>'}
-            </div>
-            <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-              ${e.weight?`<span style="font-size:12px;font-weight:700;color:var(--white)">${e.weight}lbs</span>`:''}
-              ${e.bf?`<span style="font-size:11px;color:var(--white);opacity:0.7">${e.bf}%bf</span>`:''}
-              ${e.sleep?`<span style="font-size:11px;color:#5ac8fa">${e.sleep}h</span>`:''}
-              ${e.resting_cal?`<span style="font-size:11px;color:var(--white);opacity:0.6">${e.resting_cal}rest</span>`:''}
-              ${e.steps?`<span style="font-size:11px;color:var(--white);opacity:0.6">${Number(e.steps).toLocaleString()}steps</span>`:''}
-              ${e.active_cal?`<span style="font-size:11px;color:var(--gold);opacity:0.8">${e.active_cal}cal</span>`:''}
-            </div>
-            <span style="font-size:14px;color:var(--white);opacity:0.3">&#8250;</span>
-          </div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No entries yet. Log manually above or set up the Apple Health Shortcut.</div>`}
-        </div>
-      `;
-    };
-    // Show cached data immediately, then refresh from Supabase
-    renderBodyTab(cachedLog);
-    loadBodyLogs().then(fresh=>{ if(JSON.stringify(fresh)!==JSON.stringify(cachedLog))renderBodyTab(fresh); }).catch(()=>{});
-  }else if(sub==='nutrition'){
-    const rules=localStorage.getItem('bos_nutrition_rules')||'';
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Nutrition Rules</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis references these when you ask about food, meals, or discipline.</div>
-      <textarea id="nutrition-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:160px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 No processed sugar. Zero tolerance.&#10;\u2022 Protein first at every meal (180g/day target)&#10;\u2022 No snacking after 8pm&#10;\u2022 Cheat meal max once/week, never a cheat day&#10;\u2022 Alcohol only on special occasions">${rules}</textarea>
-      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_nutrition_rules',document.getElementById('nutrition-input').value.trim());showSuccess('Nutrition rules saved.')">Save Rules</button>
-    `;
-  }else if(sub==='targets'){
-    const t=JSON.parse(localStorage.getItem('bos_health_targets')||'{}');
-    const field=(label,key,placeholder,unit)=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--white)">${label}</div>
-          <div style="font-size:10px;color:var(--white);opacity:0.4">${unit}</div>
-        </div>
-        <input id="tgt-${key}" class="field-input" type="number" step="any" placeholder="${placeholder}" value="${t[key]||''}" style="width:90px;text-align:right">
-      </div>`;
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Daily Targets</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Set your daily health goals. Shown as progress in Body Log.</div>
-      <div class="card">
-        ${field('Steps','steps','10000','steps/day')}
-        ${field('Sleep','sleep','8','hours/night')}
-        ${field('Active Calories','active_cal','500','cal/day')}
-        ${field('Resting Calories','resting_cal','1800','cal/day')}
-        ${field('Weight Goal','weight','195','lbs')}
-        ${field('Body Fat Goal','bf','15','%')}
+    <div class="card" style="border-color:var(--gold);border-width:1px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:16px">&#129302;</span>
+        <span style="font-size:13px;font-weight:700;color:var(--gold)">Jarvis Memory</span>
+        ${jmem?'<span style="font-size:9px;color:var(--green);font-weight:700;background:rgba(76,175,130,0.15);border-radius:4px;padding:1px 6px">\u2714 Active</span>':''}
       </div>
-      <button class="btn-gold" style="width:100%;padding:12px;margin-top:10px;font-size:13px" onclick="saveHealthTargets()">Save Targets</button>
-    `;
-  }else if(sub==='fasting'){
-    const fasting=localStorage.getItem('bos_fasting')||'';
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">Fasting Schedule</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis factors your fasting window into meal and energy advice.</div>
-      <textarea id="fasting-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:130px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 16:8 daily: eating window 12pm\u20138pm&#10;\u2022 No calories before noon (black coffee ok)&#10;\u2022 Break fast with protein, not carbs&#10;\u2022 24hr fast occasionally on Sundays">${fasting}</textarea>
-      <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="localStorage.setItem('bos_fasting',document.getElementById('fasting-input').value.trim());showSuccess('Fasting schedule saved.')">Save Schedule</button>
-    `;
-  }else if(sub==='anchors'){
-    const defaultAnchors=['I am disciplined. What I eat today shapes who I am tomorrow.','I can want the food and still choose not to eat it. That is power.','Every rep and every clean meal is a vote for the man I am becoming.','My family is watching. My body is the example I set.','The discomfort of discipline is lighter than the weight of regret.'];
-    const customAnchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
-    const allAnchors=[...defaultAnchors,...customAnchors];
-    c.innerHTML=tabBar+`
-      <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">NLP Anchors</div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:12px">Read one before you eat something off-plan. These rewire the moment.</div>
-      ${allAnchors.map((a,i)=>`<div class="anchor-item" style="${i<defaultAnchors.length?'border-color:var(--gold)':'border-color:var(--purple)'}">
-        <div class="anchor-text">&ldquo;${a}&rdquo;</div>
-        ${i>=defaultAnchors.length?`<button class="btn-red-outline" style="margin-top:8px;padding:4px 10px;font-size:10px;width:auto" onclick="deleteAnchor(${i-defaultAnchors.length})">Remove</button>`:''}
-      </div>`).join('')}
-      <div class="card" style="margin-top:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">Add Your Own Anchor</div>
-        <textarea id="anchor-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:60px;resize:none;box-sizing:border-box" placeholder="Write your personal discipline anchor..."></textarea>
-        <button class="btn-gold-outline" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="addAnchor()">+ Add Anchor</button>
-      </div>
-    `;
-  }
-}
-async function loadBodyLogs(){
-  const uid=S.profile?.id;
-  if(!uid)return JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  try{
-    const r=await fetch(SUPABASE_URL+'/rest/v1/body_logs?select=logged_date,weight_lbs,body_fat_pct,sleep_hrs,steps,resting_cal,active_cal,source&user_id=eq.'+uid+'&order=logged_date.desc&limit=60',{headers:{'apikey':SUPABASE_ANON_KEY}});
-    const rows=await r.json();
-    if(!Array.isArray(rows))throw new Error('bad response');
-    const normalized=rows.map(r=>({date:r.logged_date,weight:r.weight_lbs,bf:r.body_fat_pct,sleep:r.sleep_hrs,steps:r.steps,resting_cal:r.resting_cal,active_cal:r.active_cal,source:r.source}));
-    localStorage.setItem('bos_body_log',JSON.stringify(normalized));
-    return normalized;
-  }catch(e){
-    return JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  }
-}
-async function saveBodyLog(){
-  const weight=parseFloat(document.getElementById('bl-weight')?.value)||0;
-  const bf=parseFloat(document.getElementById('bl-bf')?.value)||0;
-  const sleep=parseFloat(document.getElementById('bl-sleep')?.value)||0;
-  const hr=parseInt(document.getElementById('bl-hr')?.value)||0;
-  const steps=parseInt(document.getElementById('bl-steps')?.value)||0;
-  const cal=parseInt(document.getElementById('bl-cal')?.value)||0;
-  if(!weight&&!bf&&!sleep&&!hr&&!steps&&!cal){showError('Enter at least one value.');return;}
-  const today=getLocalDateStr();
-  const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  const entry={date:today,weight:weight||null,bf:bf||null,sleep:sleep||null,resting_cal:hr||null,steps:steps||null,active_cal:cal||null,source:'manual'};
-  const updated=[entry,...log.filter(e=>e.date!==today)].slice(0,90);
-  localStorage.setItem('bos_body_log',JSON.stringify(updated));
-  // Sync to Supabase
-  if(S.profile?.id){
-    const row={user_id:S.profile.id,household_id:S.household?.id,logged_date:today,source:'manual'};
-    if(weight)row.weight_lbs=weight;
-    if(bf)row.body_fat_pct=bf;
-    if(sleep)row.sleep_hrs=sleep;
-    if(hr)row.resting_cal=hr;
-    if(steps)row.steps=steps;
-    if(cal)row.active_cal=cal;
-    fetch(SUPABASE_URL+'/rest/v1/body_logs',{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([row])}).catch(()=>{});
-  }
-  showSuccess('Logged!');
-  renderGoals(document.getElementById('health-content'));
-}
-function saveHealthTargets(){
-  const keys=['steps','sleep','active_cal','resting_cal','weight','bf'];
-  const t={};
-  keys.forEach(k=>{const v=parseFloat(document.getElementById('tgt-'+k)?.value);if(v)t[k]=v;});
-  localStorage.setItem('bos_health_targets',JSON.stringify(t));
-  showSuccess('Targets saved!');
-}
-function showBodyLogDetail(i){
-  const log=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
-  const e=log[i];if(!e)return;
-  const row=(label,val,color)=>val?`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--white);opacity:0.6;font-size:12px">${label}</span><span style="color:${color||'var(--white)'};font-weight:700;font-size:15px">${val}</span></div>`:'';
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${fmtDate(e.date)}</div>
-    <div class="card" style="margin-top:12px">
-      ${row('Weight',e.weight?e.weight+' lbs':null)}
-      ${row('Body Fat',e.bf?e.bf+'%':null)}
-      ${row('Sleep',e.sleep?e.sleep+' hrs':null,'#5ac8fa')}
-      ${row('Resting Energy',e.resting_cal?e.resting_cal+' cal':null)}
-      ${row('Steps',e.steps?Number(e.steps).toLocaleString():null)}
-      ${row('Active Calories',e.active_cal?e.active_cal+' cal':null,'var(--gold)')}
-      <div style="display:flex;justify-content:space-between;padding:9px 0"><span style="color:var(--white);opacity:0.6;font-size:12px">Source</span><span style="color:var(--white);font-size:12px">${e.source==='apple_health'?'Apple Health':'Manual'}</span></div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:8px">Tell Jarvis anything you want him to always know. He\u2019ll use this in every workout plan, coaching tip, and recommendation.</div>
+      <textarea id="jmem-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:120px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 I train 6 days/week. Sunday is always rest.&#10;\u2022 I respond well to high volume on chest.&#10;\u2022 My left shoulder has a slight impingement \u2014 avoid overhead pressing heavy.&#10;\u2022 I prefer compound movements. Keep it athletic, not bodybuilder-style.&#10;\u2022 I fast until noon every day.">${esc(jmem)}</textarea>
+      <button class="btn-gold" style="margin-top:8px;padding:11px;font-size:13px;width:100%" onclick="saveJarvisMemory()">Save to Jarvis Memory</button>
     </div>
-    <button class="btn-white" style="width:100%;padding:12px;margin-top:10px;font-size:13px" onclick="closeModal()">Close</button>`);
+
+    <div style="font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px">My Goal</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Jarvis reads this to guide every recommendation.</div>
+    <textarea id="goal-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:110px;resize:none;box-sizing:border-box" placeholder="e.g. Cut from 215 to 195 lbs by August 2026 while maintaining strength. Stay lean, athletic, and disciplined.">${esc(goal)}</textarea>
+    <button class="btn-gold" style="margin-top:8px;padding:12px;font-size:13px;width:100%" onclick="saveGoal()">Save Goal</button>
+    ${goal?`<div class="jcard" style="margin-top:10px"><div class="jlabel">Current Goal</div><div class="jtext">${esc(goal)}</div><div class="jcta" onclick="openJarvisCtx('Based on my goal: ${goal.replace(/'/g,'').replace(/`/g,'')}. How should I train and eat this week?')">Ask Jarvis how to hit it &#8594;</div></div>`:''}
+    <div class="sec-label" style="margin-top:18px">Nutrition Rules</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:8px">Jarvis references these when you ask about food or discipline.</div>
+    <textarea id="nutrition-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:120px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 No processed sugar. Zero tolerance.&#10;\u2022 Protein first at every meal (180g/day target)&#10;\u2022 No snacking after 8pm">${esc(rules)}</textarea>
+    <button class="btn-gold-outline" style="margin-top:8px;padding:10px;font-size:13px;width:100%" onclick="saveNutritionRules()">Save Rules</button>
+    <div class="sec-label" style="margin-top:18px">Fasting Schedule</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:8px">Jarvis factors your fasting window into meal and energy advice.</div>
+    <textarea id="fasting-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:100px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 16:8 daily: eating window 12pm\u20138pm&#10;\u2022 No calories before noon (black coffee ok)">${esc(fasting)}</textarea>
+    <button class="btn-gold-outline" style="margin-top:8px;padding:10px;font-size:13px;width:100%" onclick="saveFasting()">Save Schedule</button>
+    <div class="sec-label" style="margin-top:18px">NLP Anchors</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Read one before you eat something off-plan. These rewire the moment.</div>
+    ${allAnchors.map((a,i)=>`<div class="anchor-item" style="${i<defaultAnchors.length?'border-color:var(--gold)':'border-color:var(--purple)'}"><div class="anchor-text">&ldquo;${a}&rdquo;</div>${i>=defaultAnchors.length?`<button class="btn-red-outline" style="margin-top:8px;padding:4px 10px;font-size:10px;width:auto" onclick="deleteAnchor(${i-defaultAnchors.length})">Remove</button>`:''}</div>`).join('')}
+    <div class="card" style="margin-top:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">Add Your Own Anchor</div>
+      <textarea id="anchor-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:60px;resize:none;box-sizing:border-box" placeholder="Write your personal discipline anchor..."></textarea>
+      <button class="btn-gold-outline" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="addAnchor()">+ Add Anchor</button>
+    </div>
+  `;
 }
+function saveGoal(){const v=document.getElementById('goal-input')?.value?.trim()||'';lsSet('bos_main_goal',v);syncPreference('main_goal',v);showSuccess('Goal saved \u2014 Jarvis now knows.');renderGoals(document.getElementById('health-content'));}
+function saveNutritionRules(){const v=document.getElementById('nutrition-input')?.value?.trim()||'';lsSet('bos_nutrition_rules',v);syncPreference('nutrition_rules',v);showSuccess('Nutrition rules saved.');renderGoals(document.getElementById('health-content'));}
+function saveFasting(){const v=document.getElementById('fasting-input')?.value?.trim()||'';lsSet('bos_fasting',v);syncPreference('fasting',v);showSuccess('Fasting schedule saved.');renderGoals(document.getElementById('health-content'));}
+function saveJarvisMemory(){const v=document.getElementById('jmem-input')?.value?.trim()||'';lsSet('bos_jarvis_memory',v);syncPreference('jarvis_memory',v);showSuccess('Jarvis updated \u2014 he\u2019ll remember this.');renderGoals(document.getElementById('health-content'));}
 function addAnchor(){
   const text=document.getElementById('anchor-input')?.value?.trim();
   if(!text)return;
-  const anchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
+  const anchors=JSON.parse(lsGet('bos_anchors')||'[]');
   anchors.push(text);
-  localStorage.setItem('bos_anchors',JSON.stringify(anchors));
+  lsSet('bos_anchors',JSON.stringify(anchors));
   showSuccess('Anchor saved.');
   renderGoals(document.getElementById('health-content'));
 }
 function deleteAnchor(i){
-  const anchors=JSON.parse(localStorage.getItem('bos_anchors')||'[]');
+  const anchors=JSON.parse(lsGet('bos_anchors')||'[]');
   anchors.splice(i,1);
-  localStorage.setItem('bos_anchors',JSON.stringify(anchors));
+  lsSet('bos_anchors',JSON.stringify(anchors));
   renderGoals(document.getElementById('health-content'));
 }
 async function toggleWorkoutLog(wid,day,targetDate){
@@ -1616,16 +1482,18 @@ function openWorkoutDay(id,day,name){
   const w=S.data.workouts||[];
   const workout=w.find(x=>x.id===id)||{};
   const today=getLocalDateStr();
-  const isLogged=logs.some(l=>l.logged_date===today);
   const dayLogs=[...logs].filter(l=>{
-    const ld=new Date(l.logged_date).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
+    const p=l.logged_date.split('-');
+    const ld=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])).toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
     return ld===day;
   }).sort((a,b)=>b.logged_date.localeCompare(a.logged_date));
-  // Load saved notes for this day from localStorage
-  const notesKey='bos_workout_notes_'+day;
+  const isLogged=dayLogs.some(l=>l.logged_date===getDateForDay(day));
+  const notesKey=lsKey('bos_workout_notes_'+day);
   const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
-  const lastNote=allNotes[0]||null;
-
+  // Load persisted current plan first, fall back to last session notes
+  const planKey=lsKey('bos_current_plan_'+day);
+  const savedPlan=localStorage.getItem(planKey)||'';
+  const initialNotes=savedPlan||(allNotes[0]?.notes||'');
   const timerRunning=S.workoutStartTime!==null;
   showModal(`<div class="sheet-handle"></div>
     <div style="margin-bottom:10px">
@@ -1641,21 +1509,28 @@ function openWorkoutDay(id,day,name){
         :timerRunning
           ?`<div id="wod-timer-display" class="workout-timer">00:00</div>
             <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>`
-          :`<button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="startWorkoutTimer('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#9654; Start Workout</button>
-            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Tap when you begin — tracks your duration</div>`
+          :`<button class="btn-gold" style="width:100%;padding:14px;font-size:15px;font-weight:700" onclick="smartStartWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">&#9889; Plan &amp; Start</button>
+            <div style="font-size:10px;color:var(--white);opacity:0.35;text-align:center;margin-top:6px">Jarvis will build your plan then start the timer</div>`
       }
     </div>
 
     <div class="card" style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--gold)">PLAN &amp; NOTES</span>
-        <button class="btn-white-sm" onclick="editSplitDay('${id}','${day}','${name.replace(/'/g,'')}','${workout.workout_time||'10:00'}')">Edit Split</button>
+        <span style="font-size:11px;font-weight:700;color:var(--gold)">TODAY'S PLAN</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-white-sm" onclick="saveWorkoutNotes('${day}')">Save</button>
+          <button class="btn-gold-sm" onclick="showQuickGenerate('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Re-Plan</button>
+        </div>
       </div>
-      <input id="wod-context" type="text" class="field-input" style="margin-bottom:8px;font-size:12px" placeholder="Context for Jarvis (optional) — e.g. skip chest, feeling tight...">
-      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:140px;resize:none;box-sizing:border-box" placeholder="Generate a plan below, then edit it here as you train. Log your actual weights &amp; reps.">${lastNote&&lastNote.notes?lastNote.notes:''}</textarea>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn-white" style="flex:1;padding:9px;font-size:12px" onclick="saveWorkoutNotes('${day}')">Save Notes</button>
-        <button class="btn-gold" style="flex:1;padding:9px;font-size:12px" onclick="getInlineWorkoutPlan('${day}','${name}',${dayLogs.length},${logs.length})">&#129302; Generate Plan</button>
+      <textarea id="wod-notes" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:180px;resize:none;box-sizing:border-box" placeholder="Tap \u26a1 Plan &amp; Start above \u2014 Jarvis will generate your full workout plan here.">${initialNotes}</textarea>
+    </div>
+
+    <div class="card" style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">&#129302; ASK JARVIS LIVE</div>
+      <div id="wod-chat-msgs" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <input id="wod-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="e.g. swap bench for incline, I'm tired today...">
+        <button class="btn-gold-sm" onclick="sendWorkoutChat('${day}','${name}')">Send</button>
       </div>
     </div>
 
@@ -1671,6 +1546,8 @@ function openWorkoutDay(id,day,name){
       }
     </div>
   `);
+  S.workoutChat=[];
+  renderWorkoutChat();
   if(timerRunning&&!isLogged)startTimerDisplay();
 }
 
@@ -1678,16 +1555,51 @@ function openWorkoutDay(id,day,name){
 function saveWorkoutNotes(day){
   const notes=document.getElementById('wod-notes')?.value?.trim();
   if(!notes)return;
-  const key='bos_workout_notes_'+day;
+  const key=lsKey('bos_workout_notes_'+day);
   const existing=JSON.parse(localStorage.getItem(key)||'[]');
   const today=getLocalDateStr();
   const updated=[{date:today,notes},...existing.filter(n=>n.date!==today)].slice(0,20);
   localStorage.setItem(key,JSON.stringify(updated));
+  // Also persist to Supabase so notes survive cache clears and device changes
+  syncPreference('workout_notes_'+day,JSON.stringify(updated));
   showSuccess('Notes saved!');
 }
 function startWorkoutTimer(id,day,name){
+  // Persist whatever is in the notes textarea before rebuilding the modal
+  const cur=document.getElementById('wod-notes')?.value?.trim();
+  if(cur)localStorage.setItem(lsKey('bos_current_plan_'+day),cur);
   S.workoutStartTime=Date.now();
   openWorkoutDay(id,day,name);
+}
+function smartStartWorkout(id,day,name,daySessions,totalSessions){
+  // Show a quick 1-step sheet: optional context → generate plan → start timer
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">&#9889; ${name}</div>
+    <div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:14px">Jarvis will build your plan. Any notes first?</div>
+    <div class="field-group" style="margin-bottom:12px">
+      <div class="field-label">Notes for Jarvis (optional)</div>
+      <textarea id="smart-ctx" class="field-input" style="min-height:70px;resize:none" placeholder="e.g. Skip incline today, left shoulder tight. Focus on back width..."></textarea>
+    </div>
+    <button class="btn-gold" style="width:100%;padding:13px;font-size:14px;font-weight:700" onclick="runSmartGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate Plan &amp; Start</button>
+    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="closeModal();openWorkoutDay('${id}','${day}','${name.replace(/'/g,"\\'")}')">Just Start Without Plan</button>
+  `);
+}
+async function runSmartGenerate(id,day,name,daySessions,totalSessions){
+  const ctx=document.getElementById('smart-ctx')?.value?.trim()||'';
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">&#129302; Building your plan...</div><div style="font-size:12px;color:var(--white);opacity:0.6;text-align:center;padding:20px 0">Jarvis is analyzing your history and generating the optimal ${name} plan.</div>`);
+  await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,ctx);
+  S.workoutStartTime=Date.now();
+  openWorkoutDay(id,day,name);
+}
+function showQuickGenerate(day,name,daySessions,totalSessions){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">&#129302; Re-Plan ${name}</div>
+    <div class="field-group" style="margin-bottom:12px">
+      <div class="field-label">Any notes for Jarvis? (optional)</div>
+      <textarea id="regen-ctx" class="field-input" style="min-height:70px;resize:none" placeholder="e.g. More volume on arms, feeling strong today..."></textarea>
+    </div>
+    <button class="btn-gold" style="width:100%;padding:12px;font-size:13px" onclick="(async()=>{const ctx=document.getElementById('regen-ctx')?.value?.trim()||'';closeModal();await getInlineWorkoutPlanCtx('${day}','${name}',${daySessions},${totalSessions},ctx);})()">Generate New Plan</button>
+  `);
 }
 function startTimerDisplay(){
   clearInterval(S.workoutTimer);
@@ -1737,12 +1649,16 @@ async function saveWorkoutFinish(id,day,timeStr){
   const feedback=document.getElementById('workout-feedback')?.value?.trim()||'';
   const notes=S.pendingWorkoutNotes||'';
   S.pendingWorkoutNotes='';
-  const key='bos_workout_notes_'+day;
+  const key=lsKey('bos_workout_notes_'+day);
   const existing=JSON.parse(localStorage.getItem(key)||'[]');
   const today=getLocalDateStr();
   const entry={date:today,duration:timeStr,energy,feedback,notes};
   const updated=[entry,...existing.filter(n=>n.date!==today)].slice(0,20);
   localStorage.setItem(key,JSON.stringify(updated));
+  // Sync notes to Supabase so they survive cache clears
+  syncPreference('workout_notes_'+day,JSON.stringify(updated));
+  // Clear the current plan — session is done, next visit starts fresh
+  localStorage.removeItem(lsKey('bos_current_plan_'+day));
   S.workoutStartTime=null;
   await toggleWorkoutLog(id,day,getDateForDay(day));
   closeModal();
@@ -1750,72 +1666,136 @@ async function saveWorkoutFinish(id,day,timeStr){
   renderHealth();
 }
 
-async function getInlineWorkoutPlan(day,name,daySessions,totalSessions){
-  const notesEl=document.getElementById('wod-notes');
-  if(!notesEl)return;
-  const customPrompt=document.getElementById('wod-context')?.value?.trim()||'';
-  notesEl.value='Jarvis is thinking\u2026';
-  notesEl.style.opacity='0.5';
-  const notesKey='bos_workout_notes_'+day;
-  const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
-  const historyText=allNotes.length
-    ?allNotes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join('\n')
-    :'No previous weight data logged yet.';
+async function getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,customPrompt){
+  // Build full ALL-DAYS history so Jarvis knows what was done every day this week
+  const allDays=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const fullHistory=allDays.map(d=>{
+    const k=lsKey('bos_workout_notes_'+d);
+    const n=JSON.parse(localStorage.getItem(k)||'[]');
+    if(!n.length)return null;
+    const rec=n[0];
+    return d.toUpperCase()+' ('+rec.date+'): '+(rec.duration?'['+rec.duration+' energy:'+rec.energy+'/5] ':'')+rec.notes;
+  }).filter(Boolean).join('\n\n');
+
+  // Day-specific history (last 5 sessions for this exact day)
+  const notesKey=lsKey('bos_workout_notes_'+day);
+  const dayNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
+  const dayHistory=dayNotes.length
+    ?dayNotes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join('\n')
+    :'No previous sessions for this day yet.';
+
   const prs=getPRs();
-  const prText=prs.length?'My max lifts/PRs: '+prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'No PRs logged yet - use intermediate weights.';
-  const mainGoal=localStorage.getItem('bos_main_goal')||'';
-  const prompt=`IMPORTANT - Use these actual max lifts for weight suggestions: ${prText}
-${mainGoal?'\nMy main physique goal: '+mainGoal:''}
-${customPrompt?'\nSpecific request for today: '+customPrompt:''}
+  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'No PRs logged yet — use intermediate weights.';
+  const mainGoal=lsGet('bos_main_goal')||'';
+  const nutritionRules=lsGet('bos_nutrition_rules')||'';
+  const fasting=lsGet('bos_fasting')||'';
+  const jarvisMemory=lsGet('bos_jarvis_memory')||'';
 
-Generate a structured workout plan for: ${name} (${day}).
+  const prompt=`You are a world-class strength and conditioning coach. Build an optimal, personalized workout plan. Be specific with weights based on the athlete's PRs and history.
 
-Previous ${day} sessions logged: ${daySessions}
-Weight history:
-${historyText}
+=== ATHLETE PROFILE ===
+${jarvisMemory?'IMPORTANT — What the athlete always wants Jarvis to know:\n'+jarvisMemory+'\n':''}
+Main Goal: ${mainGoal||'Build strength and lean muscle'}
+Nutrition Rules: ${nutritionRules||'Not specified'}
+Fasting: ${fasting||'Not specified'}
+Total Lifetime Sessions: ${totalSessions}
 
-Total lifetime sessions: ${totalSessions}
+=== MAX LIFTS / PRs ===
+${prText}
 
-Respond in this exact format:
+=== THIS WEEK — ALL DAYS TRAINED ===
+${fullHistory||'No other days logged this week yet.'}
 
-## ${name}
+=== ${day.toUpperCase()} HISTORY (this exact day, last 5 sessions) ===
+${dayHistory}
+Sessions on ${day}: ${daySessions}
+${customPrompt?'\n=== ATHLETE NOTES FOR TODAY ===\n'+customPrompt:''}
 
-**Goal:** [one sentence goal for this day]
+=== YOUR TASK ===
+Generate a complete, ready-to-execute ${name} plan for ${day.toUpperCase()}. Reference the athlete's actual history and PRs. Apply progressive overload from their last ${day} session. Be direct — give exact exercises, sets, reps, and weights.
 
-**Exercises:**
-1. [Exercise Name] — [sets]x[reps] @ [weight or bodyweight] | Rest: [time]
-2. [Exercise Name] — [sets]x[reps] @ [weight] | Rest: [time]
-(continue for 5-7 exercises appropriate for ${name})
+Format (plain text, no markdown symbols):
 
-**Progressive Overload Notes:**
-- [Based on history, what to increase or focus on today]
-- [Technique tip]
+${name.toUpperCase()} — ${day.toUpperCase()}
 
-**Next Session Target:**
-- [What to aim for next ${day}]
+GOAL: [specific goal for today based on their history and main goal]
 
-Use their weight history to suggest specific weights. If no history, use intermediate-level starting weights. Keep it tight and actionable.`;
+EXERCISES:
+1. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+2. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+3. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+4. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+5. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+6. [Exercise] — [sets]x[reps] @ [weight]lbs | Rest: [time]
+
+PROGRESSIVE OVERLOAD:
+- [What to beat vs. last ${day} session]
+- [Key technique focus]
+
+NEXT ${day.toUpperCase()} TARGET:
+- [Exact targets to aim for]`;
+
+  const notesEl=document.getElementById('wod-notes');
+  if(notesEl){notesEl.value='Jarvis is building your plan\u2026';notesEl.style.opacity='0.5';}
 
   try{
-    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],context:{workout_day:day,workout_name:name}})});
+    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      messages:[{role:'user',content:prompt}],
+      context:{workout_day:day,workout_name:name,current_user:S.profile?.name?.split(' ')[0]||'AJ',current_user_full:S.profile?.name||'AJ Betancur'}
+    })});
     const data=await r.json();
-    const reply=data.content?.[0]?.text||'Could not get a plan. Try again.';
-    if(notesEl){
-      // Strip markdown to plain editable text
-      const plain=reply
-        .replace(/^#{1,3}\s+(.+)$/gm,'── $1 ──')
-        .replace(/\*\*([^*]+)\*\*/g,'$1')
-        .replace(/\*/g,'')
-        .trim();
-      notesEl.value=plain;
-      notesEl.style.opacity='1';
-      notesEl.style.minHeight='220px';
-    }
+    const reply=(data.content?.[0]?.text||'Could not get a plan. Try again.').trim();
+    // Persist the generated plan
+    localStorage.setItem(lsKey('bos_current_plan_'+day),reply);
+    if(notesEl){notesEl.value=reply;notesEl.style.opacity='1';notesEl.style.minHeight='240px';}
   }catch(e){
     if(notesEl){notesEl.value='Jarvis is offline. Check your connection.';notesEl.style.opacity='1';}
   }
 }
+// Legacy alias — keep working if anything still calls old name
+async function getInlineWorkoutPlan(day,name,daySessions,totalSessions){
+  await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,'');
+}
 
+function renderWorkoutChat(){
+  const msgs=S.workoutChat||[];
+  const el=document.getElementById('wod-chat-msgs');
+  if(!el)return;
+  if(!msgs.length){el.innerHTML='<div style="font-size:11px;color:var(--white);opacity:0.35;text-align:center;padding:6px 0">Ask Jarvis anything during your workout</div>';return;}
+  el.innerHTML=msgs.map(m=>`<div style="display:flex;flex-direction:column;gap:2px;align-items:${m.role==='user'?'flex-end':'flex-start'}">
+    <div style="max-width:85%;background:${m.role==='user'?'var(--gold)':'var(--bg-dark)'};border:0.5px solid var(--border);border-radius:10px;padding:7px 10px;font-size:11px;color:${m.role==='user'?'var(--gd)':'var(--white)'};line-height:1.4">${m.content}</div>
+  </div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function sendWorkoutChat(day,name){
+  const input=document.getElementById('wod-chat-input');
+  const text=input?.value?.trim();
+  if(!text)return;
+  input.value='';
+  S.workoutChat=S.workoutChat||[];
+  S.workoutChat.push({role:'user',content:text});
+  renderWorkoutChat();
+  // Build workout context for Jarvis
+  const currentPlan=document.getElementById('wod-notes')?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
+  const prs=getPRs();
+  const prText=prs.length?prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'None logged';
+  const jarvisMemory=lsGet('bos_jarvis_memory')||'';
+  const systemCtx=`You are Jarvis, a world-class fitness coach. The athlete is currently doing ${name} (${day}). ${jarvisMemory?'What they always want you to know: '+jarvisMemory+'. ':''}Current workout plan:\n${currentPlan}\nMax lifts: ${prText}. Respond in 1-3 short, direct sentences. If they want to swap an exercise, modify the plan, or ask for advice — give a clear answer. Be like a coach standing right next to them.`;
+  const msgs=[...S.workoutChat];
+  try{
+    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      messages:msgs,
+      context:{current_user:S.profile?.name?.split(' ')[0]||'AJ',current_user_full:S.profile?.name||'AJ Betancur',_system_override:systemCtx}
+    })});
+    const data=await r.json();
+    const reply=data.content?.[0]?.text||'Give me a sec…';
+    S.workoutChat.push({role:'assistant',content:reply});
+    renderWorkoutChat();
+  }catch(e){
+    S.workoutChat.push({role:'assistant',content:'Lost connection. Try again.'});
+    renderWorkoutChat();
+  }
+}
 async function reseedWorkouts(){
   const uid=S.profile.id;
   // Delete existing first to avoid dupes
@@ -1856,8 +1836,8 @@ function renderPRs(c){
     +'</div>';
 }
 
-function getPRs(){return JSON.parse(localStorage.getItem('bos_prs')||'[]');}
-function savePRs(prs){localStorage.setItem('bos_prs',JSON.stringify(prs));}
+function getPRs(){return JSON.parse(lsGet('bos_prs')||'[]');}
+function savePRs(prs){lsSet('bos_prs',JSON.stringify(prs));}
 
 function addPR(){
   showModal('<div class="sheet-handle"></div>'
@@ -1936,10 +1916,18 @@ function deletePR(i){
 
 function renderSupps(c){
   const supps=S.data.supplements||[],logs=S.data.supplement_logs||[],today=getLocalDateStr();
-  c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Supplements</span><button class="btn-gold-sm" onclick="addSupp()">+ Add</button></div>
+  const partnerUser=S.data.partner;
+  const partnerSupps=S.data.partner_supplements||[];
+  const partnerName=partnerUser?.name?.split(' ')[0]||'Partner';
+  const partnerSection=partnerUser?`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+    <span style="font-size:15px;font-weight:700;color:var(--white)">${partnerName}'s Stack</span>
+    <div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div>
+  </div>
+  <div class="card" style="opacity:0.8">${partnerSupps.length?partnerSupps.map(s=>`<div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${s.name}</div><div style="font-size:9px;color:var(--gold);margin-top:1px">${s.dose} \u00b7 ${s.timing}</div></div></div>`).join(''):'<div class="supp-row"><span style="opacity:0.4;font-size:12px">'+partnerName+' has no supplements logged yet.</span></div>'}</div>`:'';
+  c.innerHTML=`<div style="font-size:9px;font-weight:700;color:var(--blue);background:rgba(123,158,232,0.12);border:0.5px solid var(--blue);border-radius:7px;padding:4px 10px;display:inline-block;margin-bottom:8px">PERSONAL — Only you can edit your stack</div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700;color:var(--white)">My Supplements</span><button class="btn-gold-sm" onclick="addSupp()">+ Add</button></div>
     <div class="card">${supps.length?supps.map(s=>{const taken=logs.some(l=>l.supplement_id===s.id&&l.taken_date===today);return`<div class="supp-row"><div class="schk ${taken?'taken':''}" onclick="${taken?'':'logSupp(\''+s.id+'\')'}" style="cursor:${taken?'default':'pointer'}">${taken?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${s.name}</div><div style="font-size:9px;color:var(--gold);margin-top:1px">${s.dose} \u00b7 ${s.timing}</div></div><button class="btn-white-sm" onclick="editSupp('${s.id}')">Edit</button><span class="del-x" onclick="delSupp('${s.id}')">&#215;</span></div>`;}).join(''):'<div class="supp-row"><span style="opacity:0.4;font-size:12px">No supplements yet.</span></div>'}</div>
-    <div style="font-size:15px;font-weight:700;color:var(--white);margin-top:4px">Juliette's Supplements</div>
-    <div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:var(--white)">View only</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">Juliette only</span></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Prenatal Vitamins</div><div style="font-size:9px;color:var(--gold)">1 tablet \u00b7 Morning</div></div></div><div class="supp-row"><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Creatine</div><div style="font-size:9px;color:var(--gold)">5g \u00b7 Morning</div></div></div></div>`;
+    ${partnerSection}`;
 }
 async function logSupp(id){const today=getLocalDateStr();try{const r=await sb.from('supplement_logs').insert({supplement_id:id,user_id:S.profile.id,taken_date:today});if(r?.[0])S.data.supplement_logs=[...S.data.supplement_logs||[],...r];showSuccess('Logged!');renderHealth();}catch(e){if(e.message?.includes('unique'))showSuccess('Already logged!');else showError(e.message);}}
 function addSupp(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Supplement</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ns-sn" placeholder="e.g. Magnesium..."></div><div class="field-group"><div class="field-label">Dose</div><input class="field-input" id="ns-dose" placeholder="e.g. 400mg..."></div><div class="field-group"><div class="field-label">Timing</div><input class="field-input" id="ns-timing" placeholder="e.g. Morning with food..."></div><button class="btn-gold" onclick="saveSupp()">Add</button></div>`);}
@@ -1950,32 +1938,40 @@ async function delSupp(id){if(!confirm('Delete?'))return;try{await sb.from('supp
 function renderPregnancy(c){
   const now=getTZ(),weeks=getPregWeek('2026-02-09'),due=new Date('2026-11-23'),dLeft=Math.floor((due-now)/(24*60*60*1000)),pct=Math.min(100,Math.round((weeks/40)*100));
   const msgs={13:'Baby is the size of a lemon. Fingerprints forming. Energy improving as morning sickness eases.',14:'Baby is the size of a peach. Great time to start prenatal yoga and light resistance training.',15:'Baby is the size of an apple. Bones hardening. Add more calcium-rich foods.',16:'Baby is size of an avocado. You may start feeling movement soon. Stay hydrated.'};
+  const diana=S.data.diana;
+  const pregNotes=(diana?.preg_notes||[]);
+  const pregAppts=(diana?.preg_appointments||[{title:'OB Checkup \u2014 Week 17',date:'2026-06-03'}]);
+  const notesHTML=pregNotes.length?pregNotes.slice().reverse().map(n=>`<div style="padding:6px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:10px;color:var(--gold);font-weight:700">${n.date||''}</div><div style="font-size:11px;color:var(--white);margin-top:2px">${n.text}</div></div>`).join(''):'<div style="font-size:11px;color:var(--white);opacity:0.4;padding:8px 0">No notes yet.</div>';
   c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis \u2014 Week ${weeks}</div><div class="jtext">${msgs[weeks]||'Week '+weeks+'. Keep up prenatals and light exercise.'}</div><div class="jcta" onclick="openJarvisCtx('pregnancy week ${weeks} advice and tips')">Ask Jarvis &#8594;</div></div>
     <div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:18px;font-weight:700;color:var(--white)">Week ${weeks} &#127881;</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${weeks<=12?'1st Trimester':weeks<=26?'2nd Trimester \u2014 Just started!':'3rd Trimester'}</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--white)">${dLeft} days</div><div style="font-size:10px;color:var(--gold)">Until Nov 23</div></div></div><div style="margin-top:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:9px;color:var(--white);opacity:0.5">Wk 1</span><span style="font-size:9px;color:var(--gold);font-weight:700">Week ${weeks} of 40</span><span style="font-size:9px;color:var(--white);opacity:0.5">Wk 40</span></div><div class="preg-bg"><div class="preg-bar" style="width:${pct}%"></div></div></div></div>
     <div style="font-size:14px;font-weight:700;color:var(--white)">Symptom / Notes Log</div>
-    <div class="card" id="preg-notes"><div style="font-size:11px;color:var(--white);opacity:0.4;padding:8px 0">No notes yet.</div></div>
-    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Note</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Note</div><input class=\\"field-input\\" id=\\"pn-t\\" placeholder=\\"How are you feeling...\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Noted!\');closeModal()\\">Save</button></div>')">+ Log Note</button>
-    <div style="font-size:14px;font-weight:700;color:var(--white)">OB Appointments</div>
-    <div class="card"><div class="appt-row"><div class="adb"><div class="adb-mo">JUN</div><div class="adb-day">3</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">OB Checkup \u2014 Week 17</div><div style="font-size:10px;color:var(--gold)">Anatomy scan</div></div></div></div>
-    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Appointment</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Title</div><input class=\\"field-input\\" id=\\"oa-t\\" placeholder=\\"e.g. OB Week 20...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"oa-d\\" type=\\"date\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Appointment</button>`;
+    <div class="card">${notesHTML}</div>
+    <button class="btn-gold-outline" onclick="showPregNoteModal()">+ Log Note</button>
+    <div style="font-size:14px;font-weight:700;color:var(--white);margin-top:4px">OB Appointments</div>
+    <div class="card">${pregAppts.map(a=>{const d=new Date(a.date+'T12:00:00');return`<div class="appt-row"><div class="adb"><div class="adb-mo">${d.toLocaleDateString('en-US',{month:'short'}).toUpperCase()}</div><div class="adb-day">${d.getDate()}</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${a.title}</div>${a.note?`<div style="font-size:10px;color:var(--gold)">${a.note}</div>`:''}</div></div>`;}).join('')}</div>
+    <button class="btn-gold-outline" onclick="showPregApptModal()">+ Add Appointment</button>`;
 }
-function renderDiana(c){
-  const d=S.data.diana,age=getDianaAge();
-  const miles=d?.milestones||[{text:'First steps',date:'Mar 2025',done:true},{text:'First word \u2014 "Mama"',date:'Feb 2025',done:true},{text:'Started solid foods',date:'Apr 2025',done:true}];
-  const vaccs=d?.vaccines||[{name:'Newborn vaccines',date:'Jan 2025',done:true},{name:'2-month vaccines',date:'Mar 2025',done:true},{name:'6-month vaccines',date:'Jul 2025',done:true},{name:'18-month vaccines',date:'Jul 2026',done:false}];
-  const appts=d?.appointments||[{title:'15-month checkup',date:'2026-05-17',doctor:'Pediatrician'}];
-  c.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:17px;font-weight:700;color:var(--white)">Diana &#128118;</div><div style="font-size:11px;color:var(--gold);margin-top:2px">Born Jan 7, 2025 \u00b7 ${age} months old</div></div><div style="text-align:right"><div style="font-size:11px;font-weight:700;color:var(--white)">Next checkup</div><div style="font-size:10px;color:var(--gold)">${appts[0]?fmt(appts[0].date):'None'}</div></div></div></div>
-    <div style="font-size:14px;font-weight:700;color:var(--white)">Milestones</div>
-    <div class="card">${miles.map(m=>`<div class="mrow"><div class="mdot" style="background:${m.done?'var(--green)':'var(--gold)'}"></div><span style="font-size:12px;color:var(--white);font-weight:500;flex:1">${m.text}</span><span style="font-size:10px;color:var(--gold);font-weight:700">${m.date}</span></div>`).join('')}</div>
-    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Milestone</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Milestone</div><input class=\\"field-input\\" id=\\"ms-t\\" placeholder=\\"e.g. First sentence...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"ms-d\\" placeholder=\\"May 2026\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Milestone</button>
-    <div style="font-size:14px;font-weight:700;color:var(--white)">Vaccines</div>
-    <div class="card">${vaccs.map(v=>`<div class="mrow"><div class="mdot" style="background:${v.done?'var(--green)':'var(--gold)'}"></div><span style="font-size:12px;color:var(--white);font-weight:500;flex:1">${v.name}</span><span style="font-size:10px;color:${v.done?'var(--green)':'var(--gold)'};font-weight:700">${v.done?'Done \u2714':v.date}</span></div>`).join('')}</div>
-    <div style="font-size:14px;font-weight:700;color:var(--white)">Appointments</div>
-    <div class="card">${appts.map(a=>`<div class="appt-row"><div class="adb"><div class="adb-mo">${new Date(a.date).toLocaleDateString('en-US',{month:'short'}).toUpperCase()}</div><div class="adb-day">${new Date(a.date).getDate()}</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${a.title}</div><div style="font-size:10px;color:var(--gold)">${a.doctor||''}</div></div></div>`).join('')}</div>
-    <button class="btn-gold-outline" onclick="showModal('<div class=\\"sheet-handle\\"></div><div class=\\"sheet-title\\">Add Appointment</div><div style=\\"display:flex;flex-direction:column;gap:12px\\"><div class=\\"field-group\\"><div class=\\"field-label\\">Title</div><input class=\\"field-input\\" id=\\"da-t\\" placeholder=\\"18-month checkup...\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Date</div><input class=\\"field-input\\" id=\\"da-d\\" type=\\"date\\"></div><div class=\\"field-group\\"><div class=\\"field-label\\">Doctor</div><input class=\\"field-input\\" id=\\"da-doc\\" placeholder=\\"Pediatrician...\\"></div><button class=\\"btn-gold\\" onclick=\\"showSuccess(\'Added!\');closeModal()\\">Add</button></div>')">+ Add Appointment</button>`;
+// PREGNANCY SAVE HELPERS
+function showPregNoteModal(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log a Note</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">How are you feeling?</div><input class="field-input" id="pn-t" placeholder="e.g. Felt baby move today..."></div><button class="btn-gold" onclick="savePregNote()">Save Note</button></div>`);}
+function showPregApptModal(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add OB Appointment</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="oa-t" placeholder="e.g. OB Week 20..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="oa-d" type="date"></div><button class="btn-gold" onclick="savePregAppt()">Add Appointment</button></div>`);}
+async function savePregNote(){
+  const text=document.getElementById('pn-t')?.value?.trim();
+  if(!text){showError('BOS-DATA-001');return;}
+  const diana=S.data.diana;if(!diana?.id){showError('BOS-SYNC-001');return;}
+  const preg_notes=[...(diana.preg_notes||[]),{text,date:getLocalDateStr()}];
+  try{await sb.from('diana_health').update({preg_notes}).eq('id',diana.id);S.data.diana={...diana,preg_notes};closeModal();showSuccess('Note saved!');renderPregnancy(document.getElementById('health-content'));}
+  catch(e){showError(e.message);}
+}
+async function savePregAppt(){
+  const title=document.getElementById('oa-t')?.value?.trim(),date=document.getElementById('oa-d')?.value;
+  if(!title||!date){showError('BOS-DATA-001');return;}
+  const diana=S.data.diana;if(!diana?.id){showError('BOS-SYNC-001');return;}
+  const preg_appointments=[...(diana.preg_appointments||[]),{title,date}];
+  try{await sb.from('diana_health').update({preg_appointments}).eq('id',diana.id);S.data.diana={...diana,preg_appointments};closeModal();showSuccess('OB appointment added!');renderPregnancy(document.getElementById('health-content'));}
+  catch(e){showError(e.message);}
 }
 // BUSINESS
-function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${b.stage.toUpperCase()}</span>${own?`<button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button>`:''}</div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div>${!own?'<div style="margin-top:8px"><div class="lock-badge"><span>&#128274;</span><span style="font-size:10px;color:var(--white);opacity:0.6;margin-left:4px">View only</span></div></div>':''}</div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
+function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;const ownerName=userName(b.owner_id)||'AJ';return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}${!own?` <span style="font-size:8px;color:var(--white);opacity:0.4">&middot; ${ownerName}'s</span>`:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${b.stage.toUpperCase()}</span><button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button></div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div></div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
 function openBiz(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div><div style="font-size:18px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div><div style="display:flex;gap:6px"><button class="btn-gold-sm" onclick="openJarvisCtx('${b.name} business strategy and advice')">Jarvis</button><button class="btn-white-sm" onclick="editBizModal('${id}')">Edit</button></div></div><div id="biz-tabs" style="display:flex;gap:6px;margin-bottom:12px"><button class="biz-tab on" onclick="switchBTab('kpis','${id}')">KPIs</button><button class="biz-tab" onclick="switchBTab('tasks','${id}')">Tasks</button><button class="biz-tab" onclick="switchBTab('team','${id}')">Team</button><button class="biz-tab" onclick="switchBTab('notes','${id}')">Notes</button></div><div id="biz-tc"></div><button class="btn-red-outline" style="margin-top:12px" onclick="delBiz('${id}')">Delete Business</button>`);switchBTab('kpis',id);}
 function switchBTab(tab,id){document.querySelectorAll('#biz-tabs .biz-tab').forEach((t,i)=>t.classList.toggle('on',['kpis','tasks','team','notes'][i]===tab));const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;const c=document.getElementById('biz-tc');if(!c)return;
   if(tab==='kpis')c.innerHTML=`<div class="kpi-grid">${(b.kpis||[]).map(k=>`<div class="kpi-c"><div class="kpi-lbl">${k.label}</div><div class="kpi-val">${k.value}</div><div class="kpi-tr ${(k.trend||'').includes('\u2191')?'kpi-g':'kpi-o'}">${k.trend||''}</div></div>`).join('')}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addKPI('${id}')">+ Add KPI</button>`;
@@ -2082,24 +2078,91 @@ function editMtg(id){const m=(S.data.meetings||[]).find(x=>x.id===id);if(!m)retu
 async function addAI(mid){const text=document.getElementById('em-ai')?.value?.trim();if(!text)return;const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=[...(m.action_items||[]),{id:uid4(),text,done:false}];try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);document.getElementById('em-ai').value='';showSuccess('Added!');}catch(e){showError(e.message);}}
 async function updMtg(id){const title=document.getElementById('em-title')?.value?.trim(),notes=document.getElementById('em-notes')?.value?.trim();if(!title){showError('BOS-DATA-001');return;}try{await sb.from('meetings').update({title,notes}).eq('id',id);S.data.meetings=S.data.meetings.map(m=>m.id===id?{...m,title,notes}:m);closeModal();showSuccess('Saved!');renderMinutes();}catch(e){showError(e.message);}}
 // SCHEDULE
-function renderSchedule(){const now=getTZ(),name=(S.profile?.name||'').split(' ')[0];const sched=S.data.schedules.mine,items=sched?.items||[];const done=items.filter(i=>i.done).length;document.getElementById('sched-user-pill').innerHTML=`<div class="user-pill" style="background:${S.profile?.avatar_color||'#E8BC50'}"><div class="u-dot" style="background:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}">${name}</span></div>`;document.getElementById('schedule-week-banner').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:700;color:var(--white)">Week of ${now.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div style="font-size:10px;color:var(--gold);margin-top:2px">Fill in by Sunday night</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green)">${done} / ${items.length} done</div></div></div>`;document.getElementById('schedule-jarvis').innerHTML=`<div class="jlabel">Jarvis</div><div class="jtext">${items.length===0?'Your week list is empty. Add what needs to happen.':done+' of '+items.length+' done. Keep it up, '+name+'!'}</div>`;document.getElementById('schedule-tab-row').innerHTML=`<div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='mine'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='mine'?'var(--gd)':'var(--white)'}" onclick="setSV('mine')">My List</div><div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='partner'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='partner'?'var(--gd)':'var(--white)'}" onclick="setSV('partner')">Juliette's List</div>`;const addBtn=document.getElementById('section-schedule').querySelector('.add-item-row');if(addBtn)addBtn.style.display=S.scheduleView==='mine'?'flex':'none';if(S.scheduleView==='mine'){document.getElementById('schedule-my-list').innerHTML=items.map((item,i)=>`<div class="sched-item"><span class="si-num">${i+1}</span><div class="si-chk ${item.done?'done':''}" onclick="togSI(${i})" style="cursor:pointer">${item.done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="si-text ${item.done?'stk':''}">${item.text}</div>${item.time?`<div class="si-time">${item.time}</div>`:''}</div><button class="btn-white-sm" onclick="editSI(${i})" style="font-size:9px;padding:2px 6px">&#9998;</button><span class="del-x" onclick="delSI(${i})">&#215;</span></div>`).join('');}else{document.getElementById('schedule-my-list').innerHTML='<div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">Juliette\'s schedule</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div></div><div style="font-size:11px;color:var(--white);opacity:0.4">Juliette\'s list appears here once she signs in and adds it.</div></div>';}document.getElementById('other-sched-label').style.display='none';document.getElementById('other-schedule-list').innerHTML='';}
+function renderSchedule(){const now=getTZ(),name=(S.profile?.name||'').split(' ')[0];const partner=(S.data.users||[]).find(u=>u.id!==S.profile?.id&&u.role==='admin');const partnerName=partner?.name?.split(' ')[0]||'Partner';const sched=S.data.schedules.mine,items=sched?.items||[];const done=items.filter(i=>i.done).length;document.getElementById('sched-user-pill').innerHTML=`<div class="user-pill" style="background:${S.profile?.avatar_color||'#E8BC50'}"><div class="u-dot" style="background:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}">${name}</span></div>`;document.getElementById('schedule-week-banner').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:700;color:var(--white)">Week of ${now.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div style="font-size:10px;color:var(--gold);margin-top:2px">Fill in by Sunday night</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green)">${done} / ${items.length} done</div></div></div>`;document.getElementById('schedule-jarvis').innerHTML=`<div class="jlabel">Jarvis</div><div class="jtext">${items.length===0?'Your week list is empty. Add what needs to happen.':done+' of '+items.length+' done. Keep it up, '+name+'!'}</div>`;document.getElementById('schedule-tab-row').innerHTML=`<div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='mine'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='mine'?'var(--gd)':'var(--white)'}" onclick="setSV('mine')">My List</div><div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='partner'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='partner'?'var(--gd)':'var(--white)'}" onclick="setSV('partner')">${partnerName}'s List</div>`;const addBtn=document.getElementById('section-schedule').querySelector('.add-item-row');if(addBtn)addBtn.style.display='flex';if(S.scheduleView==='mine'){document.getElementById('schedule-my-list').innerHTML=items.map((item,i)=>`<div class="sched-item"><span class="si-num">${i+1}</span><div class="si-chk ${item.done?'done':''}" onclick="togSI(${i})" style="cursor:pointer">${item.done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="si-text ${item.done?'stk':''}">${item.text}</div>${item.time?`<div class="si-time">${item.time}</div>`:''}</div><button class="btn-white-sm" onclick="editSI(${i})" style="font-size:9px;padding:2px 6px">&#9998;</button><span class="del-x" onclick="delSI(${i})">&#215;</span></div>`).join('');}else{document.getElementById('schedule-my-list').innerHTML=`<div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${partnerName}'s schedule</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div></div><div style="font-size:11px;color:var(--white);opacity:0.4">${partnerName}'s list appears here once they sign in and add items.</div></div>`;}document.getElementById('other-sched-label').style.display='none';document.getElementById('other-schedule-list').innerHTML='';}
 function setSV(v){S.scheduleView=v;renderSchedule();}
 async function togSI(idx){const sched=S.data.schedules.mine;let items=sched?.items?JSON.parse(JSON.stringify(sched.items)):[];if(!items[idx])return;items[idx].done=!items[idx].done;try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const wof=getWeekOf(new Date());const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}renderSchedule();}catch(e){showError(e.message);}}
 function showAddScheduleItem(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add to My List</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">What needs to happen this week?</div><input class="field-input" id="si-text" placeholder="e.g. Meal prep, Call dad..."></div><div class="field-group"><div class="field-label">Time (optional)</div><input class="field-input" id="si-time" placeholder="e.g. Saturday 2pm..."></div><button class="btn-gold" onclick="saveSI()">Add</button></div>`);}
-async function saveSI(){const text=document.getElementById('si-text')?.value?.trim(),time=document.getElementById('si-time')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const wof=getWeekOf(new Date()),sched=S.data.schedules.mine,items=[...(sched?.items||[]),{text,done:false,time:time||null}];try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}closeModal();showSuccess('Added!');renderSchedule();}catch(e){showError(e.message);}}
+async function saveSI(){const text=document.getElementById('si-text')?.value?.trim(),time=document.getElementById('si-time')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const wof=getWeekOf(new Date()),sched=S.data.schedules.mine,items=[...(sched?.items||[]),{text,done:false,time:time||null}];try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}S.scheduleView='mine';closeModal();showSuccess('Added!');renderSchedule();}catch(e){showError(e.message);}}
 async function delSI(idx){const sched=S.data.schedules.mine;if(!sched)return;const items=(sched.items||[]).filter((_,i)=>i!==idx);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};renderSchedule();}catch(e){showError(e.message);}}
 function editSI(idx){const sched=S.data.schedules.mine,item=sched?.items?.[idx];if(!item)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Item</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Text</div><input class="field-input" id="esi-t" value="${item.text}"></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esi-ti" value="${item.time||''}"></div><button class="btn-gold" onclick="updSI(${idx})">Save</button></div>`);}
 async function updSI(idx){const text=document.getElementById('esi-t')?.value?.trim(),time=document.getElementById('esi-ti')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const sched=S.data.schedules.mine;if(!sched)return;const items=sched.items.map((item,i)=>i===idx?{...item,text,time:time||null}:item);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};closeModal();renderSchedule();}catch(e){showError(e.message);}}
 // GROCERY
-function renderGrocery(){const items=S.data.grocery||[];const unc=items.filter(i=>!i.checked),chk=items.filter(i=>i.checked);document.getElementById('grocery-list').innerHTML=`${unc.map(item=>`<div class="grocery-item"><div class="g-chk" onclick="togG('${item.id}')" style="cursor:pointer"></div><span class="g-name">${item.name}${item.quantity?' ('+item.quantity+')':''}</span><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`).join('')}${chk.length?`<div class="sec-label" style="margin-top:8px">In Cart</div>${chk.map(item=>`<div class="grocery-item"><div class="g-chk checked" onclick="togG('${item.id}')" style="cursor:pointer"><span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span></div><span class="g-name stk">${item.name}</span><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`).join('')}`:''}${!items.length?'<div style="padding:12px 0;font-size:13px;color:var(--white);opacity:0.4;text-align:center">List is empty! Tap + Add.</div>':''}`;document.getElementById('grocery-count').textContent=unc.length+' item'+(unc.length===1?'':'s');}
+function renderGrocery(){const items=S.data.grocery||[];const unc=items.filter(i=>!i.checked),chk=items.filter(i=>i.checked);document.getElementById('grocery-list').innerHTML=`${unc.map(item=>{const adder=item.added_by&&item.added_by!==S.profile.id?userName(item.added_by):null;return`<div class="grocery-item"><div class="g-chk" onclick="togG('${item.id}')" style="cursor:pointer"></div><div style="flex:1"><span class="g-name">${item.name}${item.quantity?' ('+item.quantity+')':''}</span>${adder?`<div style="font-size:9px;color:var(--gold);opacity:0.6;margin-top:1px">Added by ${adder}</div>`:''}</div><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`;}).join('')}${chk.length?`<div class="sec-label" style="margin-top:8px">In Cart</div>${chk.map(item=>{const checker=item.checked_by?userName(item.checked_by):null;return`<div class="grocery-item"><div class="g-chk checked" onclick="togG('${item.id}')" style="cursor:pointer"><span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span></div><div style="flex:1"><span class="g-name stk">${item.name}</span>${checker?`<div style="font-size:9px;color:var(--green);opacity:0.7;margin-top:1px">Checked by ${checker}</div>`:''}</div><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`;}).join('')}`:''}${!items.length?'<div style="padding:12px 0;font-size:13px;color:var(--white);opacity:0.4;text-align:center">List is empty! Tap + Add.</div>':''}`;document.getElementById('grocery-count').textContent=unc.length+' item'+(unc.length===1?'':'s');}
 async function togG(id){const g=(S.data.grocery||[]).find(x=>x.id===id);if(!g)return;const upd={checked:!g.checked,checked_by:!g.checked?S.profile.id:null};S.data.grocery=S.data.grocery.map(x=>x.id===id?{...x,...upd}:x);try{await sb.from('grocery_items').update(upd).eq('id',id);renderGrocery();}catch(e){showError(e.message);}}
 function showAddGrocery(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add to List</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Item</div><input class="field-input" id="ag-n" placeholder="e.g. Chicken breast..."></div><div class="field-group"><div class="field-label">Quantity (optional)</div><input class="field-input" id="ag-q" placeholder="e.g. 2 lbs..."></div><button class="btn-gold" onclick="saveG()">Add</button></div>`);}
-async function saveG(){const name=document.getElementById('ag-n')?.value?.trim(),qty=document.getElementById('ag-q')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{const r=await sb.from('grocery_items').insert({household_id:S.household.id,name,quantity:qty,checked:false});if(r?.[0])S.data.grocery.unshift(r[0]);closeModal();showSuccess('Added!');renderGrocery();}catch(e){showError(e.message);}}
+async function saveG(){const name=document.getElementById('ag-n')?.value?.trim(),qty=document.getElementById('ag-q')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{const r=await sb.from('grocery_items').insert({household_id:S.household.id,name,quantity:qty||null,checked:false});if(r?.[0])S.data.grocery.unshift(r[0]);logActivity('added '+name+' to grocery','grocery',name);closeModal();showSuccess('Added!');renderGrocery();}catch(e){showError(e.message);}}
 async function delG(id){try{await sb.from('grocery_items').delete().eq('id',id);S.data.grocery=S.data.grocery.filter(g=>g.id!==id);renderGrocery();}catch(e){showError(e.message);}}
 // USERS
-function renderUsers(){const users=S.data.users||[];const admins=users.filter(u=>u.role==='admin'),others=users.filter(u=>u.role!=='admin');document.getElementById('admin-users-list').innerHTML=admins.length?admins.map(u=>`<div class="u-row"><div class="u-av" style="background:${u.avatar_color||'#E8BC50'}"><span style="color:${u.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'};font-size:11px;font-weight:700">${(u.name||'').slice(0,2).toUpperCase()}</span></div><div class="u-info"><div class="u-name-t">${u.name}</div><div class="u-role-t">Admin \u00b7 Full access</div></div>${u.id===S.profile.id?'<span class="tag-gold" style="font-size:8px;padding:2px 7px">YOU</span>':`<button class="btn-white-sm" onclick="manageU('${u.id}')">Manage</button>`}</div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No admins.</div>';document.getElementById('other-users-list').innerHTML=others.length?others.map(u=>`<div class="u-row"><div class="u-av" style="background:var(--border)"><span style="color:var(--white);font-size:11px;font-weight:700">${(u.name||'').slice(0,2).toUpperCase()}</span></div><div class="u-info"><div class="u-name-t">${u.name}</div><div class="u-role-t">${u.role.charAt(0).toUpperCase()+u.role.slice(1)} \u00b7 ${u.role==='babysitter'?"Diana + Chores":'Limited'}</div></div><button class="btn-white-sm" onclick="manageU('${u.id}')">Manage</button></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No other users yet.</div>';document.getElementById('role-permissions').innerHTML=`<div class="ri"><span class="tag-gold" style="font-size:8px;padding:2px 7px">ADMIN</span><div style="flex:1;margin-left:8px"><div style="font-size:11px;font-weight:600;color:var(--white)">Full access \u00b7 Edit everything</div></div></div><div class="ri"><span class="tag-gray" style="font-size:8px;padding:2px 7px">SITTER</span><div style="flex:1;margin-left:8px"><div style="font-size:11px;font-weight:600;color:var(--white)">Diana + Chores + Notes only</div></div></div>`;}
-function showInviteUser(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Invite Someone</div><div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">How to invite</div><div style="font-size:11px;color:var(--white);opacity:0.7;line-height:1.6">1. Share your Betancur OS URL<br>2. They tap "Create Account"<br>3. They select their role<br>4. They appear in your Users list</div></div><button class="btn-gold" onclick="showSuccess('Share your app URL to invite someone!');closeModal()">Got it</button>`);}
-function manageU(id){const u=(S.data.users||[]).find(x=>x.id===id);if(!u)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Manage ${u.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div style="font-size:13px;color:var(--white);opacity:0.7">Current role: ${u.role}</div><div class="field-group"><div class="field-label">Change Role</div><select class="field-input" id="mr-role"><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option><option value="babysitter" ${u.role==='babysitter'?'selected':''}>Babysitter</option><option value="mom" ${u.role==='mom'?'selected':''}>Mom</option><option value="custom" ${u.role==='custom'?'selected':''}>Custom</option></select></div><button class="btn-gold" onclick="updRole('${id}')">Save Role</button><button class="btn-red-outline" onclick="removeU('${id}')">Remove User</button></div>`);}
+function renderUsers(){
+  const users=S.data.users||[];
+  const me=S.profile;
+  const admins=users.filter(u=>u.role==='admin');
+  const others=users.filter(u=>u.role!=='admin');
+  const uRow=(u,showManage)=>`<div class="u-row" style="padding:10px 0">
+    <div style="width:40px;height:40px;border-radius:50%;background:${u.avatar_color||'#E8BC50'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <span style="color:${u.avatar_color==='#E8BC50'?'#2A2D35':'#fff'};font-size:13px;font-weight:700">${(u.name||'').slice(0,2).toUpperCase()}</span>
+    </div>
+    <div class="u-info" style="flex:1;min-width:0">
+      <div class="u-name-t" style="font-size:13px">${u.name}${u.id===me.id?'<span style="font-size:8px;font-weight:700;background:var(--gold);color:var(--gd);padding:2px 7px;border-radius:5px;margin-left:8px">YOU</span>':''}</div>
+      <div class="u-role-t" style="font-size:11px;margin-top:2px">@${u.username} &middot; ${u.role==='admin'?'Admin · Full access':u.role==='babysitter'?'Babysitter · Diana + Chores':'Limited'}</div>
+    </div>
+    ${showManage&&u.id!==me.id?`<button class="btn-white-sm" onclick="manageU('${u.id}')">Manage</button>`:''}
+  </div>`;
+  document.getElementById('admin-users-list').innerHTML=admins.length
+    ?admins.map(u=>uRow(u,true)).join('')
+    :'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No admins found.</div>';
+  document.getElementById('other-users-list').innerHTML=others.length
+    ?others.map(u=>uRow(u,true)).join('')
+    :'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No other members yet. Tap + Invite to add someone.</div>';
+  document.getElementById('role-permissions').innerHTML=`
+    <div style="padding:4px 0 10px;border-bottom:0.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:9px;font-weight:700;background:var(--gold);color:var(--gd);padding:2px 8px;border-radius:5px">ADMIN</span>
+        <span style="font-size:12px;font-weight:700;color:var(--white)">Full Access</span>
+      </div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;line-height:1.7">Home · Chores · Budget · Health · Business · Life · Minutes · Schedule · Grocery · Users · Jarvis</div>
+    </div>
+    <div style="padding:10px 0 4px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:9px;font-weight:700;background:var(--border);color:var(--white);padding:2px 8px;border-radius:5px">BABYSITTER</span>
+        <span style="font-size:12px;font-weight:700;color:var(--white)">Limited Access</span>
+      </div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;line-height:1.7">Diana's schedule · Assigned chores · Day notes only</div>
+    </div>`;
+}
+function showInviteUser(){showModal(`<div class="sheet-handle"></div>
+  <div class="sheet-title">Add Someone to the OS</div>
+  <div style="background:var(--bg-dark);border:0.5px solid var(--gold);border-radius:10px;padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:8px">For Juliette (or any Admin)</div>
+    <div style="font-size:12px;color:var(--white);opacity:0.8;line-height:1.7">1. Open the Betancur OS URL on her phone<br>2. Tap <b style="color:var(--gold)">Create Account</b><br>3. Enter her name, choose a username &amp; password<br>4. Select <b style="color:var(--gold)">Admin</b> as her role<br>5. She automatically joins this household<br>6. She appears here in your Users list</div>
+  </div>
+  <div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--white);opacity:0.7;margin-bottom:8px">For a Babysitter</div>
+    <div style="font-size:12px;color:var(--white);opacity:0.6;line-height:1.7">Same steps — but select <b>Babysitter</b> as their role.<br>They'll only see Diana's schedule and chores.</div>
+  </div>
+  <button class="btn-gold" onclick="closeModal()">Got it</button>`);
+}
+function manageU(id){
+  const u=(S.data.users||[]).find(x=>x.id===id);
+  if(!u)return;
+  const sees=u.role==='admin'?'Everything — Home, Chores, Budget, Health, Business, Life, Minutes, Schedule, Grocery, Users, Jarvis':u.role==='babysitter'?"Diana's schedule and assigned chores only":'Limited access';
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">${u.name}</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:12px">@${u.username}</div>
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:4px">WHAT THEY SEE</div>
+      <div style="font-size:12px;color:var(--white);opacity:0.8;line-height:1.5">${sees}</div>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <div class="field-label">Change Role</div>
+      <select class="field-input" id="mr-role">
+        <option value="admin" ${u.role==='admin'?'selected':''}>Admin — Full access</option>
+        <option value="babysitter" ${u.role==='babysitter'?'selected':''}>Babysitter — Diana + Chores</option>
+      </select>
+    </div>
+    <button class="btn-gold" style="width:100%;margin-bottom:8px" onclick="updRole('${id}')">Save Role</button>
+    <button class="btn-red-outline" style="width:100%" onclick="removeU('${id}')">Remove User</button>`);
+}
 async function updRole(id){const role=document.getElementById('mr-role')?.value;try{await sb.from('user_profiles').update({role}).eq('id',id);S.data.users=S.data.users.map(u=>u.id===id?{...u,role}:u);closeModal();showSuccess('Role updated!');renderUsers();}catch(e){showError(e.message);}}
 async function removeU(id){if(!confirm('Remove this user?'))return;try{await sb.from('user_profiles').delete().eq('id',id);S.data.users=S.data.users.filter(u=>u.id!==id);closeModal();showSuccess('Removed');renderUsers();}catch(e){showError(e.message);}}
 // JARVIS
@@ -2151,18 +2214,23 @@ async function sendJMsg(text){
   const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   const workoutHistory={};
   days.forEach(d=>{
-    const notes=JSON.parse(localStorage.getItem('bos_workout_notes_'+d)||'[]');
+    const notes=JSON.parse(localStorage.getItem(lsKey('bos_workout_notes_'+d))||'[]');
     if(notes.length>0)workoutHistory[d]=notes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join(' | ');
   });
-  const prs=JSON.parse(localStorage.getItem('bos_prs')||'[]');
+  const prs=JSON.parse(lsGet('bos_prs')||'[]');
   const prSummary=prs.length?prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'none logged';
   const recentLogs=[...(S.data.workout_logs||[])].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10);
-  const bodyLog=JSON.parse(localStorage.getItem('bos_body_log')||'[]');
+  const bodyLog=JSON.parse(lsGet('bos_body_log')||'[]');
   const latestBody=bodyLog[0]||{};
+  const currentUser=S.profile?.name?.split(' ')[0]||'AJ';
+  const currentUserFull=S.profile?.name||'AJ Betancur';
+  const currentUserRole=S.profile?.role||'admin';
   const ctx={
     today_date:todayDate,
     today_day:todayDay,
-    family:'AJ Betancur (admin, founder of ParkNest & Poof), Juliette Betancur (pregnant week '+getPregWeek('2026-02-09')+', due Nov 23 2026), Diana (baby '+getDianaAge()+' months)',
+    current_user:currentUser,
+    current_user_full:currentUserFull,
+    current_user_role:currentUserRole,
     location:'Tallahassee, FL, Eastern Time',
     income_aj:ajInc,income_juliette:julInc,household_income:ajInc+julInc,
     bills_total:(S.data.bills||[]).reduce((s,b)=>s+(b.amount||0),0),
@@ -2179,9 +2247,9 @@ async function sendJMsg(text){
     preg_week:getPregWeek('2026-02-09'),diana_months:getDianaAge(),
     open_biz_tasks:(S.data.businesses||[]).flatMap(b=>b.tasks||[]).filter(t=>!t.done).length,
     grocery_items:(S.data.grocery||[]).filter(g=>!g.checked).length,
-    main_goal:localStorage.getItem('bos_main_goal')||'Not set',
-    nutrition_rules:localStorage.getItem('bos_nutrition_rules')||'Not set',
-    fasting:localStorage.getItem('bos_fasting')||'Not set',
+    main_goal:lsGet('bos_main_goal')||'Not set',
+    nutrition_rules:lsGet('bos_nutrition_rules')||'Not set',
+    fasting:lsGet('bos_fasting')||'Not set',
     current_weight:latestBody.weight?latestBody.weight+' lbs ('+latestBody.date+')':'Not logged',
     current_bf:latestBody.bf?latestBody.bf+'% ('+latestBody.date+')':'Not logged',
   };
