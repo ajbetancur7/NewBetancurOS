@@ -275,6 +275,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 #modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:800;display:none;align-items:flex-end}
 #modal-overlay.show{display:flex}
 .bottom-sheet{background:var(--bg);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto;border-top:1.5px solid var(--gold)}
+.bottom-sheet.tall{max-height:93vh}
 .sheet-title{font-size:17px;font-weight:700;color:var(--white);margin-bottom:16px}
 .sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 #jarvis-modal{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;flex-direction:column}
@@ -1148,8 +1149,8 @@ function getDianaAge(){const dob=new Date('2025-01-07'),now=getTZ();return(now.g
 function getSundays(yr,mo){const s=[],d=new Date(yr,mo,1);while(d.getMonth()===mo){if(d.getDay()===0)s.push(new Date(d).toISOString().split('T')[0]);d.setDate(d.getDate()+1);}return s;}
 function canPay(b){if(!b.auto_pay)return true;const t=getTZ();if(!b.due_day)return true;return t.getDate()>=b.due_day;}
 function billSt(b){if(b.paid)return'paid';const t=getTZ();if(!b.due_day)return'manual';if(t.getDate()>b.due_day+2)return'overdue';if(t.getDate()>=b.due_day-3)return'soon';return b.auto_pay?'autopay':'manual';}
-function showModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal-overlay').classList.add('show');}
-function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+function showModal(html,tall=false){const mc=document.getElementById('modal-content');mc.innerHTML=html;mc.classList.toggle('tall',tall);document.getElementById('modal-overlay').classList.add('show');}
+function closeModal(){const mc=document.getElementById('modal-content');mc.classList.remove('tall');document.getElementById('modal-overlay').classList.remove('show');}
 // HOME
 function renderHome(){
   const now=getTZ(),hr=now.getHours(),gr=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
@@ -1518,29 +1519,29 @@ function openWorkoutDay(id,day,name){
   const timerRunning=S.workoutStartTime!==null;
 
   if(timerRunning&&!isLogged){
-    // Active workout view
+    // Active workout view — editable plan, Jarvis inline
     showModal(`<div class="sheet-handle"></div>
-      <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div>
-          <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase">${day.toUpperCase()}</div>
-          <div style="font-size:16px;font-weight:700;color:var(--white);margin-top:1px">${name}</div>
+          <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
+          <div style="font-size:17px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
         </div>
-        <button class="btn-white-sm" onclick="showQuickGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">Re-Plan</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <div id="wod-timer-display" class="workout-timer" style="font-size:22px">00:00</div>
+          <button class="btn-white-sm" onclick="showQuickGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">Re-Plan</button>
+        </div>
       </div>
-      <div id="wod-timer-display" class="workout-timer" style="margin-bottom:10px">00:00</div>
-      <div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;max-height:200px;overflow-y:auto;font-size:11px;color:var(--white);white-space:pre-line;line-height:1.6">${currentPlan||'No plan generated yet. Tap Re-Plan to create one.'}</div>
-      <div style="background:var(--bg-card);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:6px">&#129302; ADJUST WITH JARVIS</div>
-        <div id="wod-chat-msgs" style="max-height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:6px"></div>
+      <textarea id="wod-plan-edit" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:12px;width:100%;min-height:300px;font-size:11.5px;color:var(--white);line-height:1.7;resize:vertical;box-sizing:border-box;font-family:inherit" oninput="savePlanEdit('${day}')">${(currentPlan||'No plan yet — tap Re-Plan to generate one.').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div style="background:var(--bg-card);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-top:10px;margin-bottom:12px">
+        <div style="font-size:9px;font-weight:700;color:var(--gold);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em">&#129302; Adjust with Jarvis</div>
+        <div id="wod-jarvis-tip" style="font-size:11px;color:var(--white);opacity:0.65;margin-bottom:6px;min-height:15px;line-height:1.4"></div>
         <div style="display:flex;gap:6px">
-          <input id="wod-chat-input" class="field-input" style="flex:1;padding:7px 9px;font-size:11px" placeholder="Swap an exercise, need a tip...">
+          <input id="wod-chat-input" class="field-input" style="flex:1;padding:7px 10px;font-size:12px" placeholder="Swap an exercise, need a tip…">
           <button class="btn-gold-sm" onclick="sendWorkoutChat('${day}','${name}')">Go</button>
         </div>
       </div>
-      <button class="btn-gold" style="width:100%;padding:14px;font-size:14px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>
-    `);
-    S.workoutChat=[];
-    renderWorkoutChat();
+      <button class="btn-gold" style="width:100%;padding:14px;font-size:15px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>
+    `,true);
     startTimerDisplay();
     return;
   }
@@ -1568,10 +1569,13 @@ function openWorkoutDay(id,day,name){
       <div style="font-size:12px;color:var(--white);opacity:0.85;white-space:pre-line;line-height:1.5">${allNotes[0].notes||'No plan notes.'}</div>
       ${allNotes[0].feedback?`<div style="font-size:11px;color:var(--gold);opacity:0.7;margin-top:6px;font-style:italic">"${allNotes[0].feedback}"</div>`:''}
     </div>`:''}
-    <div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:6px;opacity:0.5;text-transform:uppercase;letter-spacing:0.05em">${name} History (${dayLogs.length} sessions)</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;font-weight:700;color:var(--white);opacity:0.5;text-transform:uppercase;letter-spacing:0.05em">${name} History (${dayLogs.length} sessions)</span>
+      ${allNotes.length>3?`<button class="btn-white-sm" onclick="viewAllWorkoutHistory('${day}','${name.replace(/'/g,"\\'")}')">View All</button>`:''}
+    </div>
     <div class="card">
       ${allNotes.length
-        ?allNotes.slice(0,4).map((n,idx)=>idx===0&&isLogged?'':`<div style="padding:7px 0;border-bottom:0.5px solid var(--border)">
+        ?allNotes.slice(0,3).map((n,idx)=>idx===0&&isLogged?'':`<div style="padding:7px 0;border-bottom:0.5px solid var(--border)">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>
               ${n.energy?`<span style="font-size:11px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n.energy]||''} <span style="font-size:9px;color:var(--white);opacity:0.5">${n.duration||''}</span></span>`:''}
@@ -1586,6 +1590,25 @@ function openWorkoutDay(id,day,name){
 }
 
 
+function viewAllWorkoutHistory(day,name){
+  const notesKey=lsKey('bos_workout_notes_'+day);
+  const allNotes=JSON.parse(localStorage.getItem(notesKey)||'[]');
+  const emojis=['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'];
+  const rows=allNotes.length
+    ?allNotes.map(n=>`<div style="padding:12px 0;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--gold);font-weight:700">${n.date}</span>
+          <span style="font-size:12px">${n.energy?emojis[n.energy]:''} <span style="font-size:10px;color:var(--white);opacity:0.45">${n.duration||''}</span></span>
+        </div>
+        <div style="font-size:11.5px;color:var(--white);opacity:0.85;white-space:pre-line;line-height:1.55">${n.notes||'No notes.'}</div>
+        ${n.feedback?`<div style="font-size:10.5px;color:var(--gold);opacity:0.7;margin-top:5px;font-style:italic">"${n.feedback}"</div>`:''}
+      </div>`).join('')
+    :'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:16px 0">No history yet.</div>';
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">${name} — All Sessions</div>
+    ${rows}
+  `,true);
+}
 function saveWorkoutNotes(day){
   const notes=document.getElementById('wod-notes')?.value?.trim();
   if(!notes)return;
@@ -1651,7 +1674,7 @@ function startTimerDisplay(){
   },1000);
 }
 function finishWorkoutPrompt(id,day,name){
-  S.pendingWorkoutNotes=document.getElementById('wod-notes')?.value?.trim()||'';
+  S.pendingWorkoutNotes=document.getElementById('wod-plan-edit')?.value?.trim()||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
   clearInterval(S.workoutTimer);
   const elapsed=Math.floor((Date.now()-S.workoutStartTime)/1000);
   const m=Math.floor(elapsed/60),s=elapsed%60;
@@ -1795,55 +1818,63 @@ async function getInlineWorkoutPlan(day,name,daySessions,totalSessions){
   await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,'');
 }
 
-function renderWorkoutChat(){
-  const msgs=S.workoutChat||[];
-  const el=document.getElementById('wod-chat-msgs');
-  if(!el)return;
-  if(!msgs.length){el.innerHTML='<div style="font-size:11px;color:var(--white);opacity:0.35;text-align:center;padding:6px 0">Ask Jarvis anything during your workout</div>';return;}
-  el.innerHTML=msgs.map(m=>`<div style="display:flex;flex-direction:column;gap:2px;align-items:${m.role==='user'?'flex-end':'flex-start'}">
-    <div style="max-width:85%;background:${m.role==='user'?'var(--gold)':'var(--bg-dark)'};border:0.5px solid var(--border);border-radius:10px;padding:7px 10px;font-size:11px;color:${m.role==='user'?'var(--gd)':'var(--white)'};line-height:1.4">${m.content}</div>
-  </div>`).join('');
-  el.scrollTop=el.scrollHeight;
+function savePlanEdit(day){
+  const v=document.getElementById('wod-plan-edit')?.value||'';
+  localStorage.setItem(lsKey('bos_current_plan_'+day),v);
 }
+function renderWorkoutChat(){}
 async function sendWorkoutChat(day,name){
   const input=document.getElementById('wod-chat-input');
   const text=input?.value?.trim();
   if(!text)return;
   input.value='';
-  S.workoutChat=S.workoutChat||[];
-  S.workoutChat.push({role:'user',content:text});
-  renderWorkoutChat();
-  const currentPlan=localStorage.getItem(lsKey('bos_current_plan_'+day))||'No plan generated.';
+  const tipEl=document.getElementById('wod-jarvis-tip');
+  if(tipEl){tipEl.style.opacity='0.45';tipEl.textContent='Jarvis is thinking…';}
+  const planEl=document.getElementById('wod-plan-edit');
+  const currentPlan=planEl?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'No plan generated.';
   const prs=getPRs();
-  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps).join(', '):'None logged';
+  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'None logged';
   const jarvisMemory=lsGet('bos_jarvis_memory')||'';
-  // Focused system: modify THIS plan, short answers, no full rewrite
-  const systemCtx=`You are a gym coach standing next to the athlete mid-workout. They are doing ${name} on ${day}.${jarvisMemory?' Notes: '+jarvisMemory:''}
+  const systemCtx=`You are a gym coach standing next to ${S.profile?.name?.split(' ')[0]||'AJ'} mid-workout. Split: ${name} (${day}).${jarvisMemory?'\nCoach memory: '+jarvisMemory:''}
 
-THEIR CURRENT PLAN:
+CURRENT PLAN IN THEIR HANDS:
 ${currentPlan}
 
-MAX LIFTS: ${prText}
+MAX LIFTS / PRs:
+${prText}
 
-RULES:
-- Keep answers to 1-3 sentences max.
-- If they ask to swap an exercise, give ONLY the replacement line (e.g. "3. Cable Row — 4x10 @ 120lbs | Rest: 60s").
-- If they need advice or a tip, be direct and practical.
-- NEVER generate a whole new plan — adjust only what they ask about.
-- Speak like a coach right next to them, not a chatbot.`;
-  const msgs=[...S.workoutChat];
+RESPONSE RULES — follow exactly:
+1. If they ask to SWAP or CHANGE an exercise: reply with ONLY the updated line(s) in the same numbered format as the plan above (e.g. "3. Cable Row — 4x10 @ 120lbs | Rest: 60s"). No extra text.
+2. If they ask a question, want a tip, or need advice: answer in 1-3 sentences max. Be direct and practical. No fluff.
+3. NEVER rewrite the entire plan. Only adjust what they specifically ask about.
+4. You have their PRs above — USE THEM. Reference actual weights.`;
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      messages:msgs,
-      context:{current_user:S.profile?.name?.split(' ')[0]||'AJ',current_user_full:S.profile?.name||'AJ Betancur',_system_override:systemCtx}
+      messages:[{role:'user',content:text}],
+      context:{current_user:S.profile?.name?.split(' ')[0]||'AJ',_system_override:systemCtx}
     })});
     const data=await r.json();
-    const reply=data.content?.[0]?.text||'Give me a sec…';
-    S.workoutChat.push({role:'assistant',content:reply});
-    renderWorkoutChat();
+    const reply=(data.content?.[0]?.text||'Give me a sec…').trim();
+    // Detect if reply is an exercise line (starts with digit+period) — if so, splice into plan
+    const lines=reply.split('\n').map(l=>l.trim()).filter(Boolean);
+    const allExerciseLines=lines.length>0&&lines.every(l=>/^\d+\./.test(l));
+    if(planEl&&allExerciseLines){
+      let planText=planEl.value;
+      lines.forEach(newLine=>{
+        const m=newLine.match(/^(\d+)\./);
+        if(m){
+          const re=new RegExp('^'+m[1]+'\\.[^\n]*','m');
+          planText=re.test(planText)?planText.replace(re,newLine):planText+'\n'+newLine;
+        }
+      });
+      planEl.value=planText;
+      savePlanEdit(day);
+      if(tipEl){tipEl.style.opacity='1';tipEl.innerHTML='<span style="color:var(--green)">&#10003; Updated in plan above</span>';}
+    }else{
+      if(tipEl){tipEl.style.opacity='0.9';tipEl.textContent=reply;}
+    }
   }catch(e){
-    S.workoutChat.push({role:'assistant',content:'Lost connection. Try again.'});
-    renderWorkoutChat();
+    if(tipEl){tipEl.style.opacity='0.6';tipEl.textContent='Lost connection. Try again.';}
   }
 }
 async function reseedWorkouts(){
@@ -1886,8 +1917,8 @@ function renderPRs(c){
     +'</div>';
 }
 
-function getPRs(){return JSON.parse(lsGet('bos_prs')||'[]');}
-function savePRs(prs){lsSet('bos_prs',JSON.stringify(prs));}
+function getPRs(){return JSON.parse(localStorage.getItem('bos_prs')||lsGet('bos_prs')||'[]');}
+function savePRs(prs){const j=JSON.stringify(prs);localStorage.setItem('bos_prs',j);lsSet('bos_prs',j);}
 
 function addPR(){
   showModal('<div class="sheet-handle"></div>'
