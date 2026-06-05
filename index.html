@@ -276,6 +276,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 #modal-overlay.show{display:flex}
 .bottom-sheet{background:var(--bg);border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto;border-top:1.5px solid var(--gold)}
 .bottom-sheet.tall{max-height:93vh}
+.bottom-sheet.fullscreen{max-height:100dvh;height:100dvh;border-radius:0;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .sheet-title{font-size:17px;font-weight:700;color:var(--white);margin-bottom:16px}
 .sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 #jarvis-modal{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;flex-direction:column}
@@ -1149,8 +1150,8 @@ function getDianaAge(){const dob=new Date('2025-01-07'),now=getTZ();return(now.g
 function getSundays(yr,mo){const s=[],d=new Date(yr,mo,1);while(d.getMonth()===mo){if(d.getDay()===0)s.push(new Date(d).toISOString().split('T')[0]);d.setDate(d.getDate()+1);}return s;}
 function canPay(b){if(!b.auto_pay)return true;const t=getTZ();if(!b.due_day)return true;return t.getDate()>=b.due_day;}
 function billSt(b){if(b.paid)return'paid';const t=getTZ();if(!b.due_day)return'manual';if(t.getDate()>b.due_day+2)return'overdue';if(t.getDate()>=b.due_day-3)return'soon';return b.auto_pay?'autopay':'manual';}
-function showModal(html,tall=false){const mc=document.getElementById('modal-content');mc.innerHTML=html;mc.classList.toggle('tall',tall);document.getElementById('modal-overlay').classList.add('show');}
-function closeModal(){const mc=document.getElementById('modal-content');mc.classList.remove('tall');document.getElementById('modal-overlay').classList.remove('show');}
+function showModal(html,size=false){const mc=document.getElementById('modal-content');mc.innerHTML=html;mc.classList.toggle('tall',size===true||size==='tall');mc.classList.toggle('fullscreen',size==='fullscreen');document.getElementById('modal-overlay').classList.add('show');}
+function closeModal(){const mc=document.getElementById('modal-content');mc.classList.remove('tall','fullscreen');document.getElementById('modal-overlay').classList.remove('show');}
 // HOME
 function renderHome(){
   const now=getTZ(),hr=now.getHours(),gr=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
@@ -1519,29 +1520,29 @@ function openWorkoutDay(id,day,name){
   const timerRunning=S.workoutStartTime!==null;
 
   if(timerRunning&&!isLogged){
-    // Active workout view — editable plan, Jarvis inline
-    showModal(`<div class="sheet-handle"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    // Active workout — full screen
+    showModal(`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div>
-          <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
-          <div style="font-size:17px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
+          <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.07em">${day.toUpperCase()}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--white);margin-top:2px;line-height:1.1">${name}</div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          <div id="wod-timer-display" class="workout-timer" style="font-size:22px">00:00</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="wod-timer-display" style="font-size:20px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums">00:00</div>
           <button class="btn-white-sm" onclick="showQuickGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${dayLogs.length},${logs.length})">Re-Plan</button>
         </div>
       </div>
-      <textarea id="wod-plan-edit" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:12px;width:100%;min-height:300px;font-size:11.5px;color:var(--white);line-height:1.7;resize:vertical;box-sizing:border-box;font-family:inherit" oninput="savePlanEdit('${day}')">${(currentPlan||'No plan yet — tap Re-Plan to generate one.').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <textarea id="wod-plan-edit" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px;width:100%;min-height:360px;font-size:12px;color:var(--white);line-height:1.75;resize:vertical;box-sizing:border-box;font-family:inherit"oninput="savePlanEdit('${day}')">${(currentPlan||'No plan — tap Re-Plan above.').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
       <div style="background:var(--bg-card);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-top:10px;margin-bottom:12px">
         <div style="font-size:9px;font-weight:700;color:var(--gold);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em">&#129302; Adjust with Jarvis</div>
-        <div id="wod-jarvis-tip" style="font-size:11px;color:var(--white);opacity:0.65;margin-bottom:6px;min-height:15px;line-height:1.4"></div>
+        <div id="wod-jarvis-tip" style="font-size:11.5px;color:var(--white);opacity:0.7;margin-bottom:6px;min-height:14px;line-height:1.45"></div>
         <div style="display:flex;gap:6px">
-          <input id="wod-chat-input" class="field-input" style="flex:1;padding:7px 10px;font-size:12px" placeholder="Swap an exercise, need a tip…">
+          <input id="wod-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="Swap an exercise, need a tip…">
           <button class="btn-gold-sm" onclick="sendWorkoutChat('${day}','${name}')">Go</button>
         </div>
       </div>
-      <button class="btn-gold" style="width:100%;padding:14px;font-size:15px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>
-    `,true);
+      <button class="btn-gold" style="width:100%;padding:15px;font-size:15px;font-weight:700" onclick="finishWorkoutPrompt('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#10003; Finish Workout</button>
+    `,'fullscreen');
     startTimerDisplay();
     return;
   }
@@ -1628,26 +1629,82 @@ function startWorkoutTimer(id,day,name){
   S.workoutStartTime=Date.now();
   openWorkoutDay(id,day,name);
 }
+// STEP 1 — Start screen: notes for Jarvis then generate
 function smartStartWorkout(id,day,name,daySessions,totalSessions){
+  const desc=(S.data.workouts||[]).find(w=>w.day_of_week===day)?.description||'';
   showModal(`<div class="sheet-handle"></div>
-    <div class="sheet-title">&#9889; ${name}</div>
-    <div style="font-size:12px;color:var(--white);opacity:0.6;margin-bottom:14px">Any notes for Jarvis today? (optional)</div>
-    <textarea id="smart-ctx" class="field-input" style="min-height:80px;resize:none;margin-bottom:14px" placeholder="e.g. Skip incline, left shoulder tight. Focus on back width..."></textarea>
-    <button class="btn-gold" style="width:100%;padding:14px;font-size:14px;font-weight:700" onclick="runSmartGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate Plan &amp; Start</button>
-    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="startJustTimer('${id}','${day}','${name.replace(/'/g,"\\'")}')">Start Without Plan</button>
+    <div style="margin-bottom:4px">
+      <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()}</div>
+      <div style="font-size:20px;font-weight:700;color:var(--white);margin-top:3px">${name}</div>
+    </div>
+    ${desc?`<div style="font-size:11px;color:var(--white);opacity:0.45;margin-bottom:14px;line-height:1.4">${desc}</div>`:'<div style="margin-bottom:14px"></div>'}
+    <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:6px">Notes for Jarvis <span style="opacity:0.4;font-weight:400">(optional)</span></div>
+    <textarea id="smart-ctx" class="field-input" style="min-height:72px;resize:none;margin-bottom:14px" placeholder="e.g. Left shoulder tight — skip incline. Want more chest volume today..."></textarea>
+    <button class="btn-gold" style="width:100%;padding:15px;font-size:14px;font-weight:700" onclick="runSmartGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">&#129302; Generate Plan</button>
+    <button class="btn-white" style="width:100%;padding:10px;font-size:12px;margin-top:8px" onclick="beginWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}')">Start Without Plan</button>
   `);
 }
-function startJustTimer(id,day,name){
+// STEP 2 — Plan preview: edit or ask Jarvis to improve, then begin
+function showPlanPreview(id,day,name,daySessions,totalSessions){
+  const currentPlan=localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
+  showModal(`<div class="sheet-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:0.06em">${day.toUpperCase()} — PLAN PREVIEW</div>
+        <div style="font-size:17px;font-weight:700;color:var(--white);margin-top:2px">${name}</div>
+      </div>
+      <button class="btn-white-sm" onclick="showQuickGenerate('${id}','${day}','${name.replace(/'/g,"\\'")}',${daySessions},${totalSessions})">Redo</button>
+    </div>
+    <textarea id="wod-preview-edit" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:14px;width:100%;min-height:260px;font-size:12px;color:var(--white);line-height:1.7;resize:vertical;box-sizing:border-box;font-family:inherit;margin-bottom:10px" oninput="localStorage.setItem(lsKey('bos_current_plan_${day}'),this.value)">${(currentPlan||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    <div style="background:var(--bg-card);border:0.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">
+      <div style="font-size:9px;font-weight:700;color:var(--gold);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em">&#129302; Ask Jarvis to improve</div>
+      <div id="preview-jarvis-tip" style="font-size:11.5px;color:var(--white);opacity:0.7;margin-bottom:6px;min-height:14px;line-height:1.45"></div>
+      <div style="display:flex;gap:6px">
+        <input id="preview-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="Add more chest volume, swap deadlifts for RDLs…">
+        <button class="btn-gold-sm" onclick="improveWorkoutPlan('${day}','${name}')">Go</button>
+      </div>
+    </div>
+    <button class="btn-gold" style="width:100%;padding:16px;font-size:15px;font-weight:700;letter-spacing:0.02em" onclick="beginWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#9889; Begin Workout</button>
+  `,'tall');
+}
+// Jarvis improve during preview — rewrites the full plan based on request
+async function improveWorkoutPlan(day,name){
+  const input=document.getElementById('preview-chat-input');
+  const text=input?.value?.trim();
+  if(!text)return;
+  input.value='';
+  const tipEl=document.getElementById('preview-jarvis-tip');
+  if(tipEl){tipEl.style.opacity='0.45';tipEl.textContent='Jarvis is updating the plan…';}
+  const planEl=document.getElementById('wod-preview-edit');
+  const currentPlan=planEl?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
+  const prs=getPRs();
+  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'None logged';
+  const jarvisMemory=lsGet('bos_jarvis_memory')||'';
+  const mainGoal=lsGet('bos_main_goal')||'Build strength and muscle';
+  const systemCtx=`You are modifying a ${name} workout plan for ${S.profile?.name?.split(' ')[0]||'AJ'}.${jarvisMemory?'\nCoach memory: '+jarvisMemory:''}
+Main goal: ${mainGoal}
+
+MAX LIFTS / PRs:
+${prText}
+
+CURRENT PLAN:
+${currentPlan}
+
+TASK: Apply the requested change. Return the COMPLETE updated plan in the exact same format. Keep all unchanged exercises identical.`;
+  try{
+    const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:text}],context:{current_user:S.profile?.name?.split(' ')[0]||'AJ',_system_override:systemCtx}})});
+    const data=await r.json();
+    const reply=(data.content?.[0]?.text||'').trim();
+    if(planEl&&reply){planEl.value=reply;localStorage.setItem(lsKey('bos_current_plan_'+day),reply);}
+    if(tipEl){tipEl.style.opacity='1';tipEl.innerHTML='<span style="color:var(--green)">&#10003; Plan updated</span>';}
+  }catch(e){if(tipEl){tipEl.style.opacity='0.6';tipEl.textContent='Connection error — try again.';}}
+}
+// STEP 3 — Begin: start timer and open full-screen active workout
+function beginWorkout(id,day,name){
   S.workoutStartTime=Date.now();
   openWorkoutDay(id,day,name);
 }
-async function runSmartGenerate(id,day,name,daySessions,totalSessions){
-  const ctx=document.getElementById('smart-ctx')?.value?.trim()||'';
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">&#129302; Building your plan...</div><div style="font-size:12px;color:var(--white);opacity:0.6;text-align:center;padding:20px 0">Jarvis is analyzing your history and generating the optimal ${name} plan.</div>`);
-  await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,ctx);
-  S.workoutStartTime=Date.now();
-  openWorkoutDay(id,day,name);
-}
+// Re-plan during active workout (timer already running)
 function showQuickGenerate(id,day,name,daySessions,totalSessions){
   showModal(`<div class="sheet-handle"></div>
     <div class="sheet-title">&#129302; New Plan</div>
@@ -1660,7 +1717,15 @@ async function regenPlan(id,day,name,daySessions,totalSessions){
   const ctx=document.getElementById('regen-ctx')?.value?.trim()||'';
   showModal(`<div class="sheet-handle"></div><div class="sheet-title">&#129302; Building plan...</div><div style="padding:24px;text-align:center;font-size:12px;color:var(--white);opacity:0.6">Jarvis is generating your ${name} plan.</div>`);
   await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,ctx);
-  openWorkoutDay(id,day,name);
+  // If timer already running → stay in active workout with new plan; else show preview
+  if(S.workoutStartTime!==null){openWorkoutDay(id,day,name);}
+  else{showPlanPreview(id,day,name,daySessions,totalSessions);}
+}
+async function runSmartGenerate(id,day,name,daySessions,totalSessions){
+  const ctx=document.getElementById('smart-ctx')?.value?.trim()||'';
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">&#129302; Building your plan...</div><div style="font-size:12px;color:var(--white);opacity:0.6;text-align:center;padding:20px 0">Jarvis is analyzing your history and PRs to build the optimal ${name} plan.</div>`);
+  await getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,ctx);
+  showPlanPreview(id,day,name,daySessions,totalSessions);
 }
 function startTimerDisplay(){
   clearInterval(S.workoutTimer);
