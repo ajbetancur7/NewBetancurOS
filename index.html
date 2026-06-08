@@ -871,7 +871,7 @@ async function launchApp(){
   document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
   await loadAll();checkMonthlyBillReset();renderHome();
-  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{if(S.currentSection==='home')renderHome();});},30000);
+  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();({home:renderHome,budget:renderBudget,chores:renderChores,grocery:renderGrocery,health:renderHealth,schedule:renderSchedule,minutes:renderMinutes})[S.currentSection]?.();});},30000);
 }
 function openActivityDetail(){
   const acts=S.data.activity||[];
@@ -1083,8 +1083,10 @@ async function loadAll(){
     prefRow.items.forEach(({key,value})=>{
       // Always restore from Supabase — it's the cross-device source of truth
       localStorage.setItem('bos_'+key+'_'+uid,value);
-      // PRs are also read from the non-prefixed 'bos_prs' key by renderPRs
+      // Special cases: keys stored without user prefix
       if(key==='prs')localStorage.setItem('bos_prs',value);
+      if(key==='aj_income')localStorage.setItem('aj_income',value);
+      if(key==='jul_income')localStorage.setItem('jul_income',value);
     });
   }
 }
@@ -1222,6 +1224,7 @@ function saveIncome(key){
   const val=parseInt(document.getElementById('inc-val')?.value);
   if(!val||val<=0){showError('BOS-DATA-001');return;}
   localStorage.setItem(key,val.toString());
+  syncPreference(key,val.toString());
   closeModal();showSuccess('Income updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
@@ -1474,6 +1477,7 @@ function addAnchor(){
   const anchors=JSON.parse(lsGet('bos_anchors')||'[]');
   anchors.push(text);
   lsSet('bos_anchors',JSON.stringify(anchors));
+  syncPreference('anchors',JSON.stringify(anchors));
   showSuccess('Anchor saved.');
   renderGoals(document.getElementById('health-content'));
 }
@@ -1481,6 +1485,7 @@ function deleteAnchor(i){
   const anchors=JSON.parse(lsGet('bos_anchors')||'[]');
   anchors.splice(i,1);
   lsSet('bos_anchors',JSON.stringify(anchors));
+  syncPreference('anchors',JSON.stringify(anchors));
   renderGoals(document.getElementById('health-content'));
 }
 async function toggleWorkoutLog(wid,day,targetDate){
