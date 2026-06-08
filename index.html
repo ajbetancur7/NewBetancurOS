@@ -921,6 +921,7 @@ function getDayNotes(){
 
 function saveDayNotes(notes){
   lsSet('bos_day_notes',JSON.stringify(notes));
+  syncPreference('day_notes',JSON.stringify(notes));
   renderDayNotes();
 }
 
@@ -1080,9 +1081,10 @@ async function loadAll(){
   S.data.schedules.prefs=prefRow?.items||[];
   if(prefRow&&prefRow.items){
     prefRow.items.forEach(({key,value})=>{
-      // Only restore if localStorage doesn't already have a value (e.g. after cache clear)
-      const storageKey='bos_'+key+'_'+uid;
-      if(!localStorage.getItem(storageKey))localStorage.setItem(storageKey,value);
+      // Always restore from Supabase — it's the cross-device source of truth
+      localStorage.setItem('bos_'+key+'_'+uid,value);
+      // PRs are also read from the non-prefixed 'bos_prs' key by renderPRs
+      if(key==='prs')localStorage.setItem('bos_prs',value);
     });
   }
 }
@@ -1223,21 +1225,22 @@ function saveIncome(key){
   closeModal();showSuccess('Income updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
-  // Resets ALL bills (paid=false) whenever a new calendar month is detected.
-  // Runs regardless of what day it is — catches cases where app wasn't opened on the 1st.
-  const key='bos_bills_reset_month';
+  // Resets bills whose paid_at is from a PREVIOUS month.
+  // Source of truth is paid_at in Supabase — no localStorage flag needed.
+  // This works identically on every device without any coordination.
   const now=getTZ();
-  const thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  if(localStorage.getItem(key)===thisMonth)return; // already reset for this month
-  const toReset=(S.data.bills||[]).filter(b=>b.paid);
-  toReset.forEach(b=>{
-    sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{});
+  const yr=now.getFullYear(),mo=now.getMonth();
+  const toReset=(S.data.bills||[]).filter(b=>{
+    if(!b.paid)return false;
+    if(!b.paid_at)return true; // legacy: paid but no timestamp — treat as prior month
+    const d=new Date(b.paid_at);
+    return d.getFullYear()!==yr||d.getMonth()!==mo;
   });
-  S.data.bills=(S.data.bills||[]).map(b=>b.paid?{...b,paid:false,paid_by:null,paid_at:null}:b);
-  localStorage.setItem(key,thisMonth);
-  if(toReset.length>0){
-    showSuccess('New month — all bills reset for '+now.toLocaleDateString('en-US',{month:'long',year:'numeric'}));
-  }
+  if(!toReset.length)return;
+  const ids=new Set(toReset.map(b=>b.id));
+  toReset.forEach(b=>sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{}));
+  S.data.bills=S.data.bills.map(b=>ids.has(b.id)?{...b,paid:false,paid_by:null,paid_at:null}:b);
+  showSuccess('New month — bills reset for '+now.toLocaleDateString('en-US',{month:'long',year:'numeric'}));
 }
 function renderBudget(){
   checkMonthlyBillReset();
@@ -1979,7 +1982,7 @@ function renderPRs(c){
 }
 
 function getPRs(){return JSON.parse(localStorage.getItem('bos_prs')||lsGet('bos_prs')||'[]');}
-function savePRs(prs){const j=JSON.stringify(prs);localStorage.setItem('bos_prs',j);lsSet('bos_prs',j);}
+function savePRs(prs){const j=JSON.stringify(prs);localStorage.setItem('bos_prs',j);lsSet('bos_prs',j);syncPreference('prs',j);}
 
 function addPR(){
   showModal('<div class="sheet-handle"></div>'
