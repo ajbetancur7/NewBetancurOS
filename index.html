@@ -870,7 +870,7 @@ async function finishSetup(){
 async function launchApp(){
   document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
-  await loadAll();checkMonthlyBillReset();renderHome();
+  await loadAll();migrateLocalToSupabase();checkMonthlyBillReset();renderHome();
   setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();({home:renderHome,budget:renderBudget,chores:renderChores,grocery:renderGrocery,health:renderHealth,schedule:renderSchedule,minutes:renderMinutes})[S.currentSection]?.();});},30000);
 }
 function openActivityDetail(){
@@ -1087,8 +1087,43 @@ async function loadAll(){
       if(key==='prs')localStorage.setItem('bos_prs',value);
       if(key==='aj_income')localStorage.setItem('aj_income',value);
       if(key==='jul_income')localStorage.setItem('jul_income',value);
+      // bills_reset_month is already user-prefixed via lsGet/lsSet — nothing extra needed
     });
   }
+}
+// One-time migration: push localStorage-only data to Supabase for cross-device sync.
+// Safe to call repeatedly — only migrates a key if Supabase doesn't already have it.
+function migrateLocalToSupabase(){
+  const prefs=S.data.schedules?.prefs||[];
+  const hasKey=k=>prefs.some(p=>p.key===k);
+  // Day notes
+  const localNotes=lsGet('bos_day_notes');
+  if(localNotes&&!hasKey('day_notes'))syncPreference('day_notes',localNotes);
+  // PRs
+  const localPRs=localStorage.getItem('bos_prs')||lsGet('bos_prs');
+  if(localPRs&&!hasKey('prs'))syncPreference('prs',localPRs);
+  // Goals / memory
+  const localGoal=lsGet('bos_main_goal');
+  if(localGoal&&!hasKey('main_goal'))syncPreference('main_goal',localGoal);
+  const localMem=lsGet('bos_jarvis_memory');
+  if(localMem&&!hasKey('jarvis_memory'))syncPreference('jarvis_memory',localMem);
+  const localNutr=lsGet('bos_nutrition_rules');
+  if(localNutr&&!hasKey('nutrition_rules'))syncPreference('nutrition_rules',localNutr);
+  const localFast=lsGet('bos_fasting');
+  if(localFast&&!hasKey('fasting'))syncPreference('fasting',localFast);
+  // Anchors
+  const localAnchors=lsGet('bos_anchors');
+  if(localAnchors&&!hasKey('anchors'))syncPreference('anchors',localAnchors);
+  // Spiritual
+  const localBooks=lsGet('bos_spiritual_books');
+  if(localBooks&&!hasKey('spiritual_books'))syncPreference('spiritual_books',localBooks);
+  const localSNotes=lsGet('bos_spiritual_notes');
+  if(localSNotes&&!hasKey('spiritual_notes'))syncPreference('spiritual_notes',localSNotes);
+  // Income
+  const localAJInc=localStorage.getItem('aj_income');
+  if(localAJInc&&!hasKey('aj_income'))syncPreference('aj_income',localAJInc);
+  const localJulInc=localStorage.getItem('jul_income');
+  if(localJulInc&&!hasKey('jul_income'))syncPreference('jul_income',localJulInc);
 }
 // Sync a preference key+value to Supabase (fire-and-forget, localStorage is source of truth for reads)
 async function syncPreference(key,value){
@@ -1228,17 +1263,22 @@ function saveIncome(key){
   closeModal();showSuccess('Income updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
-  // Resets bills whose paid_at is from a PREVIOUS month.
-  // Source of truth is paid_at in Supabase — no localStorage flag needed.
-  // This works identically on every device without any coordination.
   const now=getTZ();
   const yr=now.getFullYear(),mo=now.getMonth();
+  const thisMonthKey=yr+'-'+String(mo+1).padStart(2,'0');
+  // Cross-device marker synced via Supabase preferences — prevents double-reset
+  const lastReset=lsGet('bos_bills_reset_month')||'';
+  if(lastReset===thisMonthKey)return;
+  // Only reset bills whose paid_at timestamp is from a prior month.
+  // Bills with no paid_at are left alone (DB column may not exist or legacy data).
   const toReset=(S.data.bills||[]).filter(b=>{
-    if(!b.paid)return false;
-    if(!b.paid_at)return true; // legacy: paid but no timestamp — treat as prior month
+    if(!b.paid||!b.paid_at)return false;
     const d=new Date(b.paid_at);
     return d.getFullYear()!==yr||d.getMonth()!==mo;
   });
+  // Mark this month as processed regardless of whether there was anything to reset
+  lsSet('bos_bills_reset_month',thisMonthKey);
+  syncPreference('bills_reset_month',thisMonthKey);
   if(!toReset.length)return;
   const ids=new Set(toReset.map(b=>b.id));
   toReset.forEach(b=>sb.from('bills').update({paid:false,paid_by:null,paid_at:null}).eq('id',b.id).catch(()=>{}));
