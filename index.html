@@ -217,8 +217,11 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .mrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:0.5px solid var(--border)}
 .mrow:last-child{border-bottom:none}
 .mdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.sched-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:0.5px solid var(--border);border-radius:9px}
+.sched-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:0.5px solid var(--border);border-radius:9px;transition:opacity 0.15s,border-color 0.15s}
+.sched-item.dragging{opacity:0.4}
+.sched-item.drag-over{border-color:var(--gold);border-style:dashed}
 .si-num{font-size:11px;font-weight:700;color:var(--gold);width:18px;flex-shrink:0;margin-top:1px}
+.si-drag{font-size:15px;color:var(--white);opacity:0.25;flex-shrink:0;margin-top:0;cursor:grab;touch-action:none;user-select:none;padding:0 2px}
 .si-chk{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;margin-top:1px}
 .si-chk.done{background:var(--green);border-color:var(--green)}
 .si-text{font-size:13px;font-weight:500;color:var(--white);flex:1;line-height:1.3}
@@ -341,6 +344,74 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .gstab.on{background:var(--gold);color:var(--gd);border-color:var(--gold)}
 .preprompt-area{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--white);width:100%;min-height:52px;resize:none;box-sizing:border-box;margin-bottom:8px}
 .preprompt-area::placeholder{color:rgba(255,255,255,0.3)}
+/* NAV SVG ICONS */
+.nav-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex-shrink:0;color:rgba(255,255,255,0.45)}
+.nav-icon svg{width:18px;height:18px;display:block;stroke:currentColor}
+.nav-item.active .nav-icon{color:var(--gold)}
+.nav-label{font-size:14px;font-weight:600;color:var(--white)}
+.nav-item.active .nav-label{color:var(--gold)}
+/* MIAMI FINANCE MODULE */
+.m-metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m-metric{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:11px 13px}
+.m-metric-lbl{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.m-metric-val{font-size:18px;font-weight:700;color:var(--white)}
+.m-metric-sub{font-size:10px;color:var(--white);opacity:.5;margin-top:2px}
+.vault-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vault-card{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;cursor:pointer;position:relative;transition:border-color .15s,background .15s}
+.vault-card:active{border-color:var(--gold);background:rgba(255,255,255,0.07)}
+.vault-card.locked{opacity:.45}
+.vault-name{font-size:11px;font-weight:700;color:var(--white);margin-bottom:1px}
+.vault-amt{font-size:16px;font-weight:700;color:var(--white);margin:3px 0}
+.vault-pct{font-size:9px;color:var(--gold);font-weight:700}
+.vault-pb-bg{background:rgba(255,255,255,0.08);border-radius:3px;height:3px;margin-top:7px}
+.vault-pb{border-radius:3px;height:3px;transition:width .3s}
+.vault-pb-red{background:var(--red)}.vault-pb-amber{background:var(--gold)}.vault-pb-green{background:var(--green)}.vault-pb-blue{background:var(--blue)}.vault-pb-purple{background:var(--purple)}.vault-pb-teal{background:#5DCAA5}
+.vault-lock{position:absolute;top:8px;right:8px;font-size:10px;color:var(--white);opacity:.35}
+.exp-cat-hdr{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 4px;padding-left:2px}
+.exp-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:4px}
+.exp-name{font-size:12px;font-weight:600;color:var(--white);flex:1}
+.exp-note{font-size:9px;color:var(--white);opacity:.4;margin-top:1px}
+.exp-amt{font-size:12px;font-weight:700;color:var(--white);white-space:nowrap}
+.exp-tag{font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.exp-tag-debt{background:rgba(232,188,80,.18);color:var(--gold)}.exp-tag-watch{background:rgba(226,75,74,.18);color:var(--red)}.exp-tag-ibr{background:rgba(123,158,232,.18);color:var(--blue)}
+.debt-row{padding:10px 0;border-bottom:.5px solid rgba(255,255,255,.06)}
+.debt-row:last-child{border-bottom:none}
+.debt-name{font-size:12px;font-weight:700;color:var(--white)}
+.debt-meta{font-size:9px;color:var(--white);opacity:.4;margin-top:1px;line-height:1.4}
+.debt-bal{font-size:14px;font-weight:700}
+.debt-pb-bg{background:rgba(255,255,255,.08);border-radius:3px;height:4px;margin:6px 0 3px}
+.debt-pb-fill{border-radius:3px;height:4px;transition:width .4s}
+.asset-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid rgba(255,255,255,.06)}
+.asset-row:last-child{border-bottom:none}
+.asset-name{font-size:12px;font-weight:600;color:var(--white);flex:1}
+.asset-val{font-size:12px;font-weight:700;color:var(--white)}
+.asset-equity{font-size:10px;color:var(--green);margin-top:1px}
+.ms-row{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:.5px solid rgba(255,255,255,.06)}
+.ms-row:last-child{border-bottom:none}
+.ms-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.ms-dot-done{background:var(--green)}.ms-dot-active{background:var(--gold);box-shadow:0 0 6px rgba(232,188,80,.5)}.ms-dot-locked{background:transparent;border:1.5px solid rgba(255,255,255,.2)}
+.ms-title{font-size:12px;font-weight:700;color:var(--white)}.ms-sub{font-size:10px;color:var(--white);opacity:.4;margin-top:1px}.ms-target{font-size:9px;font-weight:700;color:var(--gold);margin-top:2px}
+.tally-panel{background:rgba(255,255,255,.03);border:0.5px solid rgba(255,255,255,.08);border-radius:10px;padding:12px}
+.phase-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:700}
+.phase-plan{background:rgba(232,188,80,.1);border:1px solid rgba(232,188,80,.25);color:var(--gold)}.phase-live{background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.3);color:#5DCAA5}
+.miami-alert{background:rgba(232,188,80,.06);border:1px solid rgba(232,188,80,.2);border-radius:10px;padding:11px 13px}
+.miami-alert-msg{font-size:12px;color:var(--white);line-height:1.45;opacity:.85}
+.miami-alert-cta{font-size:10px;font-weight:700;color:var(--gold);margin-top:6px;cursor:pointer;display:inline-block}
+.nw-ring-wrap{display:flex;flex-direction:column;align-items:center;padding:12px 0 6px}
+.paycheck-bar{background:rgba(255,255,255,.06);border-radius:5px;height:7px;margin:3px 0 2px;overflow:hidden}
+.paycheck-bar-fill{height:7px;border-radius:5px;transition:width .25s;background:var(--gold)}
+.paycheck-bar-over{background:var(--red)}
+.vault-pct-input{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.18);width:42px;text-align:right;font-size:13px;font-weight:700;color:var(--gold);padding:1px 2px;-moz-appearance:textfield}
+.vault-pct-input::-webkit-outer-spin-button,.vault-pct-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.vault-amt-input{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.18);width:72px;text-align:right;font-size:13px;font-weight:700;color:var(--white);padding:1px 2px;-moz-appearance:textfield}
+.vault-amt-input::-webkit-outer-spin-button,.vault-amt-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.history-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:.5px solid rgba(255,255,255,.05)}
+.history-row:last-child{border-bottom:none}
+.history-who{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap;min-width:28px}
+.history-what{font-size:11px;color:var(--white);flex:1;line-height:1.35}
+.history-when{font-size:9px;color:var(--white);opacity:.4;white-space:nowrap}
+.nav-badge{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto;flex-shrink:0}
+.budget-ssec{flex-direction:column;gap:10px;padding:14px}
 </style>
 </head>
 <body><div id="app-root">
@@ -449,23 +520,32 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div id="chores-room-detail" style="display:none"></div>
       <div class="room-grid" id="room-grid"></div>
     </div>
-    <div class="section" id="section-budget">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:18px;font-weight:700;color:var(--white)">Budget</span>
-        <span style="font-size:11px;color:var(--gold);font-weight:600" id="budget-month-label"></span>
+    <div class="section" id="section-budget" style="padding:0;gap:0">
+      <div class="top-tabs" id="budget-tabs">
+        <div class="ttab on" onclick="switchBudgetTab('overview')">Overview</div>
+        <div class="ttab" onclick="switchBudgetTab('miami')">Miami</div>
+        <div class="ttab" onclick="switchBudgetTab('millionaire')">Millionaire</div>
       </div>
-      <div class="grid2" id="budget-summary"></div>
-      <div id="budget-progress"></div>
-      <div class="sec-label">By Category</div><div class="card" id="budget-categories"></div>
-      <div class="sec-label">Tithe &#8212; Sundays</div><div class="card" id="tithe-tracker"></div>
-      <div class="sec-label">Savings Goals</div>
-      <div id="savings-section"></div>
-      <button class="btn-gold-outline" onclick="showAddSavings()">+ Add Savings Goal</button>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-        <span style="font-size:16px;font-weight:700;color:var(--white)">Bills</span>
-        <button class="btn-gold-sm" onclick="showAddBill()">+ Add Bill</button>
+      <div class="ssec active budget-ssec" id="budget-ssec-overview">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:18px;font-weight:700;color:var(--white)">Budget</span>
+          <span style="font-size:11px;color:var(--gold);font-weight:600" id="budget-month-label"></span>
+        </div>
+        <div class="grid2" id="budget-summary"></div>
+        <div id="budget-progress"></div>
+        <div class="sec-label">By Category</div><div class="card" id="budget-categories"></div>
+        <div class="sec-label">Tithe &#8212; Sundays</div><div class="card" id="tithe-tracker"></div>
+        <div class="sec-label">Savings Goals</div>
+        <div id="savings-section"></div>
+        <button class="btn-gold-outline" onclick="showAddSavings()">+ Add Savings Goal</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span style="font-size:16px;font-weight:700;color:var(--white)">Bills</span>
+          <button class="btn-gold-sm" onclick="showAddBill()">+ Add Bill</button>
+        </div>
+        <div id="bills-list"></div>
       </div>
-      <div id="bills-list"></div>
+      <div class="ssec budget-ssec" id="budget-ssec-miami"></div>
+      <div class="ssec budget-ssec" id="budget-ssec-millionaire"></div>
     </div>
     <div class="section" id="section-health" style="padding:0">
       <div class="top-tabs" id="health-tabs">
@@ -554,7 +634,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 <script>
 const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
-let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',workoutChat:[],data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',budgetTab:'overview',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',workoutChat:[],data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
 const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -871,7 +951,8 @@ async function launchApp(){
   document.getElementById('main-app').style.display='flex';document.getElementById('splash').style.display='none';
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
   await loadAll();migrateLocalToSupabase();checkMonthlyBillReset();renderHome();
-  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();({home:renderHome,budget:renderBudget,chores:renderChores,grocery:renderGrocery,health:renderHealth,schedule:renderSchedule,minutes:renderMinutes})[S.currentSection]?.();});},30000);
+  if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();
+  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();({home:renderHome,budget:renderBudget,chores:renderChores,grocery:renderGrocery,health:renderHealth,schedule:renderSchedule,minutes:renderMinutes,miami:renderMiami,millionaire:renderMillionaire})[S.currentSection]?.();});},30000);
 }
 function openActivityDetail(){
   const acts=S.data.activity||[];
@@ -986,9 +1067,22 @@ function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';sh
 function isDesktop(){return window.innerWidth>=768;}
 function setupNav(){
   document.getElementById('drawer-user-name').textContent=S.profile?.name||'User';
-  document.getElementById('drawer-user-role').textContent=(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)+' \u00b7 Tallahassee, FL';
-  const navs=[['home','\ud83c\udfe0','Home'],['chores','\ud83e\uddf9','Chores'],['budget','\ud83d\udcb0','Budget'],['health','\u2764\ufe0f','Health'],['business','\ud83d\udcbc','Business'],['life','\ud83c\udf3f','Life'],['minutes','\ud83d\udccb','Minutes'],['schedule','\ud83d\udcc5','Schedule'],['grocery','\ud83d\uded2','Grocery'],['users','\ud83d\udc65','Users']];
-  document.getElementById('drawer-nav').innerHTML=navs.map(([id,icon,label])=>`<div class="nav-item ${S.currentSection===id?'active':''}" id="nav-${id}" onclick="go('${id}')"><span class="nav-icon">${icon}</span><span class="nav-label">${label}</span></div>`).join('');
+  document.getElementById('drawer-user-role').textContent=(S.profile?.role||'admin').charAt(0).toUpperCase()+(S.profile?.role||'admin').slice(1)+' \u00b7 Betancur OS';
+  const svgI={
+    home:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    chores:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+    budget:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+    health:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    business:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+    life:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12m0 0C12 7 7 5 3 7c4 0 9 2 9 5zm0 0c0-3 5-5 9-5-4 2-9 2-9 5"/></svg>`,
+    minutes:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    schedule:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    grocery:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
+    users:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+  };
+  const navs=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','Minutes'],['schedule','Schedule'],['grocery','Grocery'],['users','Users']];
+  const alerts=typeof checkMiamiAlerts==='function'?checkMiamiAlerts():[];
+  document.getElementById('drawer-nav').innerHTML=navs.map(([id,label])=>`<div class="nav-item ${S.currentSection===id?'active':''}" id="nav-${id}" onclick="go('${id}')"><span class="nav-icon">${svgI[id]||''}</span><span class="nav-label">${label}</span>${id==='budget'&&alerts.length?`<span class="nav-badge"></span>`:''}</div>`).join('');
 }
 function setupTopBar(){
   const c=S.profile?.avatar_color||'#E8BC50',isDark=c==='#E8BC50',name=(S.profile?.name||'User').split(' ')[0];
@@ -1497,6 +1591,17 @@ function renderGoals(c){
     <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:8px">Jarvis factors your fasting window into meal and energy advice.</div>
     <textarea id="fasting-input" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:13px;font-size:13px;color:var(--white);width:100%;min-height:100px;resize:none;box-sizing:border-box" placeholder="e.g.&#10;\u2022 16:8 daily: eating window 12pm\u20138pm&#10;\u2022 No calories before noon (black coffee ok)">${esc(fasting)}</textarea>
     <button class="btn-gold-outline" style="margin-top:8px;padding:10px;font-size:13px;width:100%" onclick="saveFasting()">Save Schedule</button>
+    <div class="sec-label" style="margin-top:18px">Body Log</div>
+    <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:8px">Jarvis reads your latest weight and body fat for coaching. Log after weigh-ins.</div>
+    <div class="card">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <div style="flex:1"><div class="field-label">Weight (lbs)</div><input class="field-input" id="bl-wt" type="number" placeholder="215" style="margin-top:4px"></div>
+        <div style="flex:1"><div class="field-label">Body Fat %</div><input class="field-input" id="bl-bf" type="number" placeholder="18" style="margin-top:4px"></div>
+      </div>
+      <button class="btn-gold-outline" style="width:100%;padding:10px;font-size:13px" onclick="saveBodyLog()">Log Entry</button>
+      <div id="bl-history" style="margin-top:10px"></div>
+    </div>
+
     <div class="sec-label" style="margin-top:18px">NLP Anchors</div>
     <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:10px">Read one before you eat something off-plan. These rewire the moment.</div>
     ${allAnchors.map((a,i)=>`<div class="anchor-item" style="${i<defaultAnchors.length?'border-color:var(--gold)':'border-color:var(--purple)'}"><div class="anchor-text">&ldquo;${a}&rdquo;</div>${i>=defaultAnchors.length?`<button class="btn-red-outline" style="margin-top:8px;padding:4px 10px;font-size:10px;width:auto" onclick="deleteAnchor(${i-defaultAnchors.length})">Remove</button>`:''}</div>`).join('')}
@@ -1506,11 +1611,14 @@ function renderGoals(c){
       <button class="btn-gold-outline" style="width:100%;padding:10px;margin-top:8px;font-size:13px" onclick="addAnchor()">+ Add Anchor</button>
     </div>
   `;
+  _renderBodyLogHistory();
 }
+function _renderBodyLogHistory(){const hist=document.getElementById('bl-history');if(!hist)return;const log=JSON.parse(lsGet('bos_body_log')||'[]');hist.innerHTML=log.slice(0,5).map(e=>`<div class="body-log-row"><span style="font-size:10px;color:var(--white);opacity:0.4;width:70px;flex-shrink:0">${e.date}</span>${e.weight?`<span style="font-size:12px;font-weight:700;color:var(--white)">${e.weight} lbs</span>`:''}${e.bf?`<span style="font-size:11px;color:var(--gold);margin-left:8px">${e.bf}% bf</span>`:''}</div>`).join('');}
 function saveGoal(){const v=document.getElementById('goal-input')?.value?.trim()||'';lsSet('bos_main_goal',v);syncPreference('main_goal',v);showSuccess('Goal saved \u2014 Jarvis now knows.');renderGoals(document.getElementById('health-content'));}
 function saveNutritionRules(){const v=document.getElementById('nutrition-input')?.value?.trim()||'';lsSet('bos_nutrition_rules',v);syncPreference('nutrition_rules',v);showSuccess('Nutrition rules saved.');renderGoals(document.getElementById('health-content'));}
 function saveFasting(){const v=document.getElementById('fasting-input')?.value?.trim()||'';lsSet('bos_fasting',v);syncPreference('fasting',v);showSuccess('Fasting schedule saved.');renderGoals(document.getElementById('health-content'));}
 function saveJarvisMemory(){const v=document.getElementById('jmem-input')?.value?.trim()||'';lsSet('bos_jarvis_memory',v);syncPreference('jarvis_memory',v);showSuccess('Jarvis updated \u2014 he\u2019ll remember this.');renderGoals(document.getElementById('health-content'));}
+function saveBodyLog(){const wt=parseFloat(document.getElementById('bl-wt')?.value),bf=parseFloat(document.getElementById('bl-bf')?.value);if(!wt&&!bf){showError('Enter weight or body fat.');return;}const entry={date:getLocalDateStr(),weight:wt||null,bf:bf||null};const log=JSON.parse(lsGet('bos_body_log')||'[]');log.unshift(entry);lsSet('bos_body_log',JSON.stringify(log.slice(0,30)));document.getElementById('bl-wt').value='';document.getElementById('bl-bf').value='';showSuccess('Logged!');const hist=document.getElementById('bl-history');if(hist)hist.innerHTML=log.slice(0,5).map(e=>`<div class="body-log-row"><span style="font-size:10px;color:var(--white);opacity:0.4;width:70px;flex-shrink:0">${e.date}</span>${e.weight?`<span style="font-size:12px;font-weight:700;color:var(--white)">${e.weight} lbs</span>`:''}${e.bf?`<span style="font-size:11px;color:var(--gold);margin-left:8px">${e.bf}% bf</span>`:''}</div>`).join('');}
 function addAnchor(){
   const text=document.getElementById('anchor-input')?.value?.trim();
   if(!text)return;
@@ -2364,7 +2472,7 @@ async function sendEncouragement(){
   }catch(e){showError(e.message);}
 }
 // BUSINESS
-function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;const ownerName=userName(b.owner_id)||'AJ';return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}${!own?` <span style="font-size:8px;color:var(--white);opacity:0.4">&middot; ${ownerName}'s</span>`:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${b.stage.toUpperCase()}</span><button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button></div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div></div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
+function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;const ownerName=userName(b.owner_id)||'AJ';return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}${!own?` <span style="font-size:8px;color:var(--white);opacity:0.4">&middot; ${ownerName}'s</span>`:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${(b.stage||'active').toUpperCase()}</span><button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button></div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div></div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
 function openBiz(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div><div style="font-size:18px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div><div style="display:flex;gap:6px"><button class="btn-gold-sm" onclick="openJarvisCtx('${b.name} business strategy and advice')">Jarvis</button><button class="btn-white-sm" onclick="editBizModal('${id}')">Edit</button></div></div><div id="biz-tabs" style="display:flex;gap:6px;margin-bottom:12px"><button class="biz-tab on" onclick="switchBTab('kpis','${id}')">KPIs</button><button class="biz-tab" onclick="switchBTab('tasks','${id}')">Tasks</button><button class="biz-tab" onclick="switchBTab('team','${id}')">Team</button><button class="biz-tab" onclick="switchBTab('notes','${id}')">Notes</button></div><div id="biz-tc"></div><button class="btn-red-outline" style="margin-top:12px" onclick="delBiz('${id}')">Delete Business</button>`);switchBTab('kpis',id);}
 function switchBTab(tab,id){document.querySelectorAll('#biz-tabs .biz-tab').forEach((t,i)=>t.classList.toggle('on',['kpis','tasks','team','notes'][i]===tab));const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;const c=document.getElementById('biz-tc');if(!c)return;
   if(tab==='kpis')c.innerHTML=`<div class="kpi-grid">${(b.kpis||[]).map(k=>`<div class="kpi-c"><div class="kpi-lbl">${k.label}</div><div class="kpi-val">${k.value}</div><div class="kpi-tr ${(k.trend||'').includes('\u2191')?'kpi-g':'kpi-o'}">${k.trend||''}</div></div>`).join('')}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addKPI('${id}')">+ Add KPI</button>`;
@@ -2471,14 +2579,24 @@ function editMtg(id){const m=(S.data.meetings||[]).find(x=>x.id===id);if(!m)retu
 async function addAI(mid){const text=document.getElementById('em-ai')?.value?.trim();if(!text)return;const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=[...(m.action_items||[]),{id:uid4(),text,done:false}];try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);document.getElementById('em-ai').value='';showSuccess('Added!');}catch(e){showError(e.message);}}
 async function updMtg(id){const title=document.getElementById('em-title')?.value?.trim(),notes=document.getElementById('em-notes')?.value?.trim();if(!title){showError('BOS-DATA-001');return;}try{await sb.from('meetings').update({title,notes}).eq('id',id);S.data.meetings=S.data.meetings.map(m=>m.id===id?{...m,title,notes}:m);closeModal();showSuccess('Saved!');renderMinutes();}catch(e){showError(e.message);}}
 // SCHEDULE
-function renderSchedule(){const now=getTZ(),name=(S.profile?.name||'').split(' ')[0];const partner=(S.data.users||[]).find(u=>u.id!==S.profile?.id&&u.role==='admin');const partnerName=partner?.name?.split(' ')[0]||'Partner';const sched=S.data.schedules.mine,items=sched?.items||[];const done=items.filter(i=>i.done).length;document.getElementById('sched-user-pill').innerHTML=`<div class="user-pill" style="background:${S.profile?.avatar_color||'#E8BC50'}"><div class="u-dot" style="background:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}">${name}</span></div>`;document.getElementById('schedule-week-banner').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:700;color:var(--white)">Week of ${now.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div style="font-size:10px;color:var(--gold);margin-top:2px">Fill in by Sunday night</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green)">${done} / ${items.length} done</div></div></div>`;document.getElementById('schedule-jarvis').innerHTML=`<div class="jlabel">Jarvis</div><div class="jtext">${items.length===0?'Your week list is empty. Add what needs to happen.':done+' of '+items.length+' done. Keep it up, '+name+'!'}</div>`;document.getElementById('schedule-tab-row').innerHTML=`<div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='mine'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='mine'?'var(--gd)':'var(--white)'}" onclick="setSV('mine')">My List</div><div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='partner'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='partner'?'var(--gd)':'var(--white)'}" onclick="setSV('partner')">${partnerName}'s List</div>`;const addBtn=document.getElementById('section-schedule').querySelector('.add-item-row');if(addBtn)addBtn.style.display='flex';if(S.scheduleView==='mine'){document.getElementById('schedule-my-list').innerHTML=items.map((item,i)=>`<div class="sched-item"><span class="si-num">${i+1}</span><div class="si-chk ${item.done?'done':''}" onclick="togSI(${i})" style="cursor:pointer">${item.done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="si-text ${item.done?'stk':''}">${item.text}</div>${item.time?`<div class="si-time">${item.time}</div>`:''}</div><button class="btn-white-sm" onclick="editSI(${i})" style="font-size:9px;padding:2px 6px">&#9998;</button><span class="del-x" onclick="delSI(${i})">&#215;</span></div>`).join('');}else{document.getElementById('schedule-my-list').innerHTML=`<div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${partnerName}'s schedule</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div></div><div style="font-size:11px;color:var(--white);opacity:0.4">${partnerName}'s list appears here once they sign in and add items.</div></div>`;}document.getElementById('other-sched-label').style.display='none';document.getElementById('other-schedule-list').innerHTML='';}
+function renderSchedule(){const now=getTZ(),name=(S.profile?.name||'').split(' ')[0];const partner=(S.data.users||[]).find(u=>u.id!==S.profile?.id&&u.role==='admin');const partnerName=partner?.name?.split(' ')[0]||'Partner';const sched=(S.data.schedules||{}).mine,items=sched?.items||[];const done=items.filter(i=>i.done).length;document.getElementById('sched-user-pill').innerHTML=`<div class="user-pill" style="background:${S.profile?.avatar_color||'#E8BC50'}"><div class="u-dot" style="background:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}"></div><span class="u-name" style="color:${S.profile?.avatar_color==='#E8BC50'?'#2A2D35':'#FFFFFF'}">${name}</span></div>`;document.getElementById('schedule-week-banner').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:700;color:var(--white)">Week of ${now.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div style="font-size:10px;color:var(--gold);margin-top:2px">Fill in by Sunday night</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green)">${done} / ${items.length} done</div></div></div>`;document.getElementById('schedule-jarvis').innerHTML=`<div class="jlabel">Jarvis</div><div class="jtext">${items.length===0?'Your week list is empty. Add what needs to happen.':done+' of '+items.length+' done. Keep it up, '+name+'!'}</div>`;document.getElementById('schedule-tab-row').innerHTML=`<div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='mine'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='mine'?'var(--gd)':'var(--white)'}" onclick="setSV('mine')">My List</div><div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:${S.scheduleView==='partner'?'var(--gold)':'var(--bg-dark)'};cursor:pointer;font-size:11px;font-weight:700;color:${S.scheduleView==='partner'?'var(--gd)':'var(--white)'}" onclick="setSV('partner')">${partnerName}'s List</div>`;const addBtn=document.getElementById('section-schedule').querySelector('.add-item-row');if(addBtn)addBtn.style.display='flex';if(S.scheduleView==='mine'){document.getElementById('schedule-my-list').innerHTML=items.map((item,i)=>`<div class="sched-item" draggable="true" data-idx="${i}" ondragstart="siDragStart(event,${i})" ondragover="siDragOver(event,${i})" ondrop="siDrop(event,${i})" ondragend="siDragEnd(event)"><span class="si-drag" ontouchstart="siTouchStart(event,${i})" ontouchmove="siTouchMove(event)" ontouchend="siTouchEnd(event,${i})">&#8942;&#8942;</span><span class="si-num">${i+1}</span><div class="si-chk ${item.done?'done':''}" onclick="togSI(${i})" style="cursor:pointer">${item.done?'<span style="color:var(--white);font-size:10px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="si-text ${item.done?'stk':''}">${item.text}</div>${item.time?`<div class="si-time">${item.time}</div>`:''}</div><button class="btn-white-sm" onclick="editSI(${i})" style="font-size:9px;padding:2px 6px">&#9998;</button><span class="del-x" onclick="delSI(${i})">&#215;</span></div>`).join('');}else{document.getElementById('schedule-my-list').innerHTML=`<div class="card" style="opacity:0.75"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${partnerName}'s schedule</span><div class="lock-badge"><span>&#128274;</span><span style="font-size:9px;color:var(--white);opacity:0.6;margin-left:3px">View only</span></div></div><div style="font-size:11px;color:var(--white);opacity:0.4">${partnerName}'s list appears here once they sign in and add items.</div></div>`;}document.getElementById('other-sched-label').style.display='none';document.getElementById('other-schedule-list').innerHTML='';}
 function setSV(v){S.scheduleView=v;renderSchedule();}
-async function togSI(idx){const sched=S.data.schedules.mine;let items=sched?.items?JSON.parse(JSON.stringify(sched.items)):[];if(!items[idx])return;items[idx].done=!items[idx].done;try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const wof=getWeekOf(new Date());const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}renderSchedule();}catch(e){showError(e.message);}}
+async function togSI(idx){const sched=(S.data.schedules||{}).mine;let items=sched?.items?JSON.parse(JSON.stringify(sched.items)):[];if(!items[idx])return;items[idx].done=!items[idx].done;try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const wof=getWeekOf(new Date());const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}renderSchedule();}catch(e){showError(e.message);}}
 function showAddScheduleItem(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add to My List</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">What needs to happen this week?</div><input class="field-input" id="si-text" placeholder="e.g. Meal prep, Call dad..."></div><div class="field-group"><div class="field-label">Time (optional)</div><input class="field-input" id="si-time" placeholder="e.g. Saturday 2pm..."></div><button class="btn-gold" onclick="saveSI()">Add</button></div>`);}
-async function saveSI(){const text=document.getElementById('si-text')?.value?.trim(),time=document.getElementById('si-time')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const wof=getWeekOf(new Date()),sched=S.data.schedules.mine,items=[...(sched?.items||[]),{text,done:false,time:time||null}];try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}S.scheduleView='mine';closeModal();showSuccess('Added!');renderSchedule();}catch(e){showError(e.message);}}
-async function delSI(idx){const sched=S.data.schedules.mine;if(!sched)return;const items=(sched.items||[]).filter((_,i)=>i!==idx);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};renderSchedule();}catch(e){showError(e.message);}}
-function editSI(idx){const sched=S.data.schedules.mine,item=sched?.items?.[idx];if(!item)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Item</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Text</div><input class="field-input" id="esi-t" value="${item.text}"></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esi-ti" value="${item.time||''}"></div><button class="btn-gold" onclick="updSI(${idx})">Save</button></div>`);}
-async function updSI(idx){const text=document.getElementById('esi-t')?.value?.trim(),time=document.getElementById('esi-ti')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const sched=S.data.schedules.mine;if(!sched)return;const items=sched.items.map((item,i)=>i===idx?{...item,text,time:time||null}:item);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};closeModal();renderSchedule();}catch(e){showError(e.message);}}
+async function saveSI(){const text=document.getElementById('si-text')?.value?.trim(),time=document.getElementById('si-time')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const wof=getWeekOf(new Date()),sched=(S.data.schedules||{}).mine,items=[...(sched?.items||[]),{text,done:false,time:time||null}];try{if(sched){await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};}else{const r=await sb.from('schedules').insert({user_id:S.profile.id,week_of:wof,items});if(r?.[0])S.data.schedules.mine=r[0];}S.scheduleView='mine';closeModal();showSuccess('Added!');renderSchedule();}catch(e){showError(e.message);}}
+async function delSI(idx){const sched=(S.data.schedules||{}).mine;if(!sched)return;const items=(sched.items||[]).filter((_,i)=>i!==idx);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};renderSchedule();}catch(e){showError(e.message);}}
+async function siReorder(fromIdx,toIdx){if(fromIdx===toIdx)return;const sched=(S.data.schedules||{}).mine;if(!sched)return;const items=JSON.parse(JSON.stringify(sched.items||[]));const[moved]=items.splice(fromIdx,1);items.splice(toIdx,0,moved);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};renderSchedule();}catch(e){showError(e.message);}}
+let _siDragFrom=null;
+function siDragStart(e,idx){_siDragFrom=idx;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function siDragOver(e,idx){e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.sched-item').forEach((el,i)=>{el.classList.toggle('drag-over',i===idx&&idx!==_siDragFrom);});}
+function siDrop(e,idx){e.preventDefault();if(_siDragFrom!==null&&_siDragFrom!==idx)siReorder(_siDragFrom,idx);}
+function siDragEnd(e){_siDragFrom=null;document.querySelectorAll('.sched-item').forEach(el=>{el.classList.remove('dragging','drag-over');});}
+let _siTouchFrom=null,_siTouchEl=null;
+function siTouchStart(e,idx){_siTouchFrom=idx;_siTouchEl=e.currentTarget.closest('.sched-item');_siTouchEl.classList.add('dragging');}
+function siTouchMove(e){e.preventDefault();const t=e.touches[0];const el=document.elementFromPoint(t.clientX,t.clientY)?.closest('.sched-item');document.querySelectorAll('.sched-item').forEach(x=>x.classList.remove('drag-over'));if(el&&el!==_siTouchEl){const idx=parseInt(el.dataset.idx);if(!isNaN(idx))el.classList.add('drag-over');}}
+function siTouchEnd(e,fromIdx){const t=e.changedTouches[0];const el=document.elementFromPoint(t.clientX,t.clientY)?.closest('.sched-item');const toIdx=el?parseInt(el.dataset.idx):NaN;if(_siTouchEl)_siTouchEl.classList.remove('dragging');document.querySelectorAll('.sched-item').forEach(x=>x.classList.remove('drag-over'));_siTouchEl=null;if(!isNaN(toIdx)&&toIdx!==fromIdx)siReorder(fromIdx,toIdx);_siTouchFrom=null;}
+function editSI(idx){const sched=(S.data.schedules||{}).mine,item=sched?.items?.[idx];if(!item)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Item</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Text</div><input class="field-input" id="esi-t" value="${item.text}"></div><div class="field-group"><div class="field-label">Time</div><input class="field-input" id="esi-ti" value="${item.time||''}"></div><button class="btn-gold" onclick="updSI(${idx})">Save</button></div>`);}
+async function updSI(idx){const text=document.getElementById('esi-t')?.value?.trim(),time=document.getElementById('esi-ti')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const sched=(S.data.schedules||{}).mine;if(!sched)return;const items=sched.items.map((item,i)=>i===idx?{...item,text,time:time||null}:item);try{await sb.from('schedules').update({items}).eq('id',sched.id);S.data.schedules.mine={...sched,items};closeModal();renderSchedule();}catch(e){showError(e.message);}}
 // GROCERY
 function renderGrocery(){const items=S.data.grocery||[];const unc=items.filter(i=>!i.checked),chk=items.filter(i=>i.checked);document.getElementById('grocery-list').innerHTML=`${unc.map(item=>{const adder=item.added_by&&item.added_by!==S.profile.id?userName(item.added_by):null;return`<div class="grocery-item"><div class="g-chk" onclick="togG('${item.id}')" style="cursor:pointer"></div><div style="flex:1"><span class="g-name">${item.name}${item.quantity?' ('+item.quantity+')':''}</span>${adder?`<div style="font-size:9px;color:var(--gold);opacity:0.6;margin-top:1px">Added by ${adder}</div>`:''}</div><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`;}).join('')}${chk.length?`<div class="sec-label" style="margin-top:8px">In Cart</div>${chk.map(item=>{const checker=item.checked_by?userName(item.checked_by):null;return`<div class="grocery-item"><div class="g-chk checked" onclick="togG('${item.id}')" style="cursor:pointer"><span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span></div><div style="flex:1"><span class="g-name stk">${item.name}</span>${checker?`<div style="font-size:9px;color:var(--green);opacity:0.7;margin-top:1px">Checked by ${checker}</div>`:''}</div><span class="del-x" onclick="delG('${item.id}')">&#215;</span></div>`;}).join('')}`:''}${!items.length?'<div style="padding:12px 0;font-size:13px;color:var(--white);opacity:0.4;text-align:center">List is empty! Tap + Add.</div>':''}`;document.getElementById('grocery-count').textContent=unc.length+' item'+(unc.length===1?'':'s');}
 async function togG(id){const g=(S.data.grocery||[]).find(x=>x.id===id);if(!g)return;const upd={checked:!g.checked,checked_by:!g.checked?S.profile.id:null};S.data.grocery=S.data.grocery.map(x=>x.id===id?{...x,...upd}:x);try{await sb.from('grocery_items').update(upd).eq('id',id);renderGrocery();}catch(e){showError(e.message);}}
@@ -2645,6 +2763,7 @@ async function sendJMsg(text){
     fasting:lsGet('bos_fasting')||'Not set',
     current_weight:latestBody.weight?latestBody.weight+' lbs ('+latestBody.date+')':'Not logged',
     current_bf:latestBody.bf?latestBody.bf+'% ('+latestBody.date+')':'Not logged',
+    ...(()=>{try{const md=getMiamiData();const mAssets=md.assets.reduce((s,a)=>s+(a.value||0),0);const mLiab=md.debts.filter(d=>!d.paid).reduce((s,d)=>s+(d.balance||0),0);const mNW=mAssets-mLiab;const mInc=(md.income?.aj||0)+(md.income?.juliette||0);const mExp=md.expenses.reduce((s,e)=>s+(e.amount||0),0);const mSurplus=mInc-mExp;const activeVaults=md.vaults.filter(v=>!v.locked);const vaultStr=activeVaults.map(v=>v.name+': '+v.pct+'% ($'+Math.round(v.monthlyAmt||0)+'/mo) balance '+fmt$(v.balance||0)+(v.target?' / target '+fmt$(v.target):'')).join('; ');const debtStr=md.debts.filter(d=>!d.paid).sort((a,b)=>(b.apr||0)-(a.apr||0)).map(d=>d.name+': '+fmt$(d.balance||0)+' @ '+(d.apr||0)+'% APR').join('; ');return{miami_is_live:md.phase==='live'?'YES — Go Live activated':'NO — Plan Mode (jobs not yet secured)',miami_income:fmt$(mInc)+'/mo combined',miami_surplus:fmt$(mSurplus)+'/mo after expenses',miami_net_worth:fmt$(mNW)+' (assets '+fmt$(mAssets)+' minus debts '+fmt$(mLiab)+')',miami_vaults:vaultStr||'none configured',miami_debts:debtStr||'none'};}catch(e){return{};}})(),
   };
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:ctx})});
@@ -2662,6 +2781,290 @@ async function sendJMsg(text){
 function launchSitter(){document.getElementById('splash').style.display='none';document.getElementById('main-app').style.display='none';document.getElementById('babysitter-app').style.display='flex';const name=(S.profile?.name||'').split(' ')[0]||'There';document.getElementById('sitter-greeting').textContent='Hi '+name+'! \ud83d\udc4b';document.getElementById('sitter-date').textContent=getTZ().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});document.getElementById('sitter-pill').innerHTML=`<div style="background:var(--border);border-radius:10px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:var(--white);opacity:0.5"></div><span style="font-size:8px;font-weight:700;color:var(--white)">${name}</span></div>`;const ds=S.data.diana_schedule;const di=ds?.items||[{time:'7:00 AM',activity:'Wake up'},{time:'8:00 AM',activity:'Breakfast'},{time:'12:00 PM',activity:'Nap time'},{time:'1:30 PM',activity:'Lunch'},{time:'2:00 PM',activity:'Playtime'},{time:'7:00 PM',activity:'Bedtime routine'}];const chores=(S.data.chores||[]).filter(c=>c.status!=='done').slice(0,5);document.getElementById('sitter-body').innerHTML=`<div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Diana Today &#128118;</div>${di.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)"><span style="font-size:12px;color:var(--white);font-weight:500">${i.activity}</span><span style="font-size:11px;color:var(--gold);font-weight:700">${i.time}</span></div>`).join('')}</div><div class="card"><div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:8px">Chores</div>${chores.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border)"><div class="chk" id="sc${i}" onclick="sChk('${c.id}',${i})" style="cursor:pointer"></div><span style="font-size:13px;color:var(--white);font-weight:500;flex:1" id="sct${i}">${c.room} \u2014 ${c.name}</span></div>`).join('')}${!chores.length?'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">All chores done!</div>':''}</div><div class="card"><div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px">LEAVE A NOTE FOR AJ + JULIETTE</div><textarea id="sit-note" style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;color:var(--white);width:100%;min-height:70px;resize:none" placeholder="How did the session go? Any notes about Diana..."></textarea><button class="btn-gold" style="margin-top:8px;padding:10px;font-size:13px" onclick="sendSNote()">Send Note</button></div><button style="background:transparent;border:none;color:var(--red);font-size:12px;font-weight:700;text-align:center;width:100%;padding:10px;cursor:pointer" onclick="logout()">Sign Out</button>`;}
 function sChk(id,i){const el=document.getElementById('sc'+i);const tel=document.getElementById('sct'+i);if(el){el.classList.add('checked');el.innerHTML='<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>';el.onclick=null;}if(tel){tel.style.textDecoration='line-through';tel.style.opacity='0.5';}doneChore(id);}
 async function sendSNote(){const note=document.getElementById('sit-note')?.value?.trim();if(!note){showError('Please write a note first.');return;}try{await sb.from('babysitter_notes').insert({household_id:S.household.id,from_user_id:S.profile.id,note,session_date:getLocalDateStr()});document.getElementById('sit-note').value='';showSuccess('Note sent to AJ and Juliette!');}catch(e){showError(e.message);}}
+// ═══════════════════════════════════════════════════
+// MIAMI CHAPTER — FINANCIAL OPERATING SYSTEM
+// ═══════════════════════════════════════════════════
+const MIAMI_KEY='betancur-miami-finance';
+function fmt$(n){return(n||0).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtRel(iso){try{const d=new Date(iso);const days=Math.round((new Date()-d)/864e5);if(days===0)return'Today';if(days===1)return'Yesterday';if(days<7)return days+'d ago';return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch(e){return'';}}
+const MIAMI_VAULT_DEFAULTS=[
+  {id:'chase-killer',name:'Chase Killer',pct:24,monthlyAmt:3000,target:10640,balance:0,originalBalance:10640,color:'red',rule:'$3,000/mo direct to Chase balance (27.24% APR). Active until Chase = $0. Automatically redirects to Amex when done.',autoRedirect:'amex-killer',locked:false,order:1},
+  {id:'amex-killer',name:'Amex Payoff',pct:0,monthlyAmt:0,target:3710,balance:0,originalBalance:3710,color:'amber',rule:'Activates automatically when Chase is paid off. Full $3,000 redirected here. Done by month 6.',locked:true,unlocksWhen:'chase-killer-complete',order:2},
+  {id:'emergency',name:'Emergency Fund',pct:8,monthlyAmt:1000,target:15000,balance:0,color:'blue',rule:'$1,000/mo until $15,000 reached. Pauses at target. Both must agree before any withdrawal. Unlocks full vault freedom.',pauseAtTarget:true,locked:false,order:3},
+  {id:'betancur-fund',name:'Betancur Fund',pct:8,monthlyAmt:1000,target:null,balance:0,color:'purple',rule:'$1,000/mo in HYSA. Requires pitch deck + both Aj and Juliette approve before deploying. Either can veto. Fully unlocks when emergency fund hits $15k.',requiresPitchDeck:true,locked:false,order:4},
+  {id:'roth-ira',name:'Roth IRA',pct:9.3,monthlyAmt:1166,target:14000,balance:0,color:'teal',rule:'$583/mo per person = $1,166/mo combined. Max $7,000/yr each ($14k combined). Open at Fidelity or Vanguard. Cannot touch until retirement.',locked:false,order:5},
+  {id:'baby-family',name:'Baby + Family',pct:4,monthlyAmt:500,target:null,balance:0,color:'amber',rule:'$500/mo for baby expenses and family buffer. Review monthly as costs evolve. Convert to 529 college fund after year 1.',locked:false,order:6}
+];
+const MIAMI_EXPENSE_DEFAULTS=[
+  {id:'util-miami',category:'Housing',name:'Utilities',amount:175,note:'Housing covered — utilities only',tag:null},
+  {id:'cells',category:'Housing',name:'Cellphones',amount:170,note:null,tag:null},
+  {id:'auto-ln',category:'Transportation',name:'Auto loan',amount:450,note:'$7,700 remaining · payoff target: month 10',tag:'debt'},
+  {id:'auto-ins',category:'Transportation',name:'Auto insurance',amount:158,note:null,tag:null},
+  {id:'gas',category:'Transportation',name:'Gasoline',amount:100,note:null,tag:null},
+  {id:'groc',category:'Living',name:'Groceries',amount:450,note:null,tag:null},
+  {id:'dining',category:'Living',name:'Dining out',amount:250,note:'Discipline required in Miami',tag:'watch'},
+  {id:'baby-exp',category:'Living',name:'Baby expenses',amount:500,note:'Diapers, supplies, pediatric',tag:null},
+  {id:'sitter',category:'Living',name:'Babysitting',amount:700,note:'TBD — update when in Miami',tag:null},
+  {id:'dog',category:'Living',name:'Dog food',amount:50,note:null,tag:null},
+  {id:'stream',category:'Subscriptions',name:'Streaming',amount:8.99,note:null,tag:null},
+  {id:'spot',category:'Subscriptions',name:'Spotify',amount:12.99,note:null,tag:null},
+  {id:'amzn',category:'Subscriptions',name:'Amazon Prime',amount:11.58,note:'$139/yr ÷ 12',tag:null},
+  {id:'stloan',category:'Debt',name:'Student loan',amount:170,note:'IBR minimum only. Explore PSLF.',tag:'ibr'}
+];
+const MIAMI_DEBT_DEFAULTS=[
+  {id:'td-card',name:'TD Bank card',balance:238,originalBalance:238,apr:null,monthlyMin:35,extraPayment:238,color:'green',payoffMonth:0,note:'Pay this month — $238 left',priority:1,paid:false},
+  {id:'chase',name:'Chase',balance:10640,originalBalance:10640,apr:27.24,monthlyMin:213,extraPayment:2787,color:'red',payoffMonth:4,note:'27.24% APR — most expensive debt',priority:2,paid:false},
+  {id:'amex',name:'Amex Business Gold',balance:3710,originalBalance:3710,apr:null,monthlyMin:100,extraPayment:0,color:'amber',payoffMonth:6,note:'Charge card — redirected after Chase',priority:3,paid:false},
+  {id:'friend-loan',name:'Friend loan',balance:2000,originalBalance:2000,apr:0,monthlyMin:0,extraPayment:2000,color:'purple',payoffMonth:7,note:'Honor this relationship — one payment',priority:4,paid:false},
+  {id:'auto-loan',name:'Auto loan',balance:7700,originalBalance:7700,apr:null,monthlyMin:450,extraPayment:2550,color:'blue',payoffMonth:10,note:'$450 min + $2,550 extra toward it',priority:5,paid:false},
+  {id:'2nd-mort',name:'2nd mortgage',balance:4847,originalBalance:4847,apr:null,monthlyMin:40,extraPayment:0,color:'gray',payoffMonth:null,note:'Dies on its own — do not accelerate',priority:6,paid:false},
+  {id:'student-ln',name:'Student loan',balance:383500,originalBalance:383500,apr:null,monthlyMin:170,extraPayment:0,color:'blue',payoffMonth:null,note:'IBR only. Pursue PSLF. Do not overpay.',priority:7,paid:false},
+  {id:'1st-mort',name:'1st mortgage',balance:239380,originalBalance:239380,apr:null,monthlyMin:2031,extraPayment:0,color:'gray',payoffMonth:null,note:'Airbnb covers this — treat as $0 out of pocket',priority:8,paid:false}
+];
+const MIAMI_ASSET_DEFAULTS=[
+  {id:'tlh-home',name:'Tallahassee home',value:314000,debt:239380,note:'Est. value — update annually',type:'real_estate'},
+  {id:'roth-aj',name:'Roth IRA (AJ)',value:0,debt:0,note:'Open at Fidelity or Vanguard',type:'retirement'},
+  {id:'roth-jul',name:'Roth IRA (Juliette)',value:0,debt:0,note:'Open at Fidelity or Vanguard',type:'retirement'},
+  {id:'bf-asset',name:'Betancur Fund',value:0,debt:0,note:'HYSA — pitch deck required to deploy',type:'investment'},
+  {id:'ef-asset',name:'Emergency fund',value:0,debt:0,note:'Target: $15,000 liquid',type:'savings'}
+];
+const MIAMI_MILESTONE_DEFAULTS=[
+  {id:'m1',title:'Both jobs landed in Miami',sub:'Unlocks full vault deployment',target:'Month 0',status:'active'},
+  {id:'m2',title:'TD card paid off',sub:'First win — $238 gone',target:'Month 1',status:'active'},
+  {id:'m3',title:'Tallahassee Airbnb live',sub:'Mortgage covered, profit flowing to Betancur Fund',target:'Month 1–2',status:'locked'},
+  {id:'m4',title:'Chase card eliminated',sub:'$242/mo in interest freed forever',target:'Month 4',status:'locked'},
+  {id:'m5',title:'All cards + friend loan gone',sub:'Only mortgage, auto, student loan remain',target:'Month 7',status:'locked'},
+  {id:'m6',title:'Auto loan eliminated',sub:'$450/mo redirected to wealth building',target:'Month 10',status:'locked'},
+  {id:'m7',title:'Emergency fund fully funded',sub:'$15k liquid — full vault freedom unlocked',target:'Month 12–15',status:'locked'},
+  {id:'m8',title:'Both Roth IRAs maxed year 1',sub:'$14k/yr tax-free compound growth',target:'Year 1',status:'locked'},
+  {id:'m9',title:'Garage unit Airbnb live',sub:'+$800–$1,200/mo passive income added',target:'Year 1–2',status:'locked'},
+  {id:'m10',title:'Betancur Fund first deployment',sub:'Pitch deck submitted, both approve',target:'Year 2',status:'locked'},
+  {id:'m11',title:'Net worth $1,000,000',sub:'Millionaire by 30 — mission complete',target:'Age 29–30',status:'locked'}
+];
+function getMiamiData(){try{const r=localStorage.getItem(MIAMI_KEY);if(r)return JSON.parse(r);}catch(e){}return initMiamiData();}
+function saveMiamiData(data){data.lastUpdated=new Date().toISOString();localStorage.setItem(MIAMI_KEY,JSON.stringify(data));}
+function initMiamiData(){const data={vaults:JSON.parse(JSON.stringify(MIAMI_VAULT_DEFAULTS)),expenses:JSON.parse(JSON.stringify(MIAMI_EXPENSE_DEFAULTS)),debts:JSON.parse(JSON.stringify(MIAMI_DEBT_DEFAULTS)),assets:JSON.parse(JSON.stringify(MIAMI_ASSET_DEFAULTS)),milestones:JSON.parse(JSON.stringify(MIAMI_MILESTONE_DEFAULTS)),income:{takeHome:12500,gross:16667},airbnb:{revenue:0,extraExpenses:0},paychecks:[],actionHistory:[],isLive:false,goLiveDate:null,lastUpdated:new Date().toISOString()};saveMiamiData(data);return data;}
+function logMiamiAction(action,detail){const data=getMiamiData();data.actionHistory=[{id:uid4(),who:S.profile?.name?.split(' ')[0]||'Unknown',userId:S.profile?.id||'',action,detail,ts:new Date().toISOString()},...(data.actionHistory||[])].slice(0,300);saveMiamiData(data);}
+function applyVaultRules(data){
+  const chaseDebt=data.debts.find(d=>d.id==='chase');
+  const chaseV=data.vaults.find(v=>v.id==='chase-killer');
+  const amexV=data.vaults.find(v=>v.id==='amex-killer');
+  if(chaseDebt&&chaseDebt.balance<=0&&chaseV&&amexV&&amexV.locked){amexV.locked=false;amexV.monthlyAmt=chaseV.monthlyAmt;amexV.pct=chaseV.pct;chaseV.locked=true;chaseV.monthlyAmt=0;chaseV.pct=0;}
+  const efV=data.vaults.find(v=>v.id==='emergency');
+  if(efV&&efV.target&&(efV.balance||0)>=efV.target)efV.paused=true;
+  return data;
+}
+function checkMiamiAlerts(){
+  try{
+    const data=getMiamiData();const alerts=[];const now=new Date();
+    if(data.paychecks&&data.paychecks.length>0){const last=new Date(data.paychecks[data.paychecks.length-1].date);const days=Math.round((now-last)/864e5);if(days>=14)alerts.push({type:'paycheck',priority:1,msg:`No paycheck logged in ${days} days. Log your next paycheck to allocate to vaults.`,cta:'Log Paycheck',action:'showLogPaycheck'});}
+    else if(data.isLive)alerts.push({type:'paycheck',priority:1,msg:'No paychecks logged yet. Log your first paycheck to start allocating to vaults.',cta:'Log Paycheck',action:'showLogPaycheck'});
+    const chase=data.debts.find(d=>d.id==='chase');
+    if(chase&&!chase.paid&&chase.balance>0&&chase.balance<(chase.extraPayment+chase.monthlyMin)*2)alerts.push({type:'debt_close',priority:2,msg:`Chase is less than 2 payments from $0. Keep going — you\'re about to free $242/mo in interest.`,cta:null});
+    const efV=data.vaults.find(v=>v.id==='emergency');
+    if(efV&&efV.target&&(efV.balance||0)>=efV.target)alerts.push({type:'milestone',priority:3,msg:'Emergency fund hit $15,000. Full vault freedom is now unlocked.',cta:null});
+    return alerts.sort((a,b)=>a.priority-b.priority);
+  }catch(e){return[];}
+}
+function updateMiamiNavBadge(){try{const alerts=checkMiamiAlerts();const nb=document.getElementById('nav-budget');if(!nb)return;const ex=nb.querySelector('.nav-badge');if(ex)ex.remove();if(alerts.length){const b=document.createElement('span');b.className='nav-badge';nb.appendChild(b);}}catch(e){}}
+
+// ─── BUDGET TAB SWITCHING ───
+function switchBudgetTab(tab){
+  S.budgetTab=tab;
+  document.querySelectorAll('#budget-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['overview','miami','millionaire'][i]===tab));
+  document.querySelectorAll('.budget-ssec').forEach(el=>el.classList.remove('active'));
+  const sel=document.getElementById('budget-ssec-'+tab);if(sel)sel.classList.add('active');
+  if(tab==='miami')renderMiami();
+  else if(tab==='millionaire')renderMillionaire();
+  else renderBudget();
+}
+
+// ─── MIAMI CHAPTER RENDER ───
+function renderMiami(){
+  const data=getMiamiData();const el=document.getElementById('budget-ssec-miami');if(!el)return;
+  const{income,vaults,expenses,airbnb}=data;
+  const burn=expenses.reduce((s,e)=>s+(e.amount||0),0);
+  const surplus=income.takeHome-burn;
+  const hiDebt=data.debts.filter(d=>['chase','amex'].includes(d.id)&&!d.paid).reduce((s,d)=>s+(d.balance||0),0);
+  const alerts=checkMiamiAlerts();
+  const alertHTML=alerts.slice(0,1).map(a=>`<div class="miami-alert"><div style="display:flex;align-items:flex-start;gap:9px"><div style="flex:1"><div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Jarvis</div><div class="miami-alert-msg">${a.msg}</div>${a.cta?`<div class="miami-alert-cta" onclick="${a.action}()">${a.cta} →</div>`:''}</div><span style="font-size:18px;cursor:pointer;color:var(--white);opacity:.25;line-height:1" onclick="this.closest('.miami-alert').remove()">×</span></div></div>`).join('');
+  const phaseBadge=data.isLive?`<div class="phase-badge phase-live">● Active</div>`:`<div class="phase-badge phase-plan" onclick="showGoLiveModal()" style="cursor:pointer">Plan Mode · Go Live</div>`;
+  const liveInfo=data.isLive?`Live since ${new Date(data.goLiveDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`:data.paychecks.length?`${data.paychecks.length} paycheck${data.paychecks.length>1?'s':''} logged`:'Planning — jobs not yet secured';
+  const headerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:17px;font-weight:700;color:var(--white)">Miami Chapter</div><div style="font-size:10px;color:var(--white);opacity:.35;margin-top:2px">${liveInfo}</div></div>${phaseBadge}</div>`;
+  const metricsHTML=`<div class="m-metric-grid"><div class="m-metric" style="cursor:pointer" onclick="editMiamiIncome()"><div class="m-metric-lbl">Take-Home ✎</div><div class="m-metric-val">${fmt$(income.takeHome)}</div><div class="m-metric-sub">Monthly net</div></div><div class="m-metric"><div class="m-metric-lbl">Monthly Burn</div><div class="m-metric-val" style="color:var(--red)">${fmt$(burn)}</div><div class="m-metric-sub">${expenses.length} expenses</div></div><div class="m-metric"><div class="m-metric-lbl">Surplus</div><div class="m-metric-val" style="color:${surplus>=0?'var(--green)':'var(--red)'}">${fmt$(Math.abs(surplus))}</div><div class="m-metric-sub">${surplus>=0?'Available':'Over budget'}</div></div><div class="m-metric"><div class="m-metric-lbl">Hi-Interest Debt</div><div class="m-metric-val" style="color:var(--red)">${fmt$(hiDebt)}</div><div class="m-metric-sub">Chase + Amex</div></div></div>`;
+  const lastPC=data.paychecks.length?data.paychecks[data.paychecks.length-1]:null;
+  const paycheckHTML=`<div style="display:flex;gap:8px;align-items:center"><button class="btn-gold" onclick="showLogPaycheck()" style="flex:1;padding:11px">Log Paycheck</button><button class="btn-white" onclick="showMiamiHistory()" style="padding:11px 13px;font-size:11px;font-weight:700">History</button></div>${lastPC?`<div style="font-size:10px;color:var(--white);opacity:.3;text-align:center;margin-top:-3px">Last: ${fmtRel(lastPC.date)} · ${fmt$(lastPC.amount)}</div>`:''}`;
+  const vaultColors={red:'var(--red)',amber:'var(--gold)',blue:'var(--blue)',purple:'var(--purple)',teal:'#5DCAA5'};
+  const vaultsHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="sec-label" style="margin:0">Vaults</div><button class="btn-gold-sm" onclick="showAddVault()">+ Add</button></div><div class="vault-grid">${vaults.sort((a,b)=>a.order-b.order).map(v=>{const pct=v.target?Math.min(100,Math.round(((v.balance||0)/v.target)*100)):0;const col=vaultColors[v.color]||'var(--gold)';return`<div class="vault-card ${v.locked?'locked':''}" onclick="showVaultDetail('${v.id}')"><div class="vault-lock" style="${v.locked?'':'display:none'}">LOCKED</div><div style="font-size:9px;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">${v.locked?'Locked':'Active'}</div><div class="vault-name">${v.name}</div><div class="vault-amt">${v.locked?'—':fmt$(v.monthlyAmt)}<span style="font-size:9px;color:var(--white);opacity:.3">/mo</span></div><div class="vault-pct">${v.locked?'Activates automatically':v.pct+'% of paycheck'}</div>${v.target?`<div class="vault-pb-bg"><div class="vault-pb vault-pb-${v.color}" style="width:${pct}%"></div></div><div style="font-size:9px;color:var(--white);opacity:.35;margin-top:3px">${fmt$(v.balance||0)} of ${fmt$(v.target)}</div>`:`<div style="font-size:9px;color:var(--white);opacity:.35;margin-top:7px">${fmt$(v.balance||0)} deposited</div>`}</div>`;}).join('')}</div></div>`;
+  const expCats=['Housing','Transportation','Living','Subscriptions','Debt'];
+  const expRows=expCats.map(cat=>{const rows=expenses.filter(e=>e.category===cat);if(!rows.length)return'';return`<div class="exp-cat-hdr">${cat}</div>${rows.map(e=>`<div class="exp-row"><div style="flex:1"><div class="exp-name">${e.name}</div>${e.note?`<div class="exp-note">${e.note}</div>`:''}</div>${e.tag?`<span class="exp-tag exp-tag-${e.tag}">${e.tag==='debt'?'Debt':e.tag==='watch'?'Watch':e.tag==='ibr'?'IBR':e.tag}</span>`:''}<div class="exp-amt">${fmt$(e.amount)}</div><button class="btn-white-sm" onclick="editMiamiExp('${e.id}')" style="font-size:9px;padding:2px 6px">✎</button><span class="del-x" onclick="delMiamiExp('${e.id}')">×</span></div>`).join('')}`;}).join('');
+  const expHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"><div class="sec-label" style="margin:0">Monthly Expenses</div><button class="btn-gold-sm" onclick="showAddMiamiExp()">+ Add</button></div>${expRows}<div style="display:flex;justify-content:space-between;padding:10px 0 0;border-top:.5px solid rgba(255,255,255,.08);margin-top:4px"><span style="font-size:11px;font-weight:700;color:var(--white)">Total Monthly Burn</span><span style="font-size:14px;font-weight:700;color:var(--red)">${fmt$(burn)}</span></div></div>`;
+  const m1=data.debts.find(d=>d.id==='1st-mort');const m2=data.debts.find(d=>d.id==='2nd-mort');
+  const mortTotal=(m1?.monthlyMin||2031)+(m2?.monthlyMin||40);const profit=(airbnb.revenue||0)-mortTotal;
+  const tallHTML=`<div class="tally-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:var(--white)">Tallahassee — Airbnb</div><button class="btn-white-sm" onclick="editTallahassee()">Edit</button></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--white);opacity:.5">1st mortgage</span><span style="font-size:11px;font-weight:700;color:var(--white)">${fmt$(m1?.monthlyMin||2031)}/mo</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--white);opacity:.5">2nd mortgage</span><span style="font-size:11px;font-weight:700;color:var(--white)">${fmt$(m2?.monthlyMin||40)}/mo <span style="font-size:9px;color:var(--gold)">(dying)</span></span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--white);opacity:.5">Airbnb revenue</span><span style="font-size:11px;font-weight:700;color:${(airbnb.revenue||0)>=mortTotal?'var(--green)':'var(--gold)'}">${fmt$(airbnb.revenue||0)}/mo</span></div><div style="height:.5px;background:rgba(255,255,255,.08);margin:4px 0"></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--white)">Net profit</span><span style="font-size:15px;font-weight:700;color:${profit>=0?'var(--green)':'var(--red)'}">${fmt$(profit)}/mo</span></div></div></div>`;
+  el.innerHTML=alertHTML+headerHTML+metricsHTML+paycheckHTML+vaultsHTML+expHTML+tallHTML;
+}
+
+// ─── MILLIONAIRE RENDER ───
+function renderMillionaire(){
+  const data=getMiamiData();const el=document.getElementById('budget-ssec-millionaire');if(!el)return;
+  const totalAssets=data.assets.reduce((s,a)=>s+(a.value||0),0);
+  const totalLiab=data.debts.filter(d=>!d.paid).reduce((s,d)=>s+(d.balance||0),0);
+  const netWorth=totalAssets-totalLiab;const nwPct=Math.max(0,Math.min(100,netWorth/1000000*100));
+  const r=64,circ=2*Math.PI*r,dash=circ*(nwPct/100);
+  const ringHTML=`<div class="nw-ring-wrap"><svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="11"/><circle cx="80" cy="80" r="${r}" fill="none" stroke="var(--gold)" stroke-width="11" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${(circ-dash).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset .6s ease"/><text x="80" y="76" text-anchor="middle" fill="#FFFFFF" font-size="20" font-weight="700" font-family="Inter,sans-serif">${nwPct<0.1?'0%':nwPct.toFixed(1)+'%'}</text><text x="80" y="95" text-anchor="middle" fill="#888780" font-size="9" font-weight="700" font-family="Inter,sans-serif" letter-spacing="1">OF $1M GOAL</text></svg><div style="text-align:center;margin-top:2px"><div style="font-size:20px;font-weight:700;color:${netWorth>=0?'var(--white)':'var(--red)'}">${fmt$(netWorth)}</div><div style="font-size:10px;color:var(--white);opacity:.35;margin-top:2px">Net worth · ${fmt$(Math.max(0,1000000-netWorth))} to go</div></div></div>`;
+  const summHTML=`<div class="m-metric-grid"><div class="m-metric"><div class="m-metric-lbl">Total Assets</div><div class="m-metric-val" style="color:var(--green)">${fmt$(totalAssets)}</div></div><div class="m-metric"><div class="m-metric-lbl">Total Liabilities</div><div class="m-metric-val" style="color:var(--red)">${fmt$(totalLiab)}</div></div></div>`;
+  const debtColors={red:'var(--red)',amber:'var(--gold)',green:'var(--green)',blue:'var(--blue)',purple:'var(--purple)',gray:'rgba(255,255,255,.3)',teal:'#5DCAA5'};
+  const activeDebts=data.debts.filter(d=>!d.paid);const paidDebts=data.debts.filter(d=>d.paid);
+  const debtHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="sec-label" style="margin:0">Debt Avalanche</div><button class="btn-gold-sm" onclick="showAddDebt()">+ Add</button></div><div style="background:rgba(255,255,255,.03);border-radius:10px;padding:4px 12px">${activeDebts.map((d,i)=>{const prog=d.originalBalance>0?Math.min(100,Math.round((1-d.balance/d.originalBalance)*100)):0;const col=debtColors[d.color]||'var(--gold)';return`<div class="debt-row"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><div style="display:flex;align-items:flex-start;gap:8px;flex:1"><div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;margin-top:4px"></div><div style="flex:1"><div class="debt-name">${i+1}. ${d.name}${d.apr?` <span style="font-size:9px;color:var(--red);font-weight:700">${d.apr}% APR</span>`:''}</div><div class="debt-meta">${d.note}</div></div></div><div style="text-align:right;flex-shrink:0"><div class="debt-bal" style="color:${col}">${fmt$(d.balance)}</div>${d.payoffMonth!==null&&d.payoffMonth!==undefined?`<div style="font-size:9px;color:var(--white);opacity:.3">Month ${d.payoffMonth}</div>`:''}</div></div><div class="debt-pb-bg"><div class="debt-pb-fill" style="width:${prog}%;background:${col}"></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;color:var(--white);opacity:.3">${prog}% paid off</span><div style="display:flex;gap:5px"><button class="btn-gold-sm" onclick="markDebtPaid('${d.id}')">Mark Paid</button><button class="btn-white-sm" style="font-size:9px;padding:2px 6px" onclick="editDebt('${d.id}')">✎</button></div></div></div>`;}).join('')}${paidDebts.length?`<div style="padding:8px 0;font-size:10px;color:var(--green);font-weight:600;border-top:.5px solid rgba(255,255,255,.06)">✓ Paid off: ${paidDebts.map(d=>d.name).join(', ')}</div>`:''}<div style="display:flex;justify-content:space-between;padding:9px 0;border-top:.5px solid rgba(255,255,255,.08)"><span style="font-size:11px;font-weight:700;color:var(--white)">Total Remaining</span><span style="font-size:13px;font-weight:700;color:var(--red)">${fmt$(totalLiab)}</span></div></div></div>`;
+  const assetHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="sec-label" style="margin:0">Assets</div><button class="btn-gold-sm" onclick="showAddAsset()">+ Add</button></div><div style="background:rgba(255,255,255,.03);border-radius:10px;padding:4px 12px">${data.assets.map(a=>{const eq=(a.value||0)-(a.debt||0);return`<div class="asset-row"><div style="flex:1"><div class="asset-name">${a.name}</div>${a.note?`<div style="font-size:9px;color:var(--white);opacity:.3;margin-top:1px">${a.note}</div>`:''}</div><div style="text-align:right"><div class="asset-val">${fmt$(a.value)}</div>${a.debt?`<div class="asset-equity">${fmt$(eq)} equity</div>`:`<div style="font-size:9px;color:var(--green)">Liquid</div>`}</div><button class="btn-white-sm" onclick="editAsset('${a.id}')" style="font-size:9px;padding:2px 6px;margin-left:6px">✎</button></div>`;}).join('')}<div style="display:flex;justify-content:space-between;padding:9px 0;border-top:.5px solid rgba(255,255,255,.08)"><span style="font-size:11px;font-weight:700;color:var(--white)">Total Assets</span><span style="font-size:13px;font-weight:700;color:var(--green)">${fmt$(totalAssets)}</span></div></div></div>`;
+  const msHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="sec-label" style="margin:0">Milestones</div><button class="btn-gold-sm" onclick="showAddMilestone()">+ Add</button></div><div style="background:rgba(255,255,255,.03);border-radius:10px;padding:4px 12px">${data.milestones.map(m=>`<div class="ms-row"><div class="ms-dot ms-dot-${m.status}"></div><div style="flex:1"><div class="ms-title" style="${m.status==='locked'?'opacity:.35':''}">${m.title}</div><div class="ms-sub">${m.sub}</div><div class="ms-target">${m.target}</div></div><button class="btn-white-sm" onclick="editMilestone('${m.id}')" style="font-size:9px;padding:2px 6px">✎</button></div>`).join('')}</div></div>`;
+  el.innerHTML=`<div style="font-size:17px;font-weight:700;color:var(--white)">Millionaire by 30</div>`+ringHTML+summHTML+assetHTML+debtHTML+msHTML;
+}
+
+// ─── LOG PAYCHECK ───
+function showLogPaycheck(){
+  const data=getMiamiData();const vaults=data.vaults.filter(v=>!v.locked);
+  const lastAmt=data.paychecks.length?data.paychecks[data.paychecks.length-1].amount:4000;
+  const rows=vaults.map(v=>{const a=Math.round(lastAmt*v.pct/100);return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid rgba(255,255,255,.05)"><div style="flex:1;font-size:12px;font-weight:600;color:var(--white)">${v.name}</div><input type="number" class="vault-pct-input" id="vpc-${v.id}" value="${v.pct}" oninput="pcPct('${v.id}')"><span style="font-size:10px;color:var(--white);opacity:.3">%</span><input type="number" class="vault-amt-input" id="vac-${v.id}" value="${a}" oninput="pcAmt('${v.id}')"></div>`;}).join('');
+  const totalPct=vaults.reduce((s,v)=>s+v.pct,0);const totalAmt=vaults.reduce((s,v)=>s+Math.round(lastAmt*v.pct/100),0);
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Paycheck</div><div style="display:flex;flex-direction:column;gap:10px"><div class="field-group"><div class="field-label">Paycheck Amount ($)</div><input class="field-input" id="pc-amt" type="number" value="${lastAmt}" oninput="pcRefresh()"></div><div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;padding:0 0 2px">Vault Allocation<span style="font-size:9px;color:var(--white);opacity:.3;font-weight:400">% · Amount</span></div>${rows}<div class="paycheck-bar" style="margin-top:4px"><div class="paycheck-bar-fill" id="pc-bar" style="width:${Math.min(100,totalPct)}%"></div></div><div style="display:flex;justify-content:space-between;align-items:center"><span id="pc-total-pct" style="font-size:11px;font-weight:700;color:var(--gold)">${totalPct.toFixed(1)}% allocated</span><span style="font-size:11px;color:var(--white);opacity:.5">Remaining: <span id="pc-remaining" style="font-weight:700;color:var(--white)">${fmt$(lastAmt-totalAmt)}</span></span></div><div id="pc-jarvis" style="font-size:11px;color:var(--gold);padding:9px 12px;background:rgba(232,188,80,.06);border-radius:8px;border:0.5px solid rgba(232,188,80,.2);line-height:1.45">Jarvis: Adjust % or amounts, then tap Confirm to log this paycheck and update your vault balances.</div><button class="btn-gold" onclick="confirmPaycheck()">Confirm & Log Paycheck</button></div>`,true);
+  setTimeout(()=>pcRefresh(),30);
+}
+function _pcVaults(){return getMiamiData().vaults.filter(v=>!v.locked);}
+function pcRefresh(){const amt=parseFloat(document.getElementById('pc-amt')?.value)||0;_pcVaults().forEach(v=>{const pct=parseFloat(document.getElementById('vpc-'+v.id)?.value)||0;const a=document.getElementById('vac-'+v.id);if(a)a.value=Math.round(amt*pct/100);});_pcCalcUI(amt);}
+function pcPct(vid){const amt=parseFloat(document.getElementById('pc-amt')?.value)||0;const pct=parseFloat(document.getElementById('vpc-'+vid)?.value)||0;const a=document.getElementById('vac-'+vid);if(a)a.value=Math.round(amt*pct/100);_pcCalcUI(amt);}
+function pcAmt(vid){const amt=parseFloat(document.getElementById('pc-amt')?.value)||1;const a=parseFloat(document.getElementById('vac-'+vid)?.value)||0;const pEl=document.getElementById('vpc-'+vid);if(pEl)pEl.value=(a/amt*100).toFixed(1);_pcCalcUI(amt);}
+function _pcCalcUI(amt){
+  let tp=0,ta=0;_pcVaults().forEach(v=>{tp+=parseFloat(document.getElementById('vpc-'+v.id)?.value)||0;ta+=parseFloat(document.getElementById('vac-'+v.id)?.value)||0;});
+  const rem=amt-ta;const over=tp>100;
+  const barEl=document.getElementById('pc-bar');if(barEl){barEl.style.width=Math.min(100,tp)+'%';barEl.className='paycheck-bar-fill'+(over?' paycheck-bar-over':'');}
+  const tEl=document.getElementById('pc-total-pct');if(tEl){tEl.textContent=tp.toFixed(1)+'% allocated';tEl.style.color=over?'var(--red)':'var(--gold)';}
+  const rEl=document.getElementById('pc-remaining');if(rEl){rEl.textContent=fmt$(rem);rEl.style.color=rem<0?'var(--red)':rem>500?'var(--green)':'var(--white)';}
+  const jEl=document.getElementById('pc-jarvis');if(jEl){if(over)jEl.textContent=`Jarvis: You're over by ${fmt$(Math.abs(rem))}. Reduce a vault to balance it.`;else if(rem>500)jEl.textContent=`Jarvis: ${fmt$(rem)} unallocated. Chase at 27.24% APR is the smart move — add it there?`;else jEl.textContent='Jarvis: Plan is fully allocated. Tap Confirm to log this paycheck and update vault balances.';}
+}
+function confirmPaycheck(){
+  const amt=parseFloat(document.getElementById('pc-amt')?.value);if(!amt||amt<=0){showError('Enter a valid amount.');return;}
+  const data=getMiamiData();
+  const snap=[];
+  data.vaults.filter(v=>!v.locked).forEach(v=>{const pct=parseFloat(document.getElementById('vpc-'+v.id)?.value)||0;const a=parseFloat(document.getElementById('vac-'+v.id)?.value)||0;v.pct=pct;v.balance=(v.balance||0)+a;snap.push({id:v.id,pct,amount:a});});
+  data.paychecks=[...(data.paychecks||[]),{id:uid4(),amount:amt,date:new Date().toISOString(),loggedBy:S.profile?.id||'',vaults:snap}];
+  applyVaultRules(data);saveMiamiData(data);
+  logMiamiAction('Logged paycheck','Amount: '+fmt$(amt));
+  closeModal();showSuccess('Paycheck logged!');renderMiami();
+  const efV=data.vaults.find(v=>v.id==='emergency');if(efV){const ea=data.assets.find(a=>a.id==='ef-asset');if(ea){ea.value=efV.balance||0;saveMiamiData(data);}}
+}
+
+// ─── VAULT CRUD ───
+function showVaultDetail(id){
+  const data=getMiamiData();const v=data.vaults.find(x=>x.id===id);if(!v)return;
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${v.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div style="background:rgba(255,255,255,.04);border-radius:10px;padding:13px"><div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Rule</div><div style="font-size:12px;color:var(--white);line-height:1.6;opacity:.85">${v.rule||'No rule set.'}</div></div><div class="m-metric-grid"><div class="m-metric"><div class="m-metric-lbl">Monthly</div><div class="m-metric-val">${fmt$(v.monthlyAmt)}</div></div><div class="m-metric"><div class="m-metric-lbl">Balance</div><div class="m-metric-val">${fmt$(v.balance||0)}</div></div>${v.target?`<div class="m-metric"><div class="m-metric-lbl">Target</div><div class="m-metric-val">${fmt$(v.target)}</div></div>`:``}<div class="m-metric"><div class="m-metric-lbl">% of Check</div><div class="m-metric-val">${v.pct}%</div></div></div>${v.locked?`<div style="background:rgba(232,188,80,.07);border-radius:8px;padding:11px;font-size:11px;color:var(--gold);line-height:1.45">Locked — ${v.unlocksWhen==='chase-killer-complete'?'Activates automatically when Chase is paid off.':'Will unlock when conditions are met.'}</div>`:''}<button class="btn-gold-outline" onclick="closeModal();setTimeout(()=>editVault('${id}'),200)">Edit Vault</button><button class="btn-red-outline" onclick="deleteVault('${id}')">Delete Vault</button></div>`,true);
+}
+function editVault(id){
+  const data=getMiamiData();const v=data.vaults.find(x=>x.id===id);if(!v)return;
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${v.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ev-nm" value="${v.name}"></div><div class="field-group"><div class="field-label">% of Paycheck</div><input class="field-input" id="ev-pct" type="number" step="0.1" value="${v.pct}"></div><div class="field-group"><div class="field-label">Current Balance ($)</div><input class="field-input" id="ev-bal" type="number" value="${v.balance||0}"></div><div class="field-group"><div class="field-label">Target Amount ($, optional)</div><input class="field-input" id="ev-tgt" type="number" value="${v.target||''}"></div><div class="field-group"><div class="field-label">Rule / Notes</div><textarea class="field-input preprompt-area" id="ev-rule">${v.rule||''}</textarea></div><button class="btn-gold" onclick="saveVaultEdit('${id}')">Save Changes</button></div>`,true);
+}
+function saveVaultEdit(id){
+  const nm=document.getElementById('ev-nm')?.value?.trim();const pct=parseFloat(document.getElementById('ev-pct')?.value)||0;const bal=parseFloat(document.getElementById('ev-bal')?.value)||0;const tgt=parseFloat(document.getElementById('ev-tgt')?.value)||null;const rule=document.getElementById('ev-rule')?.value?.trim();
+  if(!nm){showError('BOS-DATA-001');return;}
+  const data=getMiamiData();const v=data.vaults.find(x=>x.id===id);if(!v)return;
+  v.name=nm;v.pct=pct;v.balance=bal;v.target=tgt||null;v.rule=rule;v.monthlyAmt=Math.round((data.income.takeHome||12500)*pct/100);
+  saveMiamiData(data);logMiamiAction('Edited vault',nm);closeModal();showSuccess('Vault updated!');renderMiami();
+}
+function deleteVault(id){
+  if(!confirm('Delete this vault?'))return;
+  const data=getMiamiData();const v=data.vaults.find(x=>x.id===id);
+  data.vaults=data.vaults.filter(x=>x.id!==id);saveMiamiData(data);logMiamiAction('Deleted vault',v?.name||id);closeModal();showSuccess('Deleted.');renderMiami();
+}
+function showAddVault(){
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Vault</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="nv-nm" placeholder="e.g. Investment Fund"></div><div class="field-group"><div class="field-label">% of Paycheck</div><input class="field-input" id="nv-pct" type="number" step="0.1" placeholder="5"></div><div class="field-group"><div class="field-label">Target Amount ($, optional)</div><input class="field-input" id="nv-tgt" type="number" placeholder="Leave blank for open-ended"></div><div class="field-group"><div class="field-label">Rule / Notes</div><textarea class="field-input preprompt-area" id="nv-rule" placeholder="How this vault works..."></textarea></div><button class="btn-gold" onclick="saveNewVault()">Add Vault</button></div>`,true);
+}
+function saveNewVault(){
+  const nm=document.getElementById('nv-nm')?.value?.trim();const pct=parseFloat(document.getElementById('nv-pct')?.value)||0;const tgt=parseFloat(document.getElementById('nv-tgt')?.value)||null;const rule=document.getElementById('nv-rule')?.value?.trim();
+  if(!nm){showError('BOS-DATA-001');return;}
+  const data=getMiamiData();const maxOrd=data.vaults.reduce((m,v)=>Math.max(m,v.order||0),0);
+  data.vaults.push({id:uid4(),name:nm,pct,monthlyAmt:Math.round((data.income.takeHome||12500)*pct/100),target:tgt,balance:0,color:'amber',rule:rule||'',locked:false,order:maxOrd+1});
+  saveMiamiData(data);logMiamiAction('Added vault',nm);closeModal();showSuccess('Vault added!');renderMiami();
+}
+
+// ─── EXPENSE CRUD ───
+function showAddMiamiExp(){
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Expense</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ne-nm" placeholder="e.g. Gym membership"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="ne-cat"><option>Housing</option><option>Transportation</option><option>Living</option><option>Subscriptions</option><option>Debt</option></select></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="ne-amt" type="number" step="0.01"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="ne-note" placeholder="Short note..."></div><div class="field-group"><div class="field-label">Tag</div><select class="field-input" id="ne-tag"><option value="">None</option><option value="debt">Active Debt</option><option value="watch">Watch</option><option value="ibr">IBR</option></select></div><button class="btn-gold" onclick="saveMiamiExp()">Add Expense</button></div>`,true);
+}
+function saveMiamiExp(){
+  const nm=document.getElementById('ne-nm')?.value?.trim();const cat=document.getElementById('ne-cat')?.value;const amt=parseFloat(document.getElementById('ne-amt')?.value);const note=document.getElementById('ne-note')?.value?.trim();const tag=document.getElementById('ne-tag')?.value||null;
+  if(!nm||isNaN(amt)||amt<0){showError('BOS-DATA-001');return;}
+  const data=getMiamiData();data.expenses.push({id:uid4(),category:cat,name:nm,amount:amt,note:note||null,tag});saveMiamiData(data);logMiamiAction('Added expense',nm+' '+fmt$(amt));closeModal();showSuccess('Added!');renderMiami();
+}
+function editMiamiExp(id){
+  const data=getMiamiData();const e=data.expenses.find(x=>x.id===id);if(!e)return;
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Expense</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ee-nm" value="${e.name}"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="ee-cat"><option ${e.category==='Housing'?'selected':''}>Housing</option><option ${e.category==='Transportation'?'selected':''}>Transportation</option><option ${e.category==='Living'?'selected':''}>Living</option><option ${e.category==='Subscriptions'?'selected':''}>Subscriptions</option><option ${e.category==='Debt'?'selected':''}>Debt</option></select></div><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="ee-amt" type="number" step="0.01" value="${e.amount}"></div><div class="field-group"><div class="field-label">Note</div><input class="field-input" id="ee-note" value="${e.note||''}"></div><div class="field-group"><div class="field-label">Tag</div><select class="field-input" id="ee-tag"><option value="" ${!e.tag?'selected':''}>None</option><option value="debt" ${e.tag==='debt'?'selected':''}>Active Debt</option><option value="watch" ${e.tag==='watch'?'selected':''}>Watch</option><option value="ibr" ${e.tag==='ibr'?'selected':''}>IBR</option></select></div><button class="btn-gold" onclick="updMiamiExp('${id}')">Save</button></div>`,true);
+}
+function updMiamiExp(id){
+  const nm=document.getElementById('ee-nm')?.value?.trim();const cat=document.getElementById('ee-cat')?.value;const amt=parseFloat(document.getElementById('ee-amt')?.value);const note=document.getElementById('ee-note')?.value?.trim();const tag=document.getElementById('ee-tag')?.value||null;
+  if(!nm||isNaN(amt)){showError('BOS-DATA-001');return;}
+  const data=getMiamiData();data.expenses=data.expenses.map(e=>e.id===id?{...e,name:nm,category:cat,amount:amt,note:note||null,tag}:e);saveMiamiData(data);logMiamiAction('Updated expense',nm);closeModal();showSuccess('Saved!');renderMiami();
+}
+function delMiamiExp(id){
+  if(!confirm('Delete this expense?'))return;
+  const data=getMiamiData();const e=data.expenses.find(x=>x.id===id);data.expenses=data.expenses.filter(x=>x.id!==id);saveMiamiData(data);logMiamiAction('Deleted expense',e?.name||id);renderMiami();
+}
+
+// ─── INCOME + TALLAHASSEE EDIT ───
+function editMiamiIncome(){
+  const data=getMiamiData();
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Update Income</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Monthly Take-Home ($)</div><input class="field-input" id="mi-th" type="number" value="${data.income.takeHome}"></div><div class="field-group"><div class="field-label">Monthly Gross ($)</div><input class="field-input" id="mi-gr" type="number" value="${data.income.gross}"></div><div style="font-size:11px;color:var(--white);opacity:.5;line-height:1.5">Changing take-home automatically recalculates vault monthly amounts based on each vault\'s % allocation.</div><button class="btn-gold" onclick="saveMiamiIncome()">Save</button></div>`,true);
+}
+function saveMiamiIncome(){
+  const th=parseFloat(document.getElementById('mi-th')?.value);const gr=parseFloat(document.getElementById('mi-gr')?.value);if(!th||th<=0){showError('BOS-DATA-001');return;}
+  const data=getMiamiData();const old=data.income.takeHome;data.income.takeHome=th;if(gr>0)data.income.gross=gr;
+  data.vaults.forEach(v=>{v.monthlyAmt=Math.round(th*v.pct/100);});
+  saveMiamiData(data);logMiamiAction('Updated income',`${fmt$(old)} → ${fmt$(th)}`);closeModal();showSuccess('Income updated!');renderMiami();
+}
+function editTallahassee(){
+  const data=getMiamiData();
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Tallahassee Airbnb</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Airbnb Monthly Revenue ($)</div><input class="field-input" id="tal-rev" type="number" value="${data.airbnb.revenue||0}"></div><div class="field-group"><div class="field-label">Extra Monthly Expenses ($)</div><input class="field-input" id="tal-exp" type="number" value="${data.airbnb.extraExpenses||0}" placeholder="Cleaning, maintenance..."></div><button class="btn-gold" onclick="saveTallahassee()">Save</button></div>`,true);
+}
+function saveTallahassee(){
+  const rev=parseFloat(document.getElementById('tal-rev')?.value)||0;const exp=parseFloat(document.getElementById('tal-exp')?.value)||0;
+  const data=getMiamiData();data.airbnb={revenue:rev,extraExpenses:exp};saveMiamiData(data);logMiamiAction('Updated Airbnb revenue',fmt$(rev)+'/mo');closeModal();showSuccess('Saved!');renderMiami();
+}
+
+// ─── GO LIVE ───
+function showGoLiveModal(){
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Go Live — Miami Chapter</div><div style="display:flex;flex-direction:column;gap:12px"><div style="font-size:12px;color:var(--white);opacity:.75;line-height:1.6">Activates full tracking mode. Vault deposits count as real balances, paycheck logging is live, and Jarvis shifts from planning to execution.</div><div style="background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.2);border-radius:10px;padding:12px;font-size:11px;color:#5DCAA5;line-height:1.6">Before going live:<br>✓ Both jobs secured in Miami<br>✓ First paycheck received or expected<br>✓ Vault percentages reviewed and set</div><button class="btn-gold" onclick="activateMiami()">Activate — Go Live</button><button class="btn-white" onclick="closeModal()">Not yet</button></div>`,true);
+}
+function activateMiami(){
+  const data=getMiamiData();data.isLive=true;data.goLiveDate=new Date().toISOString();saveMiamiData(data);logMiamiAction('Activated Miami Chapter','Go Live');closeModal();showSuccess('Miami Chapter is live!');renderMiami();
+}
+
+// ─── ASSETS CRUD ───
+function showAddAsset(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Asset</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="na-nm" placeholder="e.g. Investment account"></div><div class="field-group"><div class="field-label">Current Value ($)</div><input class="field-input" id="na-val" type="number" placeholder="0"></div><div class="field-group"><div class="field-label">Debt Against It ($)</div><input class="field-input" id="na-debt" type="number" placeholder="0"></div><div class="field-group"><div class="field-label">Note</div><input class="field-input" id="na-note" placeholder="Brief note..."></div><button class="btn-gold" onclick="saveNewAsset()">Add Asset</button></div>`,true);}
+function saveNewAsset(){const nm=document.getElementById('na-nm')?.value?.trim();const val=parseFloat(document.getElementById('na-val')?.value)||0;const debt=parseFloat(document.getElementById('na-debt')?.value)||0;const note=document.getElementById('na-note')?.value?.trim();if(!nm){showError('BOS-DATA-001');return;}const data=getMiamiData();data.assets.push({id:uid4(),name:nm,value:val,debt,note:note||null,type:'other'});saveMiamiData(data);logMiamiAction('Added asset',nm);closeModal();showSuccess('Asset added!');renderMillionaire();}
+function editAsset(id){const data=getMiamiData();const a=data.assets.find(x=>x.id===id);if(!a)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Asset</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ea-nm" value="${a.name}"></div><div class="field-group"><div class="field-label">Current Value ($)</div><input class="field-input" id="ea-val" type="number" value="${a.value}"></div><div class="field-group"><div class="field-label">Debt ($)</div><input class="field-input" id="ea-debt" type="number" value="${a.debt||0}"></div><div class="field-group"><div class="field-label">Note</div><input class="field-input" id="ea-note" value="${a.note||''}"></div><button class="btn-gold" onclick="updAsset('${id}')">Save</button><button class="btn-red-outline" onclick="delAsset('${id}')">Delete</button></div>`,true);}
+function updAsset(id){const nm=document.getElementById('ea-nm')?.value?.trim();const val=parseFloat(document.getElementById('ea-val')?.value)||0;const debt=parseFloat(document.getElementById('ea-debt')?.value)||0;const note=document.getElementById('ea-note')?.value?.trim();if(!nm){showError('BOS-DATA-001');return;}const data=getMiamiData();data.assets=data.assets.map(a=>a.id===id?{...a,name:nm,value:val,debt,note:note||null}:a);saveMiamiData(data);logMiamiAction('Updated asset',nm+' → '+fmt$(val));closeModal();showSuccess('Saved!');renderMillionaire();}
+function delAsset(id){if(!confirm('Delete this asset?'))return;const data=getMiamiData();const a=data.assets.find(x=>x.id===id);data.assets=data.assets.filter(x=>x.id!==id);saveMiamiData(data);logMiamiAction('Deleted asset',a?.name||id);closeModal();showSuccess('Deleted.');renderMillionaire();}
+
+// ─── DEBTS CRUD ───
+function showAddDebt(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Debt</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Debt Name</div><input class="field-input" id="nd-nm" placeholder="e.g. Car loan"></div><div class="field-group"><div class="field-label">Current Balance ($)</div><input class="field-input" id="nd-bal" type="number" placeholder="0"></div><div class="field-group"><div class="field-label">APR (%, optional)</div><input class="field-input" id="nd-apr" type="number" step="0.01" placeholder="Leave blank if unknown"></div><div class="field-group"><div class="field-label">Monthly Minimum ($)</div><input class="field-input" id="nd-min" type="number" placeholder="0"></div><div class="field-group"><div class="field-label">Note</div><input class="field-input" id="nd-note" placeholder="Brief note..."></div><button class="btn-gold" onclick="saveNewDebt()">Add Debt</button></div>`,true);}
+function saveNewDebt(){const nm=document.getElementById('nd-nm')?.value?.trim();const bal=parseFloat(document.getElementById('nd-bal')?.value)||0;const apr=parseFloat(document.getElementById('nd-apr')?.value)||null;const min=parseFloat(document.getElementById('nd-min')?.value)||0;const note=document.getElementById('nd-note')?.value?.trim();if(!nm){showError('BOS-DATA-001');return;}const data=getMiamiData();const maxPri=data.debts.reduce((m,d)=>Math.max(m,d.priority||0),0);data.debts.push({id:uid4(),name:nm,balance:bal,originalBalance:bal,apr,monthlyMin:min,extraPayment:0,color:'amber',payoffMonth:null,note:note||'',priority:maxPri+1,paid:false});saveMiamiData(data);logMiamiAction('Added debt',nm);closeModal();showSuccess('Debt added!');renderMillionaire();}
+function editDebt(id){const data=getMiamiData();const d=data.debts.find(x=>x.id===id);if(!d)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Debt</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ed-nm" value="${d.name}"></div><div class="field-group"><div class="field-label">Current Balance ($)</div><input class="field-input" id="ed-bal" type="number" value="${d.balance}"></div><div class="field-group"><div class="field-label">APR (%)</div><input class="field-input" id="ed-apr" type="number" step="0.01" value="${d.apr||''}"></div><div class="field-group"><div class="field-label">Monthly Min ($)</div><input class="field-input" id="ed-min" type="number" value="${d.monthlyMin||0}"></div><div class="field-group"><div class="field-label">Payoff Month</div><input class="field-input" id="ed-pm" type="number" value="${d.payoffMonth??''}" placeholder="e.g. 4"></div><div class="field-group"><div class="field-label">Note</div><input class="field-input" id="ed-note" value="${d.note||''}"></div><button class="btn-gold" onclick="updDebt('${id}')">Save</button></div>`,true);}
+function updDebt(id){const nm=document.getElementById('ed-nm')?.value?.trim();const bal=parseFloat(document.getElementById('ed-bal')?.value)||0;const apr=parseFloat(document.getElementById('ed-apr')?.value)||null;const min=parseFloat(document.getElementById('ed-min')?.value)||0;const pm=document.getElementById('ed-pm')?.value;const note=document.getElementById('ed-note')?.value?.trim();if(!nm){showError('BOS-DATA-001');return;}const data=getMiamiData();data.debts=data.debts.map(d=>d.id===id?{...d,name:nm,balance:bal,apr,monthlyMin:min,payoffMonth:pm!==''?parseInt(pm):null,note:note||''}:d);applyVaultRules(data);saveMiamiData(data);logMiamiAction('Updated debt',nm+': '+fmt$(bal));closeModal();showSuccess('Saved!');renderMillionaire();}
+function markDebtPaid(id){const data=getMiamiData();const d=data.debts.find(x=>x.id===id);if(!d)return;d.paid=true;d.balance=0;d.paidDate=new Date().toISOString();applyVaultRules(data);saveMiamiData(data);logMiamiAction('Paid off debt',d.name);showSuccess('🎉 '+d.name+' — paid off!');renderMillionaire();}
+
+// ─── MILESTONES CRUD ───
+function showAddMilestone(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Milestone</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="nm-tl" placeholder="e.g. Buy investment property"></div><div class="field-group"><div class="field-label">Subtitle</div><input class="field-input" id="nm-sb" placeholder="What this unlocks..."></div><div class="field-group"><div class="field-label">Target Date</div><input class="field-input" id="nm-tg" placeholder="e.g. Year 2"></div><button class="btn-gold" onclick="saveNewMilestone()">Add Milestone</button></div>`,true);}
+function saveNewMilestone(){const tl=document.getElementById('nm-tl')?.value?.trim();const sb=document.getElementById('nm-sb')?.value?.trim();const tg=document.getElementById('nm-tg')?.value?.trim();if(!tl){showError('BOS-DATA-001');return;}const data=getMiamiData();data.milestones.push({id:uid4(),title:tl,sub:sb||'',target:tg||'',status:'locked'});saveMiamiData(data);logMiamiAction('Added milestone',tl);closeModal();showSuccess('Added!');renderMillionaire();}
+function editMilestone(id){const data=getMiamiData();const m=data.milestones.find(x=>x.id===id);if(!m)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Milestone</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="em-tl" value="${m.title}"></div><div class="field-group"><div class="field-label">Subtitle</div><input class="field-input" id="em-sb" value="${m.sub||''}"></div><div class="field-group"><div class="field-label">Target Date</div><input class="field-input" id="em-tg" value="${m.target||''}"></div><div class="field-group"><div class="field-label">Status</div><select class="field-input" id="em-st"><option value="locked" ${m.status==='locked'?'selected':''}>Locked</option><option value="active" ${m.status==='active'?'selected':''}>Active</option><option value="done" ${m.status==='done'?'selected':''}>Done</option></select></div><button class="btn-gold" onclick="updMilestone('${id}')">Save</button><button class="btn-red-outline" onclick="delMilestone('${id}')">Delete</button></div>`,true);}
+function updMilestone(id){const tl=document.getElementById('em-tl')?.value?.trim();const sb_v=document.getElementById('em-sb')?.value?.trim();const tg=document.getElementById('em-tg')?.value?.trim();const st=document.getElementById('em-st')?.value;if(!tl){showError('BOS-DATA-001');return;}const data=getMiamiData();const old=data.milestones.find(x=>x.id===id);data.milestones=data.milestones.map(m=>m.id===id?{...m,title:tl,sub:sb_v,target:tg,status:st}:m);saveMiamiData(data);if(old?.status!=='done'&&st==='done')logMiamiAction('Milestone complete!',tl);else logMiamiAction('Updated milestone',tl);closeModal();showSuccess('Saved!');renderMillionaire();}
+function delMilestone(id){if(!confirm('Delete?'))return;const data=getMiamiData();const m=data.milestones.find(x=>x.id===id);data.milestones=data.milestones.filter(x=>x.id!==id);saveMiamiData(data);logMiamiAction('Deleted milestone',m?.title||id);closeModal();showSuccess('Deleted.');renderMillionaire();}
+
+// ─── HISTORY ───
+function showMiamiHistory(){
+  const data=getMiamiData();const h=data.actionHistory||[];
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Activity History</div><div style="font-size:10px;color:var(--white);opacity:.3;margin-bottom:6px">${h.length} actions logged</div>${h.length?h.slice(0,60).map(e=>`<div class="history-row"><div class="history-who">${e.who}</div><div style="flex:1"><div class="history-what">${e.action}</div>${e.detail?`<div style="font-size:9px;color:var(--white);opacity:.3;margin-top:1px">${e.detail}</div>`:''}</div><div class="history-when">${fmtRel(e.ts)}</div></div>`).join(''):`<div style="font-size:12px;color:var(--white);opacity:.35;padding:16px 0;text-align:center">No actions logged yet.</div>`}`,true);
+}
+
 // INIT
 window.addEventListener('load',async()=>{
   S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');

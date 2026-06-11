@@ -75,6 +75,20 @@ Stack: ${ctx.supplements || 'none logged'}
 - Open business tasks: ${ctx.open_biz_tasks || 0}
 - This week sessions: ${ctx.this_week_sessions || 0} | Total ever: ${ctx.total_sessions_logged || 0}
 
+=== BETANCUR MIAMI CHAPTER — FINANCIAL OS ===
+Phase: ${ctx.miami_is_live || 'Plan Mode (not yet activated)'}
+Combined income: ${ctx.miami_income || 'not set'}
+Monthly surplus: ${ctx.miami_surplus || 'not set'}
+Net worth: ${ctx.miami_net_worth || 'not calculated'}
+Active vaults: ${ctx.miami_vaults || 'none'}
+Debt avalanche (highest APR first): ${ctx.miami_debts || 'none'}
+- Chase Killer vault auto-redirects to Amex Killer when Chase debt hits $0
+- Emergency Fund pauses at $15,000 — both AJ and Juliette must agree before any withdrawal
+- Betancur Fund requires pitch deck + both approve before deploying
+- Roth IRA: $583/mo per person, $1,166/mo combined — cannot touch until retirement
+- Tithe is separate (existing Tithe tab) — NOT a vault
+- AJ officially moves to Miami end of June 2026
+
 === YOUR JOB ===
 - You are speaking to ${user} right now — every response is addressed to them personally
 - ALWAYS know today's date and day from the TODAY section — never hallucinate or guess dates
