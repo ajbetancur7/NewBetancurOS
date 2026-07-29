@@ -412,6 +412,37 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .history-when{font-size:9px;color:var(--white);opacity:.4;white-space:nowrap}
 .nav-badge{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto;flex-shrink:0}
 .budget-ssec{flex-direction:column;gap:10px;padding:14px}
+/* SIGNAL TO NOISE */
+.sn-wrap{display:flex;gap:12px}
+.sn-col{flex:1;min-width:0}
+.sn-col-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em}
+.sn-item{display:flex;align-items:flex-start;gap:7px;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.sn-item:last-child{border-bottom:none;padding-bottom:0}
+.sn-num{font-size:10px;font-weight:700;color:var(--gold);width:13px;flex-shrink:0;padding-top:1px}
+.sn-text{font-size:12px;color:var(--white);line-height:1.4;flex:1}
+.sn-empty{font-size:12px;color:var(--white);opacity:.25;font-style:italic}
+.sn-divider{width:.5px;background:var(--border);flex-shrink:0}
+/* CHORE DAY TABS */
+.cday-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.cday-tabs::-webkit-scrollbar{display:none}
+.cdt{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:10px;font-weight:700;border:0.5px solid var(--border);background:transparent;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s;font-family:inherit}
+.cdt.cdt-today{border-color:var(--gold);color:var(--gold)}
+.cdt.cdt-active{background:var(--gold);color:var(--gd);border-color:var(--gold)}
+.chore-list{display:flex;flex-direction:column}
+.chore-li{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:.5px solid var(--border)}
+.chore-li:last-child{border-bottom:none;padding-bottom:0}
+.chore-li .cl-chk{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;margin-top:1px;transition:.15s}
+.chore-li .cl-chk.done{background:var(--green);border-color:var(--green)}
+.chore-li .cl-body{flex:1;min-width:0}
+.chore-li .cl-name{font-size:13px;font-weight:600;color:var(--white)}
+.chore-li .cl-name.done{text-decoration:line-through;opacity:.4}
+.chore-li .cl-meta{font-size:10px;color:var(--white);opacity:.45;margin-top:2px}
+.chore-li .cl-steps{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.cl-step{font-size:9px;padding:2px 7px;border-radius:4px}
+.cl-step.done{background:var(--green);color:white}
+.cl-step.cur{background:var(--gold);color:var(--gd)}
+.cl-step.pend{background:rgba(255,255,255,.07);color:var(--white);opacity:.6}
+.chore-day-summary{font-size:10px;color:var(--white);opacity:.45;margin-bottom:4px}
 </style>
 </head>
 <body><div id="app-root">
@@ -496,6 +527,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
           <div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>
         </div>
       </div>
+      <div class="card" id="signal-noise-card" style="padding:12px 14px"></div>
       <div class="jcard" id="home-jarvis" style="cursor:pointer" onclick="openJarvis()">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span class="jlabel">Jarvis</span><span class="jbadge" id="jarvis-alert-count"></span>
@@ -634,7 +666,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 <script>
 const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
-let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',budgetTab:'overview',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',workoutChat:[],data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'workouts',currentLifeTab:'pets',jarvisMessages:[],offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',budgetTab:'overview',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',workoutChat:[],choresDay:'',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
 const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -1062,6 +1094,32 @@ function deleteDayNote(i){
   saveDayNotes(notes);
 }
 
+// SIGNAL TO NOISE
+function getSignalNoise(){return JSON.parse(localStorage.getItem('bos_signal_noise')||'{}');}
+function saveSignalNoise(d){localStorage.setItem('bos_signal_noise',JSON.stringify(d));}
+function renderSignalNoise(){
+  const el=document.getElementById('signal-noise-card');if(!el)return;
+  const uid=S.profile?.id||'';
+  const myName=(S.profile?.name||'').split(' ')[0]||'Me';
+  const sn=getSignalNoise();
+  const myItems=sn[uid]?.items||['','',''];
+  const partner=(S.data.users||[]).find(u=>u.id!==uid&&u.role==='admin');
+  const pName=partner?.name?.split(' ')[0]||'Partner';
+  const pItems=partner?(sn[partner.id]?.items||['','','']):null;
+  const col=(name,items,mine)=>`<div class="sn-col"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="sn-col-label">${name}</span>${mine?`<button style="font-size:10px;font-weight:700;color:var(--gold);background:none;border:none;cursor:pointer;padding:0;font-family:inherit" onclick="showEditSignalNoise()">Edit</button>`:''}</div>${items.map((it,i)=>`<div class="sn-item"><span class="sn-num">${i+1}</span>${it?`<span class="sn-text">${it}</span>`:`<span class="sn-empty">Not set</span>`}</div>`).join('')}</div>`;
+  el.innerHTML=`<div style="font-size:9px;font-weight:700;color:var(--white);opacity:.4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Signal to Noise — Today's Top 3</div><div class="sn-wrap">${col(myName,myItems,true)}${pItems?`<div class="sn-divider"></div>${col(pName,pItems,false)}`:''}</div>`;
+}
+function showEditSignalNoise(){
+  const uid=S.profile?.id||'';
+  const items=getSignalNoise()[uid]?.items||['','',''];
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Your Top 3 Today</div><div style="font-size:12px;color:var(--white);opacity:.5;margin-bottom:16px">What are the 3 most important things you need to do today?</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">1 — Most important</div><input class="field-input" id="sn-1" value="${items[0]||''}" placeholder="What must get done today?"></div><div class="field-group"><div class="field-label">2 — Second priority</div><input class="field-input" id="sn-2" value="${items[1]||''}" placeholder="Next most important..."></div><div class="field-group"><div class="field-label">3 — Third priority</div><input class="field-input" id="sn-3" value="${items[2]||''}" placeholder="One more..."></div><button class="btn-gold" onclick="saveMySignalItems()">Save</button></div>`);
+}
+function saveMySignalItems(){
+  const uid=S.profile?.id||'';
+  const items=[document.getElementById('sn-1')?.value?.trim()||'',document.getElementById('sn-2')?.value?.trim()||'',document.getElementById('sn-3')?.value?.trim()||''];
+  const sn=getSignalNoise();sn[uid]={items};saveSignalNoise(sn);
+  closeModal();showSuccess('Top 3 saved!');renderSignalNoise();
+}
 function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';localStorage.setItem('aj_status',s==='home'?'work':'home');renderHome();}
 function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="localStorage.setItem('jul_status','home');closeModal();renderHome()">At Home</button><button class="btn-white" style="flex:1" onclick="localStorage.setItem('jul_status','work');closeModal();renderHome()">At Work</button></div>`);}
 function isDesktop(){return window.innerWidth>=768;}
@@ -1310,19 +1368,44 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
-  renderHomeSpirit();renderDayNotes();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  renderHomeSpirit();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
 }
 // CHORES
+const CHORE_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function getChoredays(){return JSON.parse(localStorage.getItem('bos_chore_days')||'{}');}
+function setChoreday(id,day){const d=getChoredays();if(!day||day==='Any')delete d[id];else d[id]=day;localStorage.setItem('bos_chore_days',JSON.stringify(d));}
+function switchChoresDay(day){S.choresDay=day;renderChores();}
 function renderChores(){
-  const chores=S.data.chores||[];const rooms=[...new Set(chores.map(c=>c.room))];
-  const done=chores.filter(c=>c.status==='done').length,prog=chores.filter(c=>c.status==='in_progress').length,none=chores.filter(c=>c.status==='not_started').length;
-  document.getElementById('chores-status-strip').innerHTML=`<span style="font-size:9px;color:var(--green);font-weight:700">&#11044; ${done} done</span><span style="font-size:9px;color:var(--gold);font-weight:700">&#11044; ${prog} in progress</span><span style="font-size:9px;color:var(--white);opacity:0.5;font-weight:700">&#11044; ${none} not started</span>`;
-  const rd=rooms.map(r=>{const t=chores.filter(c=>c.room===r);const d=t.filter(c=>c.status==='done').length,p=t.filter(c=>c.status==='in_progress').length;const st=d===t.length&&t.length>0?'done':p>0||d>0?'progress':'empty';return{room:r,done:d,total:t.length,status:st};});
-  document.getElementById('room-grid').innerHTML=rd.map(r=>`<div class="room-tile rt-${r.status}" onclick="showRoom('${encodeURIComponent(r.room)}')"><div class="rt-name">${r.room}</div><div class="rt-status rts-${r.status}">&#11044; ${r.status==='done'?'Done':r.status==='progress'?'In progress':'Not started'}</div><div class="rt-count">${r.done} of ${r.total}</div><span class="rt-arr">&#8250;</span></div>`).join('');
-  if(!rooms.length)document.getElementById('room-grid').innerHTML='<div class="card" style="grid-column:1/-1;text-align:center"><div class="card-main" style="opacity:0.5">No chores yet. Tap + Add.</div></div>';
+  const chores=S.data.chores||[];
+  const choredays=getChoredays();
+  const todayName=CHORE_DAYS[getTZ().getDay()];
+  if(!S.choresDay)S.choresDay=todayName;
+  const sel=S.choresDay;
+  // Merge day assignments
+  const merged=chores.map(c=>({...c,day:choredays[c.id]||'Any'}));
+  const visible=sel==='Any'?merged.filter(c=>c.day==='Any'):merged.filter(c=>c.day===sel);
+  // Day tab bar
+  const tabs=[...CHORE_DAYS,'Any'].map(d=>{
+    const isActive=d===sel,isToday=d===todayName&&!isActive;
+    return`<button class="cdt${isActive?' cdt-active':''}${isToday?' cdt-today':''}" onclick="switchChoresDay('${d}')">${d}</button>`;
+  }).join('');
+  // Summary
+  const done=visible.filter(c=>c.status==='done').length,total=visible.length;
+  const summary=total?`${done} of ${total} completed`:(sel==='Any'?'No unassigned chores':'No chores for this day — tap + Add');
+  // Chore list
+  const listItems=visible.map(c=>{
+    const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,has=steps.length>0;
+    const isDone=c.status==='done';
+    const doneBy=isDone&&c.completed_by?userName(c.completed_by):null;
+    const stepsHTML=has&&!isDone?`<div class="cl-steps">${steps.map((s,i)=>`<span class="cl-step ${i<cur?'done':i===cur?'cur':'pend'}">${s}</span>`).join('')}</div>`:'';
+    const clickFn=!isDone?(has?`advanceStep('${c.id}')`:`doneChore('${c.id}')`):`doneChore('${c.id}')`;
+    return`<div class="chore-li"><div class="cl-chk${isDone?' done':''}" onclick="${clickFn}">${isDone?'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><div class="cl-body"><div class="cl-name${isDone?' done':''}">${c.name}</div><div class="cl-meta">${c.room}${c.recurrence?' · '+c.recurrence:''}${doneBy?' · Done by '+doneBy:''}</div>${stepsHTML}</div><button class="btn-white-sm" onclick="editC('${c.id}')">Edit</button></div>`;
+  }).join('');
+  document.getElementById('chores-status-strip').innerHTML=`<div class="cday-tabs">${tabs}</div><div class="chore-day-summary">${summary}</div>`;
+  document.getElementById('room-grid').innerHTML=visible.length?`<div style="grid-column:1/-1"><div class="card" style="padding:2px 14px 6px"><div class="chore-list">${listItems}</div></div></div>`:`<div style="grid-column:1/-1;text-align:center;padding:24px 0;font-size:12px;color:var(--white);opacity:.35">${sel==='Any'?'No unassigned chores.':'No chores for this day yet.<br>Tap <b>+ Add</b> to assign one.'}</div>`;
   document.getElementById('chores-room-detail').style.display='none';
 }
 function showRoom(re){
@@ -1334,12 +1417,12 @@ function showRoom(re){
 function closeRoom(){document.getElementById('room-grid').style.display='grid';document.getElementById('chores-room-detail').style.display='none';}
 async function doneChore(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const isDone=c.status==='done';const upd=isDone?{status:'not_started',current_step:0,completed_by:null,completed_at:null}:{status:'done',completed_by:S.profile.id,completed_at:new Date().toISOString()};S.data.chores=S.data.chores.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_CHORE',id,upd);if(!isDone)logActivity('completed '+c.name,'chores',c.name);S.currentSection==='chores'?renderChores():renderHome();}
 async function advanceStep(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,next=cur+1,done=next>=steps.length;const upd=done?{status:'done',current_step:next,completed_by:S.profile.id,completed_at:new Date().toISOString()}:{status:'in_progress',current_step:next,last_completed_by:S.profile.id};S.data.chores=S.data.chores.map(x=>x.id===id?{...x,...upd}:x);await safeSave('UPDATE_CHORE',id,upd);S.currentSection==='chores'?renderChores():renderHome();}
-function addTaskInRoom(re){const room=decodeURIComponent(re);showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task \u2014 ${room}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Vacuum..."></div><div class="field-group"><div class="field-label">Steps (comma separated)</div><input class="field-input" id="nc-steps" placeholder="e.g. Move furniture, Vacuum..."></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><input type="hidden" id="nc-room" value="${room}"><button class="btn-gold" onclick="saveC()">Save Task</button></div>`);}
-function showAddChore(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Room</div><select class="field-input" id="nc-room"><option value="">Select...</option>${['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office','Kitchen','Living Room','Dining Room','Laundry','Backyard / Chickens','Front Yard','Garage / Airbnb'].map(r=>`<option>${r}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Deep clean..."></div><div class="field-group"><div class="field-label">Steps (comma separated, optional)</div><input class="field-input" id="nc-steps" placeholder="e.g. Dishes, Stove, Sweep"></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><button class="btn-gold" onclick="saveC()">Save Chore</button></div>`);}
-async function saveC(){const room=document.getElementById('nc-room')?.value,name=document.getElementById('nc-name')?.value?.trim(),sr=document.getElementById('nc-steps')?.value?.trim(),rec=document.getElementById('nc-rec')?.value;if(!room||!name){showError('BOS-DATA-001');return;}const steps=sr?sr.split(',').map(s=>s.trim()).filter(Boolean):[];try{const r=await sb.from('chores').insert({household_id:S.household.id,created_by:S.profile.id,room,name,steps,recurrence:rec||'weekly',status:'not_started'});if(r?.[0])S.data.chores.push(r[0]);closeModal();showSuccess('Chore added!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+function addTaskInRoom(re){const room=decodeURIComponent(re);const preDay=S.choresDay&&S.choresDay!=='Any'?S.choresDay:'';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task \u2014 ${room}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Vacuum..."></div><div class="field-group"><div class="field-label">Steps (comma separated)</div><input class="field-input" id="nc-steps" placeholder="e.g. Move furniture, Vacuum..."></div><div class="field-group"><div class="field-label">Day of Week</div><select class="field-input" id="nc-day"><option value="">Any Day</option>${CHORE_DAYS.map(d=>`<option${preDay===d?' selected':''}>${d}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><input type="hidden" id="nc-room" value="${room}"><button class="btn-gold" onclick="saveC()">Save Task</button></div>`);}
+function showAddChore(){const preDay=S.choresDay&&S.choresDay!=='Any'?S.choresDay:'';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Room</div><select class="field-input" id="nc-room"><option value="">Select...</option>${['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office','Kitchen','Living Room','Dining Room','Laundry','Backyard / Chickens','Front Yard','Garage / Airbnb'].map(r=>`<option>${r}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">Task Name</div><input class="field-input" id="nc-name" placeholder="e.g. Deep clean..."></div><div class="field-group"><div class="field-label">Steps (comma separated, optional)</div><input class="field-input" id="nc-steps" placeholder="e.g. Dishes, Stove, Sweep"></div><div class="field-group"><div class="field-label">Day of Week</div><select class="field-input" id="nc-day"><option value="">Any Day</option>${CHORE_DAYS.map(d=>`<option${preDay===d?' selected':''}>${d}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="nc-rec"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="one_time">One time</option></select></div><button class="btn-gold" onclick="saveC()">Save Chore</button></div>`);}
+async function saveC(){const room=document.getElementById('nc-room')?.value,name=document.getElementById('nc-name')?.value?.trim(),sr=document.getElementById('nc-steps')?.value?.trim(),rec=document.getElementById('nc-rec')?.value,day=document.getElementById('nc-day')?.value||'';if(!room||!name){showError('BOS-DATA-001');return;}const steps=sr?sr.split(',').map(s=>s.trim()).filter(Boolean):[];try{const r=await sb.from('chores').insert({household_id:S.household.id,created_by:S.profile.id,room,name,steps,recurrence:rec||'weekly',status:'not_started'});if(r?.[0]){S.data.chores.push(r[0]);if(day)setChoreday(r[0].id,day);}closeModal();showSuccess('Chore added!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
 async function delC(id){if(!confirm('Delete?'))return;try{await sb.from('chores').delete().eq('id',id);S.data.chores=S.data.chores.filter(c=>c.id!==id);showSuccess('Deleted');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
-function editC(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ec-name" value="${c.name}"></div><div class="field-group"><div class="field-label">Steps</div><input class="field-input" id="ec-steps" value="${(c.steps||[]).join(', ')}"></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="ec-rec"><option value="daily" ${c.recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${c.recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${c.recurrence==='monthly'?'selected':''}>Monthly</option></select></div><button class="btn-gold" onclick="updateC('${id}')">Save</button><button class="btn-red-outline" onclick="resetC('${id}')">Reset to Not Started</button></div>`);}
-async function updateC(id){const name=document.getElementById('ec-name')?.value?.trim();const steps=document.getElementById('ec-steps')?.value?.split(',').map(s=>s.trim()).filter(Boolean);const rec=document.getElementById('ec-rec')?.value;if(!name){showError('BOS-DATA-001');return;}try{const upd={name,steps,recurrence:rec};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Saved!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
+function editC(id){const c=(S.data.chores||[]).find(x=>x.id===id);if(!c)return;const curDay=getChoredays()[id]||'';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Chore</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ec-name" value="${c.name}"></div><div class="field-group"><div class="field-label">Steps</div><input class="field-input" id="ec-steps" value="${(c.steps||[]).join(', ')}"></div><div class="field-group"><div class="field-label">Day of Week</div><select class="field-input" id="ec-day"><option value="">Any Day</option>${CHORE_DAYS.map(d=>`<option${curDay===d?' selected':''}>${d}</option>`).join('')}</select></div><div class="field-group"><div class="field-label">How Often?</div><select class="field-input" id="ec-rec"><option value="daily" ${c.recurrence==='daily'?'selected':''}>Daily</option><option value="weekly" ${c.recurrence==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${c.recurrence==='monthly'?'selected':''}>Monthly</option></select></div><button class="btn-gold" onclick="updateC('${id}')">Save</button><button class="btn-red-outline" onclick="resetC('${id}')">Reset to Not Started</button></div>`);}
+async function updateC(id){const name=document.getElementById('ec-name')?.value?.trim();const steps=document.getElementById('ec-steps')?.value?.split(',').map(s=>s.trim()).filter(Boolean);const rec=document.getElementById('ec-rec')?.value;const day=document.getElementById('ec-day')?.value||'';if(!name){showError('BOS-DATA-001');return;}try{const upd={name,steps,recurrence:rec};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);setChoreday(id,day);closeModal();showSuccess('Saved!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
 async function resetC(id){try{const upd={status:'not_started',current_step:0,completed_by:null,completed_at:null};await sb.from('chores').update(upd).eq('id',id);S.data.chores=S.data.chores.map(c=>c.id===id?{...c,...upd}:c);closeModal();showSuccess('Reset!');S.currentSection==='chores'&&renderChores();}catch(e){showError(e.message);}}
 // BUDGET
 function editIncomeModal(who){
