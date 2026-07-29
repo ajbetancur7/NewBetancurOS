@@ -423,26 +423,38 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .sn-empty{font-size:12px;color:var(--white);opacity:.25;font-style:italic}
 .sn-divider{width:.5px;background:var(--border);flex-shrink:0}
 /* CHORE DAY TABS */
-.cday-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
-.cday-tabs::-webkit-scrollbar{display:none}
-.cdt{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:10px;font-weight:700;border:0.5px solid var(--border);background:transparent;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s;font-family:inherit}
-.cdt.cdt-today{border-color:var(--gold);color:var(--gold)}
+.cday-row{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-bottom:14px}
+.cdt{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 2px;border-radius:10px;font-size:11px;font-weight:700;border:0.5px solid var(--border);background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:.15s;font-family:inherit;position:relative;min-height:46px;line-height:1}
+.cdt.cdt-today{border-color:rgba(232,188,80,.5);color:rgba(255,255,255,.8)}
+.cdt.cdt-today::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--gold);position:absolute;bottom:6px;left:50%;transform:translateX(-50%)}
 .cdt.cdt-active{background:var(--gold);color:var(--gd);border-color:var(--gold)}
-.chore-list{display:flex;flex-direction:column}
-.chore-li{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:.5px solid var(--border)}
-.chore-li:last-child{border-bottom:none;padding-bottom:0}
-.chore-li .cl-chk{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;margin-top:1px;transition:.15s}
-.chore-li .cl-chk.done{background:var(--green);border-color:var(--green)}
-.chore-li .cl-body{flex:1;min-width:0}
-.chore-li .cl-name{font-size:13px;font-weight:600;color:var(--white)}
-.chore-li .cl-name.done{text-decoration:line-through;opacity:.4}
-.chore-li .cl-meta{font-size:10px;color:var(--white);opacity:.45;margin-top:2px}
-.chore-li .cl-steps{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.cl-step{font-size:9px;padding:2px 7px;border-radius:4px}
-.cl-step.done{background:var(--green);color:white}
-.cl-step.cur{background:var(--gold);color:var(--gd)}
-.cl-step.pend{background:rgba(255,255,255,.07);color:var(--white);opacity:.6}
-.chore-day-summary{font-size:10px;color:var(--white);opacity:.45;margin-bottom:4px}
+.cdt.cdt-active.cdt-today::after{background:var(--gd)}
+.cdt-dot{position:absolute;top:6px;right:6px;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.25)}
+/* Chore progress */
+.chore-prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.chore-prog-title{font-size:17px;font-weight:700;color:var(--white)}
+.chore-prog-count{font-size:12px;color:var(--white);opacity:.45}
+.chore-prog-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-bottom:14px}
+.chore-prog-fill{height:100%;border-radius:2px;background:var(--green);transition:.4s}
+/* Chore cards */
+.chore-card{display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--bg-dark);border:0.5px solid var(--border);border-radius:12px;margin-bottom:8px}
+.chore-card:last-child{margin-bottom:0}
+.cc-chk{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:.2s;margin-top:2px}
+.cc-chk.done{background:var(--green);border-color:var(--green)}
+.cc-chk.inprog{border-color:var(--gold)}
+.cc-body{flex:1;min-width:0}
+.cc-name{font-size:15px;font-weight:700;color:var(--white);line-height:1.3}
+.cc-name.done{text-decoration:line-through;opacity:.35}
+.cc-meta{font-size:11px;color:var(--white);opacity:.45;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cc-room{font-size:10px;font-weight:700;background:rgba(255,255,255,.07);color:var(--white);opacity:.8;border-radius:5px;padding:2px 7px;flex-shrink:0}
+.cc-steps{display:flex;align-items:center;gap:4px;margin-top:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.cc-steps::-webkit-scrollbar{display:none}
+.cc-step{font-size:10px;font-weight:600;padding:3px 9px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.cc-step.done{background:rgba(72,199,142,.15);color:var(--green);border:0.5px solid rgba(72,199,142,.3)}
+.cc-step.cur{background:rgba(232,188,80,.15);color:var(--gold);border:0.5px solid rgba(232,188,80,.4)}
+.cc-step.pend{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:0.5px solid rgba(255,255,255,.08)}
+.cc-arr{font-size:10px;color:rgba(255,255,255,.18);flex-shrink:0}
+.chore-empty{text-align:center;padding:40px 16px;color:var(--white);opacity:.35;font-size:13px;line-height:1.8}
 </style>
 </head>
 <body><div id="app-root">
@@ -548,7 +560,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <span style="font-size:18px;font-weight:700;color:var(--white)">Chores</span>
         <button class="btn-gold-sm" onclick="showAddChore()">+ Add</button>
       </div>
-      <div id="chores-status-strip" style="display:flex;gap:12px"></div>
+      <div id="chores-status-strip"></div>
       <div id="chores-room-detail" style="display:none"></div>
       <div class="room-grid" id="room-grid"></div>
     </div>
@@ -1384,28 +1396,37 @@ function renderChores(){
   const todayName=CHORE_DAYS[getTZ().getDay()];
   if(!S.choresDay)S.choresDay=todayName;
   const sel=S.choresDay;
-  // Merge day assignments
   const merged=chores.map(c=>({...c,day:choredays[c.id]||'Any'}));
   const visible=sel==='Any'?merged.filter(c=>c.day==='Any'):merged.filter(c=>c.day===sel);
-  // Day tab bar
+  // Count chores per day for dot indicators
+  const dayCount={};CHORE_DAYS.forEach(d=>dayCount[d]=merged.filter(c=>c.day===d).length);
+  // Day tab grid
   const tabs=[...CHORE_DAYS,'Any'].map(d=>{
-    const isActive=d===sel,isToday=d===todayName&&!isActive;
-    return`<button class="cdt${isActive?' cdt-active':''}${isToday?' cdt-today':''}" onclick="switchChoresDay('${d}')">${d}</button>`;
+    const isActive=d===sel,isToday=d===todayName;
+    const hasDot=d!=='Any'&&dayCount[d]>0&&!isActive;
+    return`<button class="cdt${isActive?' cdt-active':''}${isToday?' cdt-today':''}" onclick="switchChoresDay('${d}')">${d==='Any'?'—':d}${hasDot?'<span class="cdt-dot"></span>':''}</button>`;
   }).join('');
-  // Summary
+  // Progress
   const done=visible.filter(c=>c.status==='done').length,total=visible.length;
-  const summary=total?`${done} of ${total} completed`:(sel==='Any'?'No unassigned chores':'No chores for this day — tap + Add');
-  // Chore list
-  const listItems=visible.map(c=>{
+  const pct=total?Math.round(done/total*100):0;
+  const dayLabel=sel===todayName?'Today \u2014 '+sel:sel==='Any'?'Unassigned':sel;
+  // Chore cards
+  const cards=visible.map(c=>{
     const steps=Array.isArray(c.steps)?c.steps:[],cur=c.current_step||0,has=steps.length>0;
-    const isDone=c.status==='done';
+    const isDone=c.status==='done',isInProg=c.status==='in_progress';
     const doneBy=isDone&&c.completed_by?userName(c.completed_by):null;
-    const stepsHTML=has&&!isDone?`<div class="cl-steps">${steps.map((s,i)=>`<span class="cl-step ${i<cur?'done':i===cur?'cur':'pend'}">${s}</span>`).join('')}</div>`:'';
     const clickFn=!isDone?(has?`advanceStep('${c.id}')`:`doneChore('${c.id}')`):`doneChore('${c.id}')`;
-    return`<div class="chore-li"><div class="cl-chk${isDone?' done':''}" onclick="${clickFn}">${isDone?'<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><div class="cl-body"><div class="cl-name${isDone?' done':''}">${c.name}</div><div class="cl-meta">${c.room}${c.recurrence?' · '+c.recurrence:''}${doneBy?' · Done by '+doneBy:''}</div>${stepsHTML}</div><button class="btn-white-sm" onclick="editC('${c.id}')">Edit</button></div>`;
+    const chkIcon=isDone?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':isInProg?'<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgba(232,188,80,.9)" stroke-width="3"><polyline points="9 11 12 14 22 4"/></svg>':'';
+    const stepsHTML=has?`<div class="cc-steps">${steps.map((s,i)=>`${i>0?'<span class="cc-arr">\u203a</span>':''}<span class="cc-step ${i<cur?'done':i===cur?'cur':'pend'}">${s}</span>`).join('')}</div>`:'';
+    return`<div class="chore-card"><div class="cc-chk${isDone?' done':isInProg?' inprog':''}" onclick="event.stopPropagation();${clickFn}">${chkIcon}</div><div class="cc-body"><div class="cc-name${isDone?' done':''}">${c.name}</div><div class="cc-meta"><span class="cc-room">${c.room}</span>${c.recurrence?'<span>'+c.recurrence+'</span>':''}${doneBy?'<span>Done by '+doneBy+'</span>':''}</div>${stepsHTML}</div><button class="btn-white-sm" style="flex-shrink:0;align-self:flex-start;margin-top:2px" onclick="event.stopPropagation();editC('${c.id}')">Edit</button></div>`;
   }).join('');
-  document.getElementById('chores-status-strip').innerHTML=`<div class="cday-tabs">${tabs}</div><div class="chore-day-summary">${summary}</div>`;
-  document.getElementById('room-grid').innerHTML=visible.length?`<div style="grid-column:1/-1"><div class="card" style="padding:2px 14px 6px"><div class="chore-list">${listItems}</div></div></div>`:`<div style="grid-column:1/-1;text-align:center;padding:24px 0;font-size:12px;color:var(--white);opacity:.35">${sel==='Any'?'No unassigned chores.':'No chores for this day yet.<br>Tap <b>+ Add</b> to assign one.'}</div>`;
+  document.getElementById('chores-status-strip').innerHTML=
+    `<div class="cday-row">${tabs}</div>`+
+    `<div class="chore-prog-row"><span class="chore-prog-title">${dayLabel}</span><span class="chore-prog-count">${total?done+' of '+total+' done':''}</span></div>`+
+    (total?`<div class="chore-prog-bar"><div class="chore-prog-fill" style="width:${pct}%"></div></div>`:'');
+  document.getElementById('room-grid').innerHTML=visible.length
+    ?`<div style="grid-column:1/-1">${cards}</div>`
+    :`<div style="grid-column:1/-1"><div class="chore-empty">${sel==='Any'?'No unassigned chores.':'No chores set for '+sel+'.<br>Tap <b>+ Add</b> to assign one.'}</div></div>`;
   document.getElementById('chores-room-detail').style.display='none';
 }
 function showRoom(re){
