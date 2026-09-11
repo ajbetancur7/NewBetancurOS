@@ -2766,12 +2766,12 @@ function renderBizOverview(b){
   const kpis=b.kpis||[];
   return`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
     <div><div style="font-size:19px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div>
-    <div style="display:flex;gap:6px;align-items:center"><span class="cs ${stageCl}" style="font-size:9px">${(b.stage||'active').toUpperCase()}</span><button class="btn-white-sm" onclick="editBizModal('${b.id}')">Edit</button></div>
+    <div style="display:flex;gap:6px;align-items:center"><span class="cs ${stageCl}" style="font-size:9px">${(b.stage||'active').toUpperCase()}</span><button class="btn-white-sm" onclick="openJarvis()" style="border-color:var(--gold);color:var(--gold)">&#10022; Jarvis</button><button class="btn-white-sm" onclick="editBizModal('${b.id}')">Edit</button></div>
   </div>
   <div class="jcard" onclick="openJarvisCtx('Business: ${b.name.replace(/'/g,"\\'")} (${b.type}). Stage: ${b.stage}. Revenue MTD: $${revMTD.toLocaleString()}, Expenses MTD: $${expMTD.toLocaleString()}, Net Profit MTD: $${profitMTD.toLocaleString()} (${margin}% margin). YTD revenue: $${revYTD.toLocaleString()}, YTD profit: $${profitYTD.toLocaleString()}. Active clients: ${activeClients}. Open tasks: ${openTasks}. Team: ${team.length}. Give me strategic advice, growth ideas, or help me prioritize what moves the needle most.')" style="cursor:pointer">
     <div class="jlabel">Jarvis \u2014 Business Advisor</div>
     <div class="jtext">MTD: <b style="color:var(--green)">$${revMTD.toLocaleString()}</b> revenue &nbsp;·&nbsp; <b style="color:${profitMTD>=0?'var(--green)':'var(--red)'}">$${profitMTD.toLocaleString()}</b> profit &nbsp;·&nbsp; ${margin}% margin. Tap for strategy.</div>
-    <div class="jcta">Ask Jarvis &#8594;</div>
+    <div class="jcta">Get business analysis &#8594;</div>
   </div>
   <div class="biz-kpi-row">
     <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${revMTD.toLocaleString()}</div><div class="biz-kpi-sub">YTD: $${revYTD.toLocaleString()}</div></div>
