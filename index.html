@@ -2680,6 +2680,15 @@ async function sendEncouragement(){
   }catch(e){showError(e.message);}
 }
 // BUSINESS COMMAND CENTER
+// revenue, expenses, clients stored in localStorage (not Supabase schema columns)
+function getBizExt(b){
+  try{const e=JSON.parse(localStorage.getItem('bos_biz_ext_'+b.id)||'{}');return{...b,revenue:e.revenue||b.revenue||[],expenses:e.expenses||b.expenses||[],clients:e.clients||b.clients||[]};}catch(e){return{...b,revenue:[],expenses:[],clients:[]};}
+}
+function saveBizExt(bid,field,value){
+  const key='bos_biz_ext_'+bid;
+  try{const e=JSON.parse(localStorage.getItem(key)||'{}');e[field]=value;localStorage.setItem(key,JSON.stringify(e));}catch(e){}
+  S.data.businesses=S.data.businesses.map(b=>b.id===bid?{...b,[field]:value}:b);
+}
 function renderBusiness(){
   const bizs=S.data.businesses||[];
   const switcher=document.getElementById('biz-switcher-row');
@@ -2707,7 +2716,8 @@ function switchBiz(id){S.currentBizId=id;S.currentBizTab='overview';renderBusine
 function switchBizTab(tab){S.currentBizTab=tab;renderBizTab();const tabs=['overview','revenue','expenses','p&l','clients','tasks','team','notes'];document.querySelectorAll('.bist').forEach((t,i)=>t.classList.toggle('on',tabs[i]===tab));}
 function renderBizTab(){
   const body=document.getElementById('biz-body');if(!body)return;
-  const b=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);if(!b){body.innerHTML='';return;}
+  const raw=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);if(!raw){body.innerHTML='';return;}
+  const b=getBizExt(raw);
   const tab=S.currentBizTab||'overview';
   if(tab==='overview')body.innerHTML=renderBizOverview(b);
   else if(tab==='revenue')body.innerHTML=renderBizRevenue(b);
@@ -2899,17 +2909,17 @@ function addBizExpense(bid){
   showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Expense</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="exp-amt" type="number" placeholder="0.00" inputmode="decimal"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="exp-cat"><option>Supplies</option><option>Fuel</option><option>Labor</option><option>Equipment</option><option>Marketing</option><option>Insurance</option><option>Software</option><option>Other</option></select></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="exp-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="exp-note" placeholder="e.g. Cleaning supplies from Costco..."></div><button class="btn-gold" onclick="saveBizExpense('${bid}')">Log Expense</button></div>`);
   setTimeout(()=>document.getElementById('exp-amt')?.focus(),80);
 }
-async function saveBizExpense(bid){
+function saveBizExpense(bid){
   const amount=document.getElementById('exp-amt')?.value?.trim();if(!amount){showError('BOS-DATA-001');return;}
   const category=document.getElementById('exp-cat')?.value,date=document.getElementById('exp-date')?.value||getLocalDateStr(),note=document.getElementById('exp-note')?.value?.trim();
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,expenses:[]});
   const expenses=[...(b.expenses||[]),{id:uid4(),amount:parseFloat(amount),category,date,note}];
-  try{await sb.from('businesses').update({expenses}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,expenses}:x);closeModal();showSuccess('Expense logged!');renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'expenses',expenses);closeModal();showSuccess('Expense logged!');renderBizTab();
 }
-async function delBizExpense(bid,eid){
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+function delBizExpense(bid,eid){
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,expenses:[]});
   const expenses=(b.expenses||[]).filter((e,i)=>e.id!==eid&&String(i)!==String(eid));
-  try{await sb.from('businesses').update({expenses}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,expenses}:x);renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'expenses',expenses);renderBizTab();
 }
 // Revenue
 function addRevEntry(bid,prefillMonth){
@@ -2920,28 +2930,28 @@ function addRevEntry(bid,prefillMonth){
 async function saveRevEntry(bid){
   const amount=document.getElementById('rev-amt')?.value?.trim(),client=document.getElementById('rev-cli')?.value?.trim(),date=document.getElementById('rev-date')?.value||getLocalDateStr(),note=document.getElementById('rev-note')?.value?.trim();
   if(!amount){showError('BOS-DATA-001');return;}
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,revenue:[]});
   const revenue=[...(b.revenue||[]),{id:uid4(),amount:parseFloat(amount),client,date,note}];
-  try{await sb.from('businesses').update({revenue}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,revenue}:x);closeModal();showSuccess('Revenue logged!');renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'revenue',revenue);closeModal();showSuccess('Revenue logged!');renderBizTab();
 }
-async function delRevEntry(bid,rid){
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+function delRevEntry(bid,rid){
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,revenue:[]});
   const revenue=(b.revenue||[]).filter((r,i)=>r.id!==rid&&String(i)!==String(rid));
-  try{await sb.from('businesses').update({revenue}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,revenue}:x);renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'revenue',revenue);renderBizTab();
 }
 // Clients
 function addBizClient(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Client / Lead</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="bc-n" placeholder="Full name or company..."></div><div class="field-group"><div class="field-label">Phone (optional)</div><input class="field-input" id="bc-p" placeholder="+1 (555) 000-0000" type="tel"></div><div class="field-group"><div class="field-label">Email (optional)</div><input class="field-input" id="bc-e" placeholder="email@example.com" type="email"></div><div class="field-group"><div class="field-label">Address (optional)</div><input class="field-input" id="bc-a" placeholder="e.g. 123 Main St..."></div><div class="field-group"><div class="field-label">Status</div><select class="field-input" id="bc-s"><option value="lead">Lead</option><option value="active" selected>Active</option><option value="inactive">Inactive</option></select></div><button class="btn-gold" onclick="saveBizClient('${bid}')">Add</button></div>`);}
-async function saveBizClient(bid){
+function saveBizClient(bid){
   const name=document.getElementById('bc-n')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}
   const phone=document.getElementById('bc-p')?.value?.trim(),email=document.getElementById('bc-e')?.value?.trim(),address=document.getElementById('bc-a')?.value?.trim(),status=document.getElementById('bc-s')?.value;
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,clients:[]});
   const clients=[...(b.clients||[]),{id:uid4(),name,phone,email,address,status}];
-  try{await sb.from('businesses').update({clients}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,clients}:x);closeModal();showSuccess('Client added!');renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'clients',clients);closeModal();showSuccess('Client added!');renderBizTab();
 }
-async function delBizClient(bid,cid){
-  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+function delBizClient(bid,cid){
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,clients:[]});
   const clients=(b.clients||[]).filter((c,i)=>c.id!==cid&&String(i)!==String(cid));
-  try{await sb.from('businesses').update({clients}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,clients}:x);renderBizTab();}catch(e){showError(e.message);}
+  saveBizExt(bid,'clients',clients);renderBizTab();
 }
 // Tasks
 async function togBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);renderBizTab();}catch(e){showError(e.message);}}
@@ -2961,7 +2971,7 @@ async function saveBizNote(bid){const title=document.getElementById('bn-t')?.val
 async function delBizNote(bid,idx){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=(b.notes||[]).filter((_,i)=>i!==idx);try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);renderBizTab();}catch(e){showError(e.message);}}
 // Add / Edit / Delete Business
 function showAddBusiness(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Business Name</div><input class="field-input" id="ab-n" placeholder="e.g. Aries Cleaning..."></div><div class="field-group"><div class="field-label">Type / Industry</div><input class="field-input" id="ab-t" placeholder="e.g. Cleaning, Tech, Real Estate..."></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ab-s"><option value="idea">Idea</option><option value="setup">Setup</option><option value="active" selected>Active</option><option value="scaling">Scaling</option></select></div><div class="field-group"><div class="field-label">Description</div><textarea class="field-input" id="ab-d" rows="3" style="resize:none;min-height:60px" placeholder="What does this business do?"></textarea></div><button class="btn-gold" onclick="saveBiz()">Create Business</button></div>`);}
-async function saveBiz(){const name=document.getElementById('ab-n')?.value?.trim(),type=document.getElementById('ab-t')?.value?.trim(),stage=document.getElementById('ab-s')?.value,desc=document.getElementById('ab-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('businesses').insert({household_id:S.household.id,owner_id:S.profile.id,name,type,stage,description:desc,kpis:[],tasks:[],team:[{name:S.profile.name,role:'Founder',initials:(S.profile.name||'').slice(0,2).toUpperCase()}],notes:[],revenue:[],clients:[]});if(r?.[0])S.data.businesses.push(r[0]);closeModal();showSuccess('Business created!');S.currentBizId=null;renderBusiness();}catch(e){showError(e.message);}}
+async function saveBiz(){const name=document.getElementById('ab-n')?.value?.trim(),type=document.getElementById('ab-t')?.value?.trim(),stage=document.getElementById('ab-s')?.value,desc=document.getElementById('ab-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('businesses').insert({household_id:S.household.id,owner_id:S.profile.id,name,type,stage,description:desc,kpis:[],tasks:[],team:[{name:S.profile.name,role:'Founder',initials:(S.profile.name||'').slice(0,2).toUpperCase()}],notes:[]});if(r?.[0])S.data.businesses.push(r[0]);closeModal();showSuccess('Business created!');S.currentBizId=null;renderBusiness();}catch(e){showError(e.message);}}
 async function delBiz(id){if(!confirm('Delete this business? Cannot be undone.'))return;try{await sb.from('businesses').delete().eq('id',id);S.data.businesses=S.data.businesses.filter(b=>b.id!==id);S.currentBizId=null;closeModal();showSuccess('Deleted');renderBusiness();}catch(e){showError(e.message);}}
 function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button><button class="btn-red-outline" style="margin-top:4px" onclick="delBiz('${id}')">Delete Business</button></div>`);}
 async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
