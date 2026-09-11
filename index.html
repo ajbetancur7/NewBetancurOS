@@ -412,6 +412,14 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .history-when{font-size:9px;color:var(--white);opacity:.4;white-space:nowrap}
 .nav-badge{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto;flex-shrink:0}
 .budget-ssec{flex-direction:column;gap:10px;padding:14px}
+/* DAILY CHECKLIST */
+.dcl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:0.5px solid var(--border)}
+.dcl-item:last-child{border-bottom:none;padding-bottom:4px}
+.dcl-chk{width:22px;height:22px;border-radius:6px;border:1.5px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:.15s}
+.dcl-chk.done{background:var(--green);border-color:var(--green)}
+.dcl-text{flex:1;font-size:13px;font-weight:600;color:var(--white);line-height:1.3;cursor:pointer;user-select:none}
+.dcl-text.done{text-decoration:line-through;opacity:.3;font-weight:400}
+.dcl-del{font-size:18px;color:rgba(255,255,255,.18);cursor:pointer;flex-shrink:0;line-height:1;padding:0 2px;transition:.15s}
 /* SIGNAL TO NOISE */
 .sn-wrap{display:flex;gap:12px}
 .sn-col{flex:1;min-width:0}
@@ -455,6 +463,38 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 .cc-step.pend{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);border:0.5px solid rgba(255,255,255,.08)}
 .cc-arr{font-size:10px;color:rgba(255,255,255,.18);flex-shrink:0}
 .chore-empty{text-align:center;padding:40px 16px;color:var(--white);opacity:.35;font-size:13px;line-height:1.8}
+/* BUSINESS COMMAND CENTER */
+.biz-switcher{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:0.5px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.biz-switcher::-webkit-scrollbar{display:none}
+.biz-sw-tab{flex-shrink:0;padding:6px 13px;border-radius:8px;font-size:11px;font-weight:700;border:0.5px solid var(--border);background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:inherit;transition:.15s}
+.biz-sw-tab.on{background:var(--gold);color:var(--gd);border-color:var(--gold)}
+.biz-inner-tabs{display:flex;gap:5px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}
+.biz-inner-tabs::-webkit-scrollbar{display:none}
+.bist{flex-shrink:0;padding:7px 14px;border-radius:8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);cursor:pointer;font-family:inherit;border:none;transition:.15s}
+.bist.on{background:rgba(232,188,80,.15);color:var(--gold)}
+.biz-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.biz-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.biz-kpi{background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:12px}
+.biz-kpi-lbl{font-size:9px;font-weight:700;color:var(--white);opacity:.4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.biz-kpi-val{font-size:20px;font-weight:700;color:var(--white);line-height:1}
+.biz-kpi-sub{font-size:10px;color:var(--white);opacity:.4;margin-top:4px}
+.biz-kpi-trend{font-size:10px;font-weight:700;margin-top:4px}
+.rev-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--border)}
+.rev-row:last-child{border-bottom:none}
+.rev-amt{font-size:15px;font-weight:700;color:var(--green)}
+.rev-meta{font-size:10px;color:var(--white);opacity:.4;margin-top:3px}
+.rev-client-tag{font-size:10px;color:var(--gold);font-weight:600;margin-top:2px}
+.client-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.client-row:last-child{border-bottom:none}
+.client-av{width:32px;height:32px;border-radius:8px;background:rgba(232,188,80,.1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0}
+.client-info{flex:1;min-width:0}
+.client-name{font-size:13px;font-weight:700;color:var(--white)}
+.client-meta{font-size:10px;color:var(--white);opacity:.4;margin-top:2px}
+.cs{font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;flex-shrink:0}
+.cs-active{background:rgba(72,199,142,.15);color:var(--green)}
+.cs-lead{background:rgba(232,188,80,.15);color:var(--gold)}
+.cs-inactive{background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)}
+.biz-empty{text-align:center;padding:30px 16px;color:var(--white);opacity:.35;font-size:13px;line-height:1.7}
 </style>
 </head>
 <body><div id="app-root">
@@ -528,6 +568,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
+      <div class="card" id="daily-checklist-card" style="padding:12px 14px"></div>
       <div class="card" id="signal-noise-card" style="padding:12px 14px"></div>
       <div class="sec-label">&#9996;&#65039; Spirit</div>
       <div id="home-spirit"></div>
@@ -601,12 +642,14 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       </div>
       <div id="health-content" style="flex:1;min-height:0;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
-    <div class="section" id="section-business">
-      <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="section" id="section-business" style="padding:0;gap:0">
+      <div id="biz-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 14px 10px">
         <span style="font-size:18px;font-weight:700;color:var(--white)">Business</span>
         <button class="btn-gold-sm" onclick="showAddBusiness()">+ Add</button>
       </div>
-      <div id="business-list"></div>
+      <div id="biz-switcher-row" class="biz-switcher" style="display:none"></div>
+      <div id="biz-inner-tabs-row" class="biz-inner-tabs" style="display:none"></div>
+      <div id="biz-body" class="biz-body"></div>
     </div>
     <div class="section" id="section-life" style="padding:0">
       <div class="top-tabs" id="life-tabs">
@@ -1106,6 +1149,46 @@ function deleteDayNote(i){
   saveDayNotes(notes);
 }
 
+// DAILY CHECKLIST
+const DCL_KEY='bos_daily_checklist';
+function getChecklist(){try{return JSON.parse(localStorage.getItem(DCL_KEY)||'null');}catch(e){return null;}}
+function saveChecklist(d){localStorage.setItem(DCL_KEY,JSON.stringify(d));}
+function resetChecklistIfNewDay(){
+  const today=getLocalDateStr();let data=getChecklist();
+  if(!data){data={date:today,items:[]};saveChecklist(data);return data;}
+  if(data.date!==today){data.date=today;data.items=(data.items||[]).map(it=>({...it,done:false}));saveChecklist(data);}
+  return data;
+}
+function renderDailyChecklist(){
+  const el=document.getElementById('daily-checklist-card');if(!el)return;
+  const data=resetChecklistIfNewDay();
+  const items=data.items||[];
+  const done=items.filter(i=>i.done).length,total=items.length;
+  const pct=total?Math.round(done/total*100):0;
+  const listHTML=items.map((it,i)=>`<div class="dcl-item">
+    <div class="dcl-chk${it.done?' done':''}" onclick="toggleChecklistItem(${i})">${it.done?'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
+    <span class="dcl-text${it.done?' done':''}" onclick="toggleChecklistItem(${i})">${it.text}</span>
+    <span class="dcl-del" onclick="removeChecklistItem(${i})">&#215;</span>
+  </div>`).join('');
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${total?'10px':'6px'}">
+    <div><span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Daily Checklist</span>${total?`<span style="font-size:10px;color:var(--white);opacity:.4;margin-left:8px">${done}/${total} done</span>`:''}</div>
+    <button style="font-size:11px;font-weight:700;color:var(--gold);background:none;border:none;cursor:pointer;padding:0;font-family:inherit" onclick="showAddChecklistItem()">+ Add</button>
+  </div>${total?`<div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px;margin-bottom:10px;overflow:hidden"><div style="height:100%;border-radius:1px;background:var(--green);width:${pct}%;transition:.4s"></div></div>`:''}<div>${listHTML||'<div style="font-size:12px;color:var(--white);opacity:.3;padding:4px 0">Tap + Add to build today\'s checklist</div>'}</div>`;
+}
+function toggleChecklistItem(i){const data=resetChecklistIfNewDay();if(data.items[i])data.items[i].done=!data.items[i].done;saveChecklist(data);renderDailyChecklist();}
+function removeChecklistItem(i){const data=resetChecklistIfNewDay();data.items.splice(i,1);saveChecklist(data);renderDailyChecklist();}
+function showAddChecklistItem(){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Add to Today's Checklist</div>
+    <div style="font-size:12px;color:var(--white);opacity:.5;margin-bottom:14px">Items auto-reset every morning. The list stays — only the checks clear.</div>
+    <input class="field-input" id="dcl-new-text" placeholder="What needs to happen today?" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')saveChecklistItem()">
+    <button class="btn-gold" onclick="saveChecklistItem()">Add</button>`);
+  setTimeout(()=>document.getElementById('dcl-new-text')?.focus(),80);
+}
+function saveChecklistItem(){
+  const text=document.getElementById('dcl-new-text')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}
+  const data=resetChecklistIfNewDay();data.items.push({text,done:false});saveChecklist(data);closeModal();renderDailyChecklist();
+}
 // SIGNAL TO NOISE
 function getSignalNoise(){return JSON.parse(localStorage.getItem('bos_signal_noise')||'{}');}
 function saveSignalNoise(d){localStorage.setItem('bos_signal_noise',JSON.stringify(d));}
@@ -1380,7 +1463,7 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
-  renderHomeSpirit();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  renderDailyChecklist();renderHomeSpirit();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
@@ -1916,12 +1999,29 @@ function showPlanPreview(id,day,name,daySessions,totalSessions){
       <div style="font-size:9px;font-weight:700;color:var(--gold);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em">&#129302; Ask Jarvis to improve</div>
       <div id="preview-jarvis-tip" style="font-size:11.5px;color:var(--white);opacity:0.7;margin-bottom:6px;min-height:14px;line-height:1.45"></div>
       <div style="display:flex;gap:6px">
-        <input id="preview-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="Add more chest volume, swap deadlifts for RDLs…">
+        <input id="preview-chat-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="Type your change request…">
         <button class="btn-gold-sm" onclick="improveWorkoutPlan('${day}','${name}')">Go</button>
       </div>
     </div>
     <button class="btn-gold" style="width:100%;padding:16px;font-size:15px;font-weight:700;letter-spacing:0.02em" onclick="beginWorkout('${id}','${day}','${name.replace(/'/g,"\\'")}')">&#9889; Begin Workout</button>
   `,'tall');
+  // Inject a rotating smart suggestion into the tip area
+  const IMPROVE_TIPS=[
+    'Increase top set weight by 5–10 lbs on your main compound lift.',
+    'Add a drop set on the last exercise for more volume.',
+    'Swap the accessory movement for something that hits the weak point.',
+    'Push the rep range down and add a heavier working set.',
+    'Add a superset to cut rest time and increase density.',
+    'Increase total sets by 1 on your priority muscle group.',
+    'Replace one isolation with a compound variant for better stimulus.',
+    'Add a pause rep at the bottom on the main lift.',
+    'Cut one exercise and redistribute volume to the weakest link.',
+    'Try a pyramid scheme on the first movement today.'
+  ];
+  setTimeout(()=>{
+    const tip=document.getElementById('preview-jarvis-tip');
+    if(tip)tip.textContent='Suggestion: '+IMPROVE_TIPS[Math.floor(Math.random()*IMPROVE_TIPS.length)];
+  },80);
 }
 // Jarvis improve during preview — rewrites the full plan based on request
 async function improveWorkoutPlan(day,name){
@@ -1930,7 +2030,7 @@ async function improveWorkoutPlan(day,name){
   if(!text)return;
   input.value='';
   const tipEl=document.getElementById('preview-jarvis-tip');
-  if(tipEl){tipEl.style.opacity='0.45';tipEl.textContent='Jarvis is updating the plan…';}
+  if(tipEl){tipEl.style.opacity='0.45';tipEl.textContent='Jarvis is rewriting the plan…';}
   const planEl=document.getElementById('wod-preview-edit');
   const currentPlan=planEl?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
   const prs=getPRs();
@@ -1939,20 +2039,24 @@ async function improveWorkoutPlan(day,name){
   const mainGoal=lsGet('bos_main_goal')||'Build strength and muscle';
   const systemCtx=`You are modifying a ${name} workout plan for ${S.profile?.name?.split(' ')[0]||'AJ'}.${jarvisMemory?'\nCoach memory: '+jarvisMemory:''}
 Main goal: ${mainGoal}
-
 MAX LIFTS / PRs:
 ${prText}
-
 CURRENT PLAN:
 ${currentPlan}
-
-TASK: Apply the requested change. Return the COMPLETE updated plan in the exact same format. Keep all unchanged exercises identical.`;
+TASK: Apply the requested change. Return the COMPLETE updated plan in the exact same format. Make the change clearly visible — adjust sets, reps, weights, or exercises as requested.`;
   try{
     const r=await fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:text}],context:{current_user:S.profile?.name?.split(' ')[0]||'AJ',_system_override:systemCtx}})});
     const data=await r.json();
     const reply=(data.content?.[0]?.text||'').trim();
-    if(planEl&&reply){planEl.value=reply;localStorage.setItem(lsKey('bos_current_plan_'+day),reply);}
-    if(tipEl){tipEl.style.opacity='1';tipEl.innerHTML='<span style="color:var(--green)">&#10003; Plan updated</span>';}
+    if(planEl&&reply){
+      planEl.value=reply;
+      localStorage.setItem(lsKey('bos_current_plan_'+day),reply);
+      // Flash the textarea gold briefly to show it changed
+      planEl.style.transition='border-color 0.3s';
+      planEl.style.borderColor='var(--gold)';
+      setTimeout(()=>{planEl.style.borderColor='';},1800);
+    }
+    if(tipEl){tipEl.style.opacity='1';tipEl.innerHTML='<span style="color:var(--green)">&#10003; Plan updated by Jarvis — review the changes above.</span>';}
   }catch(e){if(tipEl){tipEl.style.opacity='0.6';tipEl.textContent='Connection error — try again.';}}
 }
 // STEP 3 — Begin: start timer and open full-screen active workout
@@ -2375,8 +2479,11 @@ async function savePregAppt(){
 function renderHomeSpirit(){
   const el=document.getElementById('home-spirit');if(!el)return;
   const uid=S.profile?.id||'';
-  const acts=S.data.activity||[];
-  const encs=acts.filter(a=>a.section==='spirit').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,3);
+  // Merge Supabase activity + local-cached encouragements for resilient display
+  const localEncs=JSON.parse(lsGet('bos_encs')||'[]');
+  const acts=[...(S.data.activity||[]),...localEncs];
+  const seen=new Set();
+  const encs=acts.filter(a=>a.section==='spirit').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).filter(a=>{const k=a.created_at+a.user_id;return seen.has(k)?false:(seen.add(k),true);}).slice(0,5);
   const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
   const readCount=books.filter(b=>b.read).length;
 
@@ -2411,17 +2518,14 @@ function renderHomeSpirit(){
 }
 async function sendHomeEncouragement(){
   const input=document.getElementById('home-enc-input');
-  const text=input?.value?.trim();
-  if(!text){showError('BOS-DATA-001');return;}
-  input.value='';
-  try{
-    await logActivity('sent encouragement: '+text,'spirit',text);
-    // Refresh activity in memory for instant display
-    const newEntry={user_id:S.profile?.id,action:'sent encouragement: '+text,section:'spirit',item_name:text,created_at:new Date().toISOString(),household_id:S.household?.id};
-    S.data.activity=[newEntry,...(S.data.activity||[])];
-    renderHomeSpirit();
-    showSuccess('Sent!');
-  }catch(e){showError(e.message);}
+  const text=input?.value?.trim();if(!text)return;
+  // Save locally immediately — works without Supabase
+  const newEntry={user_id:S.profile?.id,action:'sent encouragement: '+text,section:'spirit',item_name:text,created_at:new Date().toISOString(),household_id:S.household?.id};
+  S.data.activity=[newEntry,...(S.data.activity||[])];
+  const localEncs=JSON.parse(lsGet('bos_encs')||'[]');localEncs.unshift(newEntry);lsSet('bos_encs',JSON.stringify(localEncs.slice(0,30)));
+  input.value='';renderHomeSpirit();showSuccess('Sent!');
+  // Background sync to Supabase (silent fail)
+  try{await logActivity('sent encouragement: '+text,'spirit',text);}catch(e){}
 }
 // SPIRITUAL
 function renderSpiritual(c){
@@ -2575,30 +2679,174 @@ async function sendEncouragement(){
     renderHomeSpirit();
   }catch(e){showError(e.message);}
 }
-// BUSINESS
-function renderBusiness(){const bizs=S.data.businesses||[];document.getElementById('business-list').innerHTML=bizs.map(b=>{const own=b.owner_id===S.profile.id;const ownerName=userName(b.owner_id)||'AJ';return`<div class="biz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1"><div class="biz-name">${b.name}</div><div class="biz-type">${b.type}${!own?` <span style="font-size:8px;color:var(--white);opacity:0.4">&middot; ${ownerName}'s</span>`:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="tag ${b.stage==='active'?'tag-green':b.stage==='setup'?'tag-gray':'tag-gold'}" style="font-size:7px">${(b.stage||'active').toUpperCase()}</span><button class="btn-white-sm" onclick="openBiz('${b.id}')">Open</button></div></div><div class="biz-stats"><div class="biz-stat"><div class="bstat-lbl">Open Tasks</div><div class="bstat-val">${(b.tasks||[]).filter(t=>!t.done).length}</div></div><div class="biz-stat"><div class="bstat-lbl">Team</div><div class="bstat-val">${(b.team||[]).length}</div></div><div class="biz-stat"><div class="bstat-lbl">KPIs</div><div class="bstat-val" style="color:${b.stage==='active'?'var(--green)':'var(--gold)'}">${b.stage==='active'?'On track':'Review'}</div></div></div></div>`;}).join('');if(!bizs.length)document.getElementById('business-list').innerHTML='<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No businesses yet.</div></div>';}
-function openBiz(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div><div style="font-size:18px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div><div style="display:flex;gap:6px"><button class="btn-gold-sm" onclick="openJarvisCtx('${b.name} business strategy and advice')">Jarvis</button><button class="btn-white-sm" onclick="editBizModal('${id}')">Edit</button></div></div><div id="biz-tabs" style="display:flex;gap:6px;margin-bottom:12px"><button class="biz-tab on" onclick="switchBTab('kpis','${id}')">KPIs</button><button class="biz-tab" onclick="switchBTab('tasks','${id}')">Tasks</button><button class="biz-tab" onclick="switchBTab('team','${id}')">Team</button><button class="biz-tab" onclick="switchBTab('notes','${id}')">Notes</button></div><div id="biz-tc"></div><button class="btn-red-outline" style="margin-top:12px" onclick="delBiz('${id}')">Delete Business</button>`);switchBTab('kpis',id);}
-function switchBTab(tab,id){document.querySelectorAll('#biz-tabs .biz-tab').forEach((t,i)=>t.classList.toggle('on',['kpis','tasks','team','notes'][i]===tab));const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;const c=document.getElementById('biz-tc');if(!c)return;
-  if(tab==='kpis')c.innerHTML=`<div class="kpi-grid">${(b.kpis||[]).map(k=>`<div class="kpi-c"><div class="kpi-lbl">${k.label}</div><div class="kpi-val">${k.value}</div><div class="kpi-tr ${(k.trend||'').includes('\u2191')?'kpi-g':'kpi-o'}">${k.trend||''}</div></div>`).join('')}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addKPI('${id}')">+ Add KPI</button>`;
-  else if(tab==='tasks')c.innerHTML=`<div class="card">${(b.tasks||[]).length?b.tasks.map(t=>`<div class="task-item ${t.done?'td':''}"><div class="chk ${t.done?'checked':''}" onclick="togBizTask('${id}','${t.id}')" style="cursor:pointer">${t.done?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div><div style="flex:1"><div class="t-name ${t.done?'stk':''}">${t.text}</div>${t.due?`<div class="t-meta">Due ${t.due}</div>`:''}</div><span class="del-x" onclick="delBizTask('${id}','${t.id}')">&#215;</span></div>`).join(''):'<div class="task-item"><span class="t-name" style="opacity:0.4">No tasks yet.</span></div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addBizTask('${id}')">+ Add Task</button>`;
-  else if(tab==='team')c.innerHTML=`<div class="card">${(b.team||[]).map(m=>`<div class="team-row"><div class="t-av">${(m.initials||m.name?.slice(0,2)||'?').toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--white)">${m.name}</div><div style="font-size:10px;color:var(--gold)">${m.role}</div></div><span class="del-x" onclick="delTeam('${id}','${m.name}')">&#215;</span></div>`).join('')||'<div class="task-item"><span class="t-name" style="opacity:0.4">No team yet.</span></div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addTeam('${id}')">+ Add Member</button>`;
-  else if(tab==='notes')c.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${(b.notes||[]).length?b.notes.map((n,i)=>`<div class="card"><div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:4px">${n.title||'Note'} \u00b7 ${n.date||''}</div><div style="font-size:12px;color:var(--white);line-height:1.4">${n.text}</div><span class="del-x" onclick="delBizNote('${id}',${i})">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4">No notes yet.</div>'}</div><button class="btn-gold-outline" style="margin-top:8px" onclick="addBizNote('${id}')">+ Add Note</button>`;}
-async function togBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);switchBTab('tasks',bid);}catch(e){showError(e.message);}}
-async function delBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).filter(t=>t.id!==tid);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);switchBTab('tasks',bid);}catch(e){showError(e.message);}}
-function addBizTask(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task</div><input class="field-input" id="bt-text" placeholder="What needs to be done..."></div><div class="field-group"><div class="field-label">Due (optional)</div><input class="field-input" id="bt-due" placeholder="e.g. May 20"></div><button class="btn-gold" onclick="saveBizTask('${bid}')">Add</button></div>`);}
-async function saveBizTask(bid){const text=document.getElementById('bt-text')?.value?.trim(),due=document.getElementById('bt-due')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=[...(b.tasks||[]),{id:uid4(),text,due,done:false}];try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
-function addKPI(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add KPI</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Label</div><input class="field-input" id="kl" placeholder="e.g. Revenue..."></div><div class="field-group"><div class="field-label">Value</div><input class="field-input" id="kv" placeholder="e.g. $12,400..."></div><div class="field-group"><div class="field-label">Trend</div><input class="field-input" id="kt" placeholder="e.g. &#8593; 18%..."></div><button class="btn-gold" onclick="saveKPI('${bid}')">Add</button></div>`);}
-async function saveKPI(bid){const label=document.getElementById('kl')?.value?.trim(),value=document.getElementById('kv')?.value?.trim(),trend=document.getElementById('kt')?.value?.trim();if(!label||!value){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const kpis=[...(b.kpis||[]),{label,value,trend}];try{await sb.from('businesses').update({kpis}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,kpis}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
-function addTeam(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Team Member</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="tm-n" placeholder="Full name..."></div><div class="field-group"><div class="field-label">Role</div><input class="field-input" id="tm-r" placeholder="e.g. Developer..."></div><button class="btn-gold" onclick="saveTeam('${bid}')">Add</button></div>`);}
-async function saveTeam(bid){const name=document.getElementById('tm-n')?.value?.trim(),role=document.getElementById('tm-r')?.value?.trim();if(!name||!role){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=[...(b.team||[]),{name,role,initials:name.slice(0,2).toUpperCase()}];try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
-async function delTeam(bid,mname){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=(b.team||[]).filter(m=>m.name!==mname);try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);switchBTab('team',bid);}catch(e){showError(e.message);}}
-function addBizNote(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Note</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="bn-t" placeholder="e.g. Investor call..."></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="bn-n" rows="4" style="resize:none;min-height:80px" placeholder="Write your notes..."></textarea></div><button class="btn-gold" onclick="saveBizNote('${bid}')">Save</button></div>`);}
-async function saveBizNote(bid){const title=document.getElementById('bn-t')?.value?.trim(),text=document.getElementById('bn-n')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=[...(b.notes||[]),{title,text,date:getTZ().toLocaleDateString('en-US',{month:'short',day:'numeric'})}];try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);closeModal();openBiz(bid);}catch(e){showError(e.message);}}
-async function delBizNote(bid,idx){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=(b.notes||[]).filter((_,i)=>i!==parseInt(idx));try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);switchBTab('notes',bid);}catch(e){showError(e.message);}}
-function showAddBusiness(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ab-n" placeholder="e.g. My Company..."></div><div class="field-group"><div class="field-label">Type / Industry</div><input class="field-input" id="ab-t" placeholder="e.g. Tech, Retail..."></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ab-s"><option value="idea">Idea</option><option value="setup">Setup</option><option value="active" selected>Active</option><option value="scaling">Scaling</option></select></div><div class="field-group"><div class="field-label">Description</div><textarea class="field-input" id="ab-d" rows="3" style="resize:none;min-height:60px" placeholder="What does this business do?"></textarea></div><button class="btn-gold" onclick="saveBiz()">Create</button></div>`);}
-async function saveBiz(){const name=document.getElementById('ab-n')?.value?.trim(),type=document.getElementById('ab-t')?.value?.trim(),stage=document.getElementById('ab-s')?.value,desc=document.getElementById('ab-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('businesses').insert({household_id:S.household.id,owner_id:S.profile.id,name,type,stage,description:desc,kpis:[],tasks:[],team:[{name:S.profile.name,role:'Founder',initials:(S.profile.name||'').slice(0,2).toUpperCase()}],notes:[]});if(r?.[0])S.data.businesses.push(r[0]);closeModal();showSuccess('Business added!');renderBusiness();}catch(e){showError(e.message);}}
-async function delBiz(id){if(!confirm('Delete? Cannot be undone.'))return;try{await sb.from('businesses').delete().eq('id',id);S.data.businesses=S.data.businesses.filter(b=>b.id!==id);closeModal();showSuccess('Deleted');renderBusiness();}catch(e){showError(e.message);}}
-function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button></div>`);}
+// BUSINESS COMMAND CENTER
+function renderBusiness(){
+  const bizs=S.data.businesses||[];
+  const switcher=document.getElementById('biz-switcher-row');
+  const innerTabs=document.getElementById('biz-inner-tabs-row');
+  const body=document.getElementById('biz-body');
+  if(!bizs.length){
+    if(switcher)switcher.style.display='none';
+    if(innerTabs)innerTabs.style.display='none';
+    if(body)body.innerHTML='<div class="biz-empty">No businesses yet.<br>Tap <b>+ Add</b> to create your first one.</div>';
+    return;
+  }
+  if(!S.currentBizId||!bizs.find(b=>b.id===S.currentBizId))S.currentBizId=bizs[0].id;
+  // Switcher tabs (if multiple businesses)
+  if(switcher){
+    switcher.style.display=bizs.length>1?'flex':'none';
+    switcher.innerHTML=bizs.map(b=>`<button class="biz-sw-tab${b.id===S.currentBizId?' on':''}" onclick="switchBiz('${b.id}')">${b.name}</button>`).join('');
+  }
+  if(innerTabs)innerTabs.style.display='flex';
+  if(!S.currentBizTab)S.currentBizTab='overview';
+  const tabs=['overview','revenue','clients','tasks','team','notes'];
+  if(innerTabs)innerTabs.innerHTML=tabs.map(t=>`<button class="bist${t===S.currentBizTab?' on':''}" onclick="switchBizTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('');
+  renderBizTab();
+}
+function switchBiz(id){S.currentBizId=id;S.currentBizTab='overview';renderBusiness();}
+function switchBizTab(tab){S.currentBizTab=tab;renderBizTab();document.querySelectorAll('.bist').forEach((t,i)=>t.classList.toggle('on',['overview','revenue','clients','tasks','team','notes'][i]===tab));}
+function renderBizTab(){
+  const body=document.getElementById('biz-body');if(!body)return;
+  const b=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);if(!b){body.innerHTML='';return;}
+  const tab=S.currentBizTab||'overview';
+  if(tab==='overview')body.innerHTML=renderBizOverview(b);
+  else if(tab==='revenue')body.innerHTML=renderBizRevenue(b);
+  else if(tab==='clients')body.innerHTML=renderBizClients(b);
+  else if(tab==='tasks')body.innerHTML=renderBizTasks(b);
+  else if(tab==='team')body.innerHTML=renderBizTeam(b);
+  else if(tab==='notes')body.innerHTML=renderBizNotes(b);
+}
+function renderBizOverview(b){
+  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],team=b.team||[];
+  const openTasks=tasks.filter(t=>!t.done).length;
+  const activeClients=clients.filter(c=>c.status==='active').length;
+  const mtd=revenue.filter(r=>r.date&&r.date.startsWith(new Date().toISOString().slice(0,7))).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const totalRev=revenue.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const stageCl=b.stage==='active'?'cs-active':b.stage==='scaling'?'cs-active':'cs-lead';
+  const stageLabel=(b.stage||'active').toUpperCase();
+  const topTasks=tasks.filter(t=>!t.done).slice(0,3);
+  const kpis=b.kpis||[];
+  return`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+    <div><div style="font-size:19px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div>
+    <div style="display:flex;gap:6px;align-items:center"><span class="cs ${stageCl}" style="font-size:9px">${stageLabel}</span><button class="btn-white-sm" onclick="editBizModal('${b.id}')">Edit</button></div>
+  </div>
+  <div class="jcard" onclick="openJarvisCtx('Business command center for ${b.name.replace(/'/g,"\\'")} (${b.type}). Stage: ${b.stage}. Revenue MTD: $${mtd.toLocaleString()}. Open tasks: ${openTasks}. Active clients: ${activeClients}. Team: ${team.length}. Give me strategic advice, growth ideas, or help me prioritize.')" style="cursor:pointer">
+    <div class="jlabel">Jarvis \u2014 Business Advisor</div>
+    <div class="jtext">Revenue MTD: <b style="color:var(--green)">$${mtd.toLocaleString()}</b> &nbsp;·&nbsp; ${openTasks} open task${openTasks!==1?'s':''} &nbsp;·&nbsp; ${activeClients} active client${activeClients!==1?'s':''}. Tap for strategic advice.</div>
+    <div class="jcta">Ask Jarvis &#8594;</div>
+  </div>
+  <div class="biz-kpi-row">
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${mtd.toLocaleString()}</div><div class="biz-kpi-sub">Total: $${totalRev.toLocaleString()}</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Active Clients</div><div class="biz-kpi-val">${activeClients}</div><div class="biz-kpi-sub">${clients.length} total</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Open Tasks</div><div class="biz-kpi-val" style="color:${openTasks>0?'var(--gold)':'var(--green)'}">${openTasks}</div><div class="biz-kpi-sub">${tasks.length} total</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Team Size</div><div class="biz-kpi-val">${team.length}</div><div class="biz-kpi-sub">Members</div></div>
+  </div>
+  ${kpis.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">KPIs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${kpis.map(k=>`<div><div style="font-size:10px;color:var(--white);opacity:.4">${k.label}</div><div style="font-size:14px;font-weight:700;color:var(--white)">${k.value}</div>${k.trend?`<div style="font-size:10px;font-weight:700;color:${k.trend.includes('\u2191')?'var(--green)':'var(--red)'}">${k.trend}</div>`:''}</div>`).join('')}</div></div><button class="btn-gold-outline" onclick="addKPI('${b.id}')">+ Add KPI</button>`:'<button class="btn-gold-outline" onclick="addKPI(\''+b.id+'\')">+ Add KPI</button>'}
+  ${topTasks.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Priority Tasks</div>${topTasks.map(t=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div class="chk" onclick="togBizTask('${b.id}','${t.id}')" style="cursor:pointer;flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;color:var(--white);font-weight:600">${t.text}</div>${t.due?`<div style="font-size:10px;color:var(--gold);margin-top:2px">Due ${t.due}</div>`:''}</div></div>`).join('')}</div><button class="btn-gold-outline" onclick="switchBizTab('tasks')">View All Tasks &#8594;</button>`:''}`;
+}
+function renderBizRevenue(b){
+  const rev=(b.revenue||[]).sort((a,z)=>new Date(z.date)-new Date(a.date));
+  const now=new Date();const thisMonth=now.toISOString().slice(0,7);
+  const lastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString().slice(0,7);
+  const mtd=rev.filter(r=>r.date&&r.date.startsWith(thisMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const lastMtd=rev.filter(r=>r.date&&r.date.startsWith(lastMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const ytd=rev.filter(r=>r.date&&r.date.startsWith(String(now.getFullYear()))).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const trend=lastMtd>0?Math.round((mtd-lastMtd)/lastMtd*100):0;
+  return`<div class="biz-kpi-row">
+    <div class="biz-kpi"><div class="biz-kpi-lbl">This Month</div><div class="biz-kpi-val" style="color:var(--green)">$${mtd.toLocaleString()}</div><div class="biz-kpi-trend" style="color:${trend>=0?'var(--green)':'var(--red)'}">${trend>=0?'+':''}${trend}% vs last month</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Year to Date</div><div class="biz-kpi-val">$${ytd.toLocaleString()}</div><div class="biz-kpi-sub">${rev.length} entries</div></div>
+  </div>
+  <div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Revenue Log</div>
+    ${rev.length?rev.map((r,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt">$${parseFloat(r.amount||0).toLocaleString()}</div>${r.client?`<div class="rev-client-tag">${r.client}</div>`:''}<div class="rev-meta">${r.date||''}${r.note?' · '+r.note:''}</div></div><span class="del-x" onclick="delRevEntry('${b.id}','${r.id||i}')">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:8px 0">No revenue logged yet.</div>'}
+  </div>
+  <button class="btn-gold" onclick="addRevEntry('${b.id}')">+ Log Revenue</button>`;
+}
+function renderBizClients(b){
+  const clients=(b.clients||[]).sort((a,z)=>a.status==='active'?-1:1);
+  return`<div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Clients &amp; Leads</div>
+    ${clients.length?clients.map((c,i)=>`<div class="client-row">
+      <div class="client-av">${(c.name||'?').slice(0,2).toUpperCase()}</div>
+      <div class="client-info"><div class="client-name">${c.name}</div><div class="client-meta">${[c.phone,c.email,c.address].filter(Boolean).join(' · ')||'No contact info'}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="cs ${c.status==='active'?'cs-active':c.status==='lead'?'cs-lead':'cs-inactive'}">${(c.status||'lead').toUpperCase()}</span><span class="del-x" onclick="delBizClient('${b.id}','${c.id||i}')">&#215;</span></div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:8px 0">No clients yet.</div>'}
+  </div>
+  <button class="btn-gold" onclick="addBizClient('${b.id}')">+ Add Client / Lead</button>`;
+}
+function renderBizTasks(b){
+  const tasks=b.tasks||[];const open=tasks.filter(t=>!t.done),done=tasks.filter(t=>t.done);
+  return`<div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Open Tasks (${open.length})</div>
+    ${open.length?open.map(t=>`<div class="task-item"><div class="chk" onclick="togBizTask('${b.id}','${t.id}')" style="cursor:pointer"></div><div style="flex:1"><div class="t-name">${t.text}</div>${t.due?`<div class="t-meta">Due ${t.due}</div>`:''}</div><span class="del-x" onclick="delBizTask('${b.id}','${t.id}')">&#215;</span></div>`).join(''):'<div class="task-item"><span class="t-name" style="opacity:.4">No open tasks.</span></div>'}
+    ${done.length?`<div style="font-size:10px;font-weight:700;color:var(--white);opacity:.3;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px">Done (${done.length})</div>${done.map(t=>`<div class="task-item td"><div class="chk checked" onclick="togBizTask('${b.id}','${t.id}')" style="cursor:pointer"><span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span></div><div style="flex:1"><div class="t-name stk">${t.text}</div></div><span class="del-x" onclick="delBizTask('${b.id}','${t.id}')">&#215;</span></div>`).join('')}`:''}
+  </div>
+  <button class="btn-gold" onclick="addBizTask('${b.id}')">+ Add Task</button>`;
+}
+function renderBizTeam(b){
+  const team=b.team||[];
+  return`<div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Team (${team.length})</div>
+    ${team.length?team.map(m=>`<div class="team-row"><div class="t-av">${(m.initials||m.name?.slice(0,2)||'?').toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--white)">${m.name}</div><div style="font-size:10px;color:var(--gold)">${m.role}</div>${m.phone?`<div style="font-size:10px;color:var(--white);opacity:.4">${m.phone}</div>`:''}</div><span class="del-x" onclick="delTeam('${b.id}','${m.name}')">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:8px 0">No team members yet.</div>'}
+  </div>
+  <button class="btn-gold" onclick="addTeam('${b.id}')">+ Add Team Member</button>`;
+}
+function renderBizNotes(b){
+  const notes=(b.notes||[]).slice().reverse();
+  return`<div style="display:flex;flex-direction:column;gap:8px">
+    ${notes.length?notes.map((n,i)=>`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${n.title||'Note'}</span><span style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--gold)">${n.date||''}</span><span class="del-x" onclick="delBizNote('${b.id}',${(b.notes||[]).length-1-i})">&#215;</span></span></div><div style="font-size:12px;color:var(--white);opacity:.8;line-height:1.6">${n.text}</div></div>`).join(''):'<div class="card" style="padding:12px;font-size:12px;color:var(--white);opacity:.4">No notes yet. Log meetings, ideas, or decisions.</div>'}
+  </div>
+  <button class="btn-gold" onclick="addBizNote('${b.id}')">+ Add Note</button>`;
+}
+// Revenue
+function addRevEntry(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Revenue</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="rev-amt" type="number" placeholder="0.00"></div><div class="field-group"><div class="field-label">Client / Source</div><input class="field-input" id="rev-cli" placeholder="e.g. Johnson Residence, Airbnb..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="rev-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="rev-note" placeholder="e.g. Monthly deep clean..."></div><button class="btn-gold" onclick="saveRevEntry('${bid}')">Log</button></div>`);}
+async function saveRevEntry(bid){
+  const amount=document.getElementById('rev-amt')?.value?.trim(),client=document.getElementById('rev-cli')?.value?.trim(),date=document.getElementById('rev-date')?.value||getLocalDateStr(),note=document.getElementById('rev-note')?.value?.trim();
+  if(!amount){showError('BOS-DATA-001');return;}
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const revenue=[...(b.revenue||[]),{id:uid4(),amount:parseFloat(amount),client,date,note}];
+  try{await sb.from('businesses').update({revenue}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,revenue}:x);closeModal();showSuccess('Revenue logged!');renderBizTab();}catch(e){showError(e.message);}
+}
+async function delRevEntry(bid,rid){
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const revenue=(b.revenue||[]).filter((r,i)=>r.id!==rid&&String(i)!==String(rid));
+  try{await sb.from('businesses').update({revenue}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,revenue}:x);renderBizTab();}catch(e){showError(e.message);}
+}
+// Clients
+function addBizClient(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Client / Lead</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="bc-n" placeholder="Full name or company..."></div><div class="field-group"><div class="field-label">Phone (optional)</div><input class="field-input" id="bc-p" placeholder="+1 (555) 000-0000" type="tel"></div><div class="field-group"><div class="field-label">Email (optional)</div><input class="field-input" id="bc-e" placeholder="email@example.com" type="email"></div><div class="field-group"><div class="field-label">Address (optional)</div><input class="field-input" id="bc-a" placeholder="e.g. 123 Main St..."></div><div class="field-group"><div class="field-label">Status</div><select class="field-input" id="bc-s"><option value="lead">Lead</option><option value="active" selected>Active</option><option value="inactive">Inactive</option></select></div><button class="btn-gold" onclick="saveBizClient('${bid}')">Add</button></div>`);}
+async function saveBizClient(bid){
+  const name=document.getElementById('bc-n')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}
+  const phone=document.getElementById('bc-p')?.value?.trim(),email=document.getElementById('bc-e')?.value?.trim(),address=document.getElementById('bc-a')?.value?.trim(),status=document.getElementById('bc-s')?.value;
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const clients=[...(b.clients||[]),{id:uid4(),name,phone,email,address,status}];
+  try{await sb.from('businesses').update({clients}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,clients}:x);closeModal();showSuccess('Client added!');renderBizTab();}catch(e){showError(e.message);}
+}
+async function delBizClient(bid,cid){
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const clients=(b.clients||[]).filter((c,i)=>c.id!==cid&&String(i)!==String(cid));
+  try{await sb.from('businesses').update({clients}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,clients}:x);renderBizTab();}catch(e){showError(e.message);}
+}
+// Tasks
+async function togBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);renderBizTab();}catch(e){showError(e.message);}}
+async function delBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).filter(t=>t.id!==tid);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);renderBizTab();}catch(e){showError(e.message);}}
+function addBizTask(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Task</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task</div><input class="field-input" id="bt-text" placeholder="What needs to be done..."></div><div class="field-group"><div class="field-label">Due Date (optional)</div><input class="field-input" id="bt-due" placeholder="e.g. Jun 15"></div><button class="btn-gold" onclick="saveBizTask('${bid}')">Add</button></div>`);}
+async function saveBizTask(bid){const text=document.getElementById('bt-text')?.value?.trim(),due=document.getElementById('bt-due')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=[...(b.tasks||[]),{id:uid4(),text,due,done:false}];try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);closeModal();renderBizTab();}catch(e){showError(e.message);}}
+// Team
+async function delTeam(bid,mname){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=(b.team||[]).filter(m=>m.name!==mname);try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);renderBizTab();}catch(e){showError(e.message);}}
+function addTeam(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Team Member</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="tm-n" placeholder="Full name..."></div><div class="field-group"><div class="field-label">Role</div><input class="field-input" id="tm-r" placeholder="e.g. Cleaner, Sales..."></div><div class="field-group"><div class="field-label">Phone (optional)</div><input class="field-input" id="tm-p" placeholder="+1 (555) 000-0000"></div><button class="btn-gold" onclick="saveTeam('${bid}')">Add</button></div>`);}
+async function saveTeam(bid){const name=document.getElementById('tm-n')?.value?.trim(),role=document.getElementById('tm-r')?.value?.trim(),phone=document.getElementById('tm-p')?.value?.trim();if(!name||!role){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const team=[...(b.team||[]),{name,role,phone,initials:name.slice(0,2).toUpperCase()}];try{await sb.from('businesses').update({team}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,team}:x);closeModal();renderBizTab();}catch(e){showError(e.message);}}
+// KPIs
+function addKPI(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add KPI</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Label</div><input class="field-input" id="kl" placeholder="e.g. Monthly Revenue..."></div><div class="field-group"><div class="field-label">Value</div><input class="field-input" id="kv" placeholder="e.g. $8,400..."></div><div class="field-group"><div class="field-label">Trend (optional)</div><input class="field-input" id="kt" placeholder="e.g. &#8593; 18%..."></div><button class="btn-gold" onclick="saveKPI('${bid}')">Add</button></div>`);}
+async function saveKPI(bid){const label=document.getElementById('kl')?.value?.trim(),value=document.getElementById('kv')?.value?.trim(),trend=document.getElementById('kt')?.value?.trim();if(!label||!value){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const kpis=[...(b.kpis||[]),{label,value,trend}];try{await sb.from('businesses').update({kpis}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,kpis}:x);closeModal();renderBizTab();}catch(e){showError(e.message);}}
+// Notes
+function addBizNote(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Note</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="bn-t" placeholder="e.g. Client call, Strategy meeting..."></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="bn-n" rows="5" style="resize:none;min-height:100px" placeholder="Write your notes, decisions, action items..."></textarea></div><button class="btn-gold" onclick="saveBizNote('${bid}')">Save</button></div>`);}
+async function saveBizNote(bid){const title=document.getElementById('bn-t')?.value?.trim(),text=document.getElementById('bn-n')?.value?.trim();if(!text){showError('BOS-DATA-001');return;}const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=[...(b.notes||[]),{title,text,date:getTZ().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}];try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);closeModal();showSuccess('Note saved!');renderBizTab();}catch(e){showError(e.message);}}
+async function delBizNote(bid,idx){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const notes=(b.notes||[]).filter((_,i)=>i!==idx);try{await sb.from('businesses').update({notes}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);renderBizTab();}catch(e){showError(e.message);}}
+// Add / Edit / Delete Business
+function showAddBusiness(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Business Name</div><input class="field-input" id="ab-n" placeholder="e.g. Aries Cleaning..."></div><div class="field-group"><div class="field-label">Type / Industry</div><input class="field-input" id="ab-t" placeholder="e.g. Cleaning, Tech, Real Estate..."></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ab-s"><option value="idea">Idea</option><option value="setup">Setup</option><option value="active" selected>Active</option><option value="scaling">Scaling</option></select></div><div class="field-group"><div class="field-label">Description</div><textarea class="field-input" id="ab-d" rows="3" style="resize:none;min-height:60px" placeholder="What does this business do?"></textarea></div><button class="btn-gold" onclick="saveBiz()">Create Business</button></div>`);}
+async function saveBiz(){const name=document.getElementById('ab-n')?.value?.trim(),type=document.getElementById('ab-t')?.value?.trim(),stage=document.getElementById('ab-s')?.value,desc=document.getElementById('ab-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('businesses').insert({household_id:S.household.id,owner_id:S.profile.id,name,type,stage,description:desc,kpis:[],tasks:[],team:[{name:S.profile.name,role:'Founder',initials:(S.profile.name||'').slice(0,2).toUpperCase()}],notes:[],revenue:[],clients:[]});if(r?.[0])S.data.businesses.push(r[0]);closeModal();showSuccess('Business created!');S.currentBizId=null;renderBusiness();}catch(e){showError(e.message);}}
+async function delBiz(id){if(!confirm('Delete this business? Cannot be undone.'))return;try{await sb.from('businesses').delete().eq('id',id);S.data.businesses=S.data.businesses.filter(b=>b.id!==id);S.currentBizId=null;closeModal();showSuccess('Deleted');renderBusiness();}catch(e){showError(e.message);}}
+function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button><button class="btn-red-outline" style="margin-top:4px" onclick="delBiz('${id}')">Delete Business</button></div>`);}
 async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
 // LIFE
 function renderLife(){if(S.currentLifeTab==='pets'||!S.currentLifeTab)S.currentLifeTab='recipes';switchLTab(S.currentLifeTab);}
