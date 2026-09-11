@@ -2699,69 +2699,106 @@ function renderBusiness(){
   }
   if(innerTabs)innerTabs.style.display='flex';
   if(!S.currentBizTab)S.currentBizTab='overview';
-  const tabs=['overview','revenue','clients','tasks','team','notes'];
-  if(innerTabs)innerTabs.innerHTML=tabs.map(t=>`<button class="bist${t===S.currentBizTab?' on':''}" onclick="switchBizTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('');
+  const tabs=['overview','revenue','expenses','p&l','clients','tasks','team','notes'];
+  if(innerTabs)innerTabs.innerHTML=tabs.map(t=>`<button class="bist${t===S.currentBizTab?' on':''}" onclick="switchBizTab('${t}')">${t==='p&l'?'P&L':t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('');
   renderBizTab();
 }
 function switchBiz(id){S.currentBizId=id;S.currentBizTab='overview';renderBusiness();}
-function switchBizTab(tab){S.currentBizTab=tab;renderBizTab();document.querySelectorAll('.bist').forEach((t,i)=>t.classList.toggle('on',['overview','revenue','clients','tasks','team','notes'][i]===tab));}
+function switchBizTab(tab){S.currentBizTab=tab;renderBizTab();const tabs=['overview','revenue','expenses','p&l','clients','tasks','team','notes'];document.querySelectorAll('.bist').forEach((t,i)=>t.classList.toggle('on',tabs[i]===tab));}
 function renderBizTab(){
   const body=document.getElementById('biz-body');if(!body)return;
   const b=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);if(!b){body.innerHTML='';return;}
   const tab=S.currentBizTab||'overview';
   if(tab==='overview')body.innerHTML=renderBizOverview(b);
   else if(tab==='revenue')body.innerHTML=renderBizRevenue(b);
+  else if(tab==='expenses')body.innerHTML=renderBizExpenses(b);
+  else if(tab==='p&l')body.innerHTML=renderBizPL(b);
   else if(tab==='clients')body.innerHTML=renderBizClients(b);
   else if(tab==='tasks')body.innerHTML=renderBizTasks(b);
   else if(tab==='team')body.innerHTML=renderBizTeam(b);
   else if(tab==='notes')body.innerHTML=renderBizNotes(b);
 }
 function renderBizOverview(b){
-  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],team=b.team||[];
+  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],expenses=b.expenses||[],team=b.team||[];
   const openTasks=tasks.filter(t=>!t.done).length;
   const activeClients=clients.filter(c=>c.status==='active').length;
-  const mtd=revenue.filter(r=>r.date&&r.date.startsWith(new Date().toISOString().slice(0,7))).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const totalRev=revenue.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const stageCl=b.stage==='active'?'cs-active':b.stage==='scaling'?'cs-active':'cs-lead';
-  const stageLabel=(b.stage||'active').toUpperCase();
+  const curMonth=new Date().toISOString().slice(0,7);
+  const thisYear=String(new Date().getFullYear());
+  const revMTD=revenue.filter(r=>r.date&&r.date.startsWith(curMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const expMTD=expenses.filter(e=>e.date&&e.date.startsWith(curMonth)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const profitMTD=revMTD-expMTD;
+  const revYTD=revenue.filter(r=>r.date&&r.date.startsWith(thisYear)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const expYTD=expenses.filter(e=>e.date&&e.date.startsWith(thisYear)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const profitYTD=revYTD-expYTD;
+  const margin=revMTD>0?Math.round(profitMTD/revMTD*100):0;
+  const stageCl=b.stage==='active'||b.stage==='scaling'?'cs-active':'cs-lead';
   const topTasks=tasks.filter(t=>!t.done).slice(0,3);
   const kpis=b.kpis||[];
-  return`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+  return`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
     <div><div style="font-size:19px;font-weight:700;color:var(--white)">${b.name}</div><div style="font-size:11px;color:var(--gold);margin-top:2px">${b.type}</div></div>
-    <div style="display:flex;gap:6px;align-items:center"><span class="cs ${stageCl}" style="font-size:9px">${stageLabel}</span><button class="btn-white-sm" onclick="editBizModal('${b.id}')">Edit</button></div>
+    <div style="display:flex;gap:6px;align-items:center"><span class="cs ${stageCl}" style="font-size:9px">${(b.stage||'active').toUpperCase()}</span><button class="btn-white-sm" onclick="editBizModal('${b.id}')">Edit</button></div>
   </div>
-  <div class="jcard" onclick="openJarvisCtx('Business command center for ${b.name.replace(/'/g,"\\'")} (${b.type}). Stage: ${b.stage}. Revenue MTD: $${mtd.toLocaleString()}. Open tasks: ${openTasks}. Active clients: ${activeClients}. Team: ${team.length}. Give me strategic advice, growth ideas, or help me prioritize.')" style="cursor:pointer">
+  <div class="jcard" onclick="openJarvisCtx('Business: ${b.name.replace(/'/g,"\\'")} (${b.type}). Stage: ${b.stage}. Revenue MTD: $${revMTD.toLocaleString()}, Expenses MTD: $${expMTD.toLocaleString()}, Net Profit MTD: $${profitMTD.toLocaleString()} (${margin}% margin). YTD revenue: $${revYTD.toLocaleString()}, YTD profit: $${profitYTD.toLocaleString()}. Active clients: ${activeClients}. Open tasks: ${openTasks}. Team: ${team.length}. Give me strategic advice, growth ideas, or help me prioritize what moves the needle most.')" style="cursor:pointer">
     <div class="jlabel">Jarvis \u2014 Business Advisor</div>
-    <div class="jtext">Revenue MTD: <b style="color:var(--green)">$${mtd.toLocaleString()}</b> &nbsp;·&nbsp; ${openTasks} open task${openTasks!==1?'s':''} &nbsp;·&nbsp; ${activeClients} active client${activeClients!==1?'s':''}. Tap for strategic advice.</div>
+    <div class="jtext">MTD: <b style="color:var(--green)">$${revMTD.toLocaleString()}</b> revenue &nbsp;·&nbsp; <b style="color:${profitMTD>=0?'var(--green)':'var(--red)'}">$${profitMTD.toLocaleString()}</b> profit &nbsp;·&nbsp; ${margin}% margin. Tap for strategy.</div>
     <div class="jcta">Ask Jarvis &#8594;</div>
   </div>
   <div class="biz-kpi-row">
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${mtd.toLocaleString()}</div><div class="biz-kpi-sub">Total: $${totalRev.toLocaleString()}</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Active Clients</div><div class="biz-kpi-val">${activeClients}</div><div class="biz-kpi-sub">${clients.length} total</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Open Tasks</div><div class="biz-kpi-val" style="color:${openTasks>0?'var(--gold)':'var(--green)'}">${openTasks}</div><div class="biz-kpi-sub">${tasks.length} total</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Team Size</div><div class="biz-kpi-val">${team.length}</div><div class="biz-kpi-sub">Members</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${revMTD.toLocaleString()}</div><div class="biz-kpi-sub">YTD: $${revYTD.toLocaleString()}</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Net Profit MTD</div><div class="biz-kpi-val" style="color:${profitMTD>=0?'var(--green)':'var(--red)'}">$${profitMTD.toLocaleString()}</div><div class="biz-kpi-sub">${margin}% margin</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Active Clients</div><div class="biz-kpi-val">${activeClients}</div><div class="biz-kpi-sub">${clients.filter(c=>c.status==='lead').length} leads</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Open Tasks</div><div class="biz-kpi-val" style="color:${openTasks>0?'var(--gold)':'var(--green)'}">${openTasks}</div><div class="biz-kpi-sub">Team: ${team.length}</div></div>
   </div>
-  ${kpis.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">KPIs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${kpis.map(k=>`<div><div style="font-size:10px;color:var(--white);opacity:.4">${k.label}</div><div style="font-size:14px;font-weight:700;color:var(--white)">${k.value}</div>${k.trend?`<div style="font-size:10px;font-weight:700;color:${k.trend.includes('\u2191')?'var(--green)':'var(--red)'}">${k.trend}</div>`:''}</div>`).join('')}</div></div><button class="btn-gold-outline" onclick="addKPI('${b.id}')">+ Add KPI</button>`:'<button class="btn-gold-outline" onclick="addKPI(\''+b.id+'\')">+ Add KPI</button>'}
+  ${kpis.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">KPIs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${kpis.map(k=>`<div><div style="font-size:10px;color:var(--white);opacity:.4">${k.label}</div><div style="font-size:14px;font-weight:700;color:var(--white)">${k.value}</div>${k.trend?`<div style="font-size:10px;font-weight:700;color:${k.trend.includes('\u2191')?'var(--green)':'var(--red)'}">${k.trend}</div>`:''}</div>`).join('')}</div></div><button class="btn-gold-outline" onclick="addKPI('${b.id}')">+ Add KPI</button>`:'<button class="btn-gold-outline" onclick="addKPI(\''+b.id+'\')">+ Add KPI</button>'}
   ${topTasks.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Priority Tasks</div>${topTasks.map(t=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div class="chk" onclick="togBizTask('${b.id}','${t.id}')" style="cursor:pointer;flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;color:var(--white);font-weight:600">${t.text}</div>${t.due?`<div style="font-size:10px;color:var(--gold);margin-top:2px">Due ${t.due}</div>`:''}</div></div>`).join('')}</div><button class="btn-gold-outline" onclick="switchBizTab('tasks')">View All Tasks &#8594;</button>`:''}`;
 }
 function renderBizRevenue(b){
   const rev=(b.revenue||[]).sort((a,z)=>new Date(z.date)-new Date(a.date));
-  const now=new Date();const thisMonth=now.toISOString().slice(0,7);
-  const lastMonth=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString().slice(0,7);
-  const mtd=rev.filter(r=>r.date&&r.date.startsWith(thisMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const lastMtd=rev.filter(r=>r.date&&r.date.startsWith(lastMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const ytd=rev.filter(r=>r.date&&r.date.startsWith(String(now.getFullYear()))).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const trend=lastMtd>0?Math.round((mtd-lastMtd)/lastMtd*100):0;
+  const now=new Date();
+  const viewYear=S.bizRevYear||now.getFullYear();
+  const selMonth=S.bizRevMonth||(viewYear+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Year totals
+  const ytd=rev.filter(r=>r.date&&r.date.startsWith(String(viewYear))).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const allTime=rev.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  // Month grid for selected year
+  const monthGrid=MO.map((m,i)=>{
+    const key=viewYear+'-'+String(i+1).padStart(2,'0');
+    const total=rev.filter(r=>r.date&&r.date.startsWith(key)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+    const isSelected=key===selMonth;
+    const isCur=key===now.toISOString().slice(0,7);
+    return`<div onclick="setBizRevMonth('${key}')" style="flex-shrink:0;width:calc((100% - 33px)/4);text-align:center;padding:9px 4px 8px;border-radius:9px;cursor:pointer;background:${isSelected?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${isSelected?'var(--gold)':isCur?'rgba(232,188,80,.4)':'var(--border)'}">
+      <div style="font-size:10px;font-weight:700;color:${isSelected?'var(--gd)':'rgba(255,255,255,.55)'}">${m}</div>
+      <div style="font-size:12px;font-weight:700;color:${isSelected?'var(--gd)':total>0?'var(--green)':'rgba(255,255,255,.2)'};margin-top:3px">${total>0?'$'+total.toLocaleString():'\u2014'}</div>
+    </div>`;
+  }).join('');
+  // Selected month entries
+  const filtRev=rev.filter(r=>r.date&&r.date.startsWith(selMonth));
+  const selTotal=filtRev.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const selLabel=MO[parseInt(selMonth.split('-')[1])-1]+' '+selMonth.split('-')[0];
   return`<div class="biz-kpi-row">
-    <div class="biz-kpi"><div class="biz-kpi-lbl">This Month</div><div class="biz-kpi-val" style="color:var(--green)">$${mtd.toLocaleString()}</div><div class="biz-kpi-trend" style="color:${trend>=0?'var(--green)':'var(--red)'}">${trend>=0?'+':''}${trend}% vs last month</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Year to Date</div><div class="biz-kpi-val">$${ytd.toLocaleString()}</div><div class="biz-kpi-sub">${rev.length} entries</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Selected Month</div><div class="biz-kpi-val" style="color:var(--green)">$${selTotal.toLocaleString()}</div><div class="biz-kpi-sub">${filtRev.length} entries</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">${viewYear} Total</div><div class="biz-kpi-val">$${ytd.toLocaleString()}</div><div class="biz-kpi-sub">All-time: $${allTime.toLocaleString()}</div></div>
+  </div>
+  <div class="card" style="padding:12px 12px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <button onclick="bizRevYear(-1)" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;padding:0 4px">&#8249;</button>
+      <span style="font-size:13px;font-weight:700;color:var(--white)">${viewYear}</span>
+      <button onclick="bizRevYear(1)" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;padding:0 4px">&#8250;</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">${monthGrid}</div>
   </div>
   <div class="card" style="padding:12px">
-    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Revenue Log</div>
-    ${rev.length?rev.map((r,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt">$${parseFloat(r.amount||0).toLocaleString()}</div>${r.client?`<div class="rev-client-tag">${r.client}</div>`:''}<div class="rev-meta">${r.date||''}${r.note?' · '+r.note:''}</div></div><span class="del-x" onclick="delRevEntry('${b.id}','${r.id||i}')">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:8px 0">No revenue logged yet.</div>'}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">${selLabel}</span>
+      <span style="font-size:10px;color:var(--white);opacity:.4">${filtRev.length} entries</span>
+    </div>
+    ${filtRev.length?filtRev.map((r,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt">$${parseFloat(r.amount||0).toLocaleString()}</div>${r.client?`<div class="rev-client-tag">${r.client}</div>`:''}<div class="rev-meta">${r.date||''}${r.note?' · '+r.note:''}</div></div><span class="del-x" onclick="delRevEntry('${b.id}','${r.id||i}')">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:6px 0">No revenue logged for ${selLabel}.</div>'}
   </div>
-  <button class="btn-gold" onclick="addRevEntry('${b.id}')">+ Log Revenue</button>`;
+  <button class="btn-gold" onclick="addRevEntry('${b.id}','${selMonth}')">+ Log Revenue for ${selLabel}</button>`;
 }
+function setBizRevMonth(key){S.bizRevMonth=key;S.bizRevYear=parseInt(key.split('-')[0]);renderBizTab();}
+function bizRevYear(dir){S.bizRevYear=(S.bizRevYear||new Date().getFullYear())+dir;S.bizRevMonth=(S.bizRevYear)+'-'+String(new Date().getMonth()+1).padStart(2,'0');renderBizTab();}
 function renderBizClients(b){
   const clients=(b.clients||[]).sort((a,z)=>a.status==='active'?-1:1);
   return`<div class="card" style="padding:12px">
@@ -2798,8 +2835,88 @@ function renderBizNotes(b){
   </div>
   <button class="btn-gold" onclick="addBizNote('${b.id}')">+ Add Note</button>`;
 }
+// Expenses tab
+function renderBizExpenses(b){
+  const exp=(b.expenses||[]).sort((a,z)=>new Date(z.date)-new Date(a.date));
+  const now=new Date();
+  const curMonth=now.toISOString().slice(0,7);
+  const thisYear=String(now.getFullYear());
+  const expMTD=exp.filter(e=>e.date&&e.date.startsWith(curMonth)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const expYTD=exp.filter(e=>e.date&&e.date.startsWith(thisYear)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const CATS=['Supplies','Fuel','Labor','Equipment','Marketing','Insurance','Software','Other'];
+  const byCat=CATS.map(cat=>{const total=exp.filter(e=>e.category===cat).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);return{cat,total};}).filter(x=>x.total>0).sort((a,z)=>z.total-a.total);
+  return`<div class="biz-kpi-row">
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses MTD</div><div class="biz-kpi-val" style="color:var(--red)">$${expMTD.toLocaleString()}</div><div class="biz-kpi-sub">${exp.filter(e=>e.date&&e.date.startsWith(curMonth)).length} entries</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses YTD</div><div class="biz-kpi-val">$${expYTD.toLocaleString()}</div><div class="biz-kpi-sub">All-time: $${exp.reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</div></div>
+  </div>
+  ${byCat.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">By Category</div>${byCat.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)"><span style="font-size:12px;color:var(--white)">${x.cat}</span><span style="font-size:13px;font-weight:700;color:var(--red)">$${x.total.toLocaleString()}</span></div>`).join('')}</div>`:''}
+  <div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Expense Log</div>
+    ${exp.length?exp.map((e,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(e.amount||0).toLocaleString()}</div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${e.category||'Other'}</div><div class="rev-meta">${e.date||''}${e.note?' · '+e.note:''}</div></div><span class="del-x" onclick="delBizExpense('${b.id}','${e.id||i}')">&#215;</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:6px 0">No expenses logged yet.</div>'}
+  </div>
+  <button class="btn-gold" onclick="addBizExpense('${b.id}')">+ Log Expense</button>`;
+}
+// P&L tab
+function renderBizPL(b){
+  const rev=b.revenue||[],exp=b.expenses||[];
+  const now=new Date();const thisYear=String(now.getFullYear());
+  const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months=MO.map((m,i)=>{
+    const key=thisYear+'-'+String(i+1).padStart(2,'0');
+    const r=rev.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    const e=exp.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    return{m,r,e,p:r-e,isCur:key===now.toISOString().slice(0,7)};
+  }).filter(x=>x.r>0||x.e>0);
+  const ytdRev=rev.filter(x=>x.date&&x.date.startsWith(thisYear)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const ytdExp=exp.filter(x=>x.date&&x.date.startsWith(thisYear)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const ytdProfit=ytdRev-ytdExp;
+  const ytdMargin=ytdRev>0?Math.round(ytdProfit/ytdRev*100):0;
+  return`<div class="biz-kpi-row">
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue YTD</div><div class="biz-kpi-val" style="color:var(--green)">$${ytdRev.toLocaleString()}</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Net Profit YTD</div><div class="biz-kpi-val" style="color:${ytdProfit>=0?'var(--green)':'var(--red)'}">$${ytdProfit.toLocaleString()}</div><div class="biz-kpi-sub">${ytdMargin}% margin</div></div>
+  </div>
+  <div class="card" style="padding:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Monthly P&amp;L — ${thisYear}</div>
+    <div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr;gap:0">
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding-bottom:8px;text-transform:uppercase">Month</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding-bottom:8px;text-align:right;text-transform:uppercase">Revenue</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding-bottom:8px;text-align:right;text-transform:uppercase">Expenses</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding-bottom:8px;text-align:right;text-transform:uppercase">Profit</div>
+      ${months.length?months.map(x=>`
+      <div style="font-size:12px;color:${x.isCur?'var(--gold)':'rgba(255,255,255,.7)'};font-weight:${x.isCur?'700':'400'};padding:8px 0;border-top:0.5px solid var(--border)">${x.m}</div>
+      <div style="font-size:12px;color:var(--green);text-align:right;padding:8px 0;border-top:0.5px solid var(--border)">$${x.r.toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--red);text-align:right;padding:8px 0;border-top:0.5px solid var(--border)">$${x.e.toLocaleString()}</div>
+      <div style="font-size:12px;font-weight:700;color:${x.p>=0?'var(--green)':'var(--red)'};text-align:right;padding:8px 0;border-top:0.5px solid var(--border)">$${x.p.toLocaleString()}</div>`).join(''):'<div style="grid-column:1/-1;font-size:12px;color:var(--white);opacity:.4;padding:12px 0">Log revenue and expenses to see your P&L.</div>'}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn-gold" style="flex:1" onclick="switchBizTab('revenue')">+ Log Revenue</button>
+    <button class="btn-white" style="flex:1" onclick="switchBizTab('expenses')">+ Log Expense</button>
+  </div>`;
+}
+// Expenses CRUD
+function addBizExpense(bid){
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Expense</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="exp-amt" type="number" placeholder="0.00" inputmode="decimal"></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="exp-cat"><option>Supplies</option><option>Fuel</option><option>Labor</option><option>Equipment</option><option>Marketing</option><option>Insurance</option><option>Software</option><option>Other</option></select></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="exp-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="exp-note" placeholder="e.g. Cleaning supplies from Costco..."></div><button class="btn-gold" onclick="saveBizExpense('${bid}')">Log Expense</button></div>`);
+  setTimeout(()=>document.getElementById('exp-amt')?.focus(),80);
+}
+async function saveBizExpense(bid){
+  const amount=document.getElementById('exp-amt')?.value?.trim();if(!amount){showError('BOS-DATA-001');return;}
+  const category=document.getElementById('exp-cat')?.value,date=document.getElementById('exp-date')?.value||getLocalDateStr(),note=document.getElementById('exp-note')?.value?.trim();
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const expenses=[...(b.expenses||[]),{id:uid4(),amount:parseFloat(amount),category,date,note}];
+  try{await sb.from('businesses').update({expenses}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,expenses}:x);closeModal();showSuccess('Expense logged!');renderBizTab();}catch(e){showError(e.message);}
+}
+async function delBizExpense(bid,eid){
+  const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+  const expenses=(b.expenses||[]).filter((e,i)=>e.id!==eid&&String(i)!==String(eid));
+  try{await sb.from('businesses').update({expenses}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,expenses}:x);renderBizTab();}catch(e){showError(e.message);}
+}
 // Revenue
-function addRevEntry(bid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Revenue</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="rev-amt" type="number" placeholder="0.00"></div><div class="field-group"><div class="field-label">Client / Source</div><input class="field-input" id="rev-cli" placeholder="e.g. Johnson Residence, Airbnb..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="rev-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="rev-note" placeholder="e.g. Monthly deep clean..."></div><button class="btn-gold" onclick="saveRevEntry('${bid}')">Log</button></div>`);}
+function addRevEntry(bid,prefillMonth){
+  const defaultDate=prefillMonth?(prefillMonth+'-'+String(new Date().getDate()).padStart(2,'0')):getLocalDateStr();
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Revenue</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="rev-amt" type="number" placeholder="0.00" inputmode="decimal"></div><div class="field-group"><div class="field-label">Client / Source</div><input class="field-input" id="rev-cli" placeholder="e.g. Johnson Residence..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="rev-date" type="date" value="${defaultDate}"></div><div class="field-group"><div class="field-label">Note (optional)</div><input class="field-input" id="rev-note" placeholder="e.g. Monthly deep clean..."></div><button class="btn-gold" onclick="saveRevEntry('${bid}')">Log Revenue</button></div>`);
+  setTimeout(()=>document.getElementById('rev-amt')?.focus(),80);
+}
 async function saveRevEntry(bid){
   const amount=document.getElementById('rev-amt')?.value?.trim(),client=document.getElementById('rev-cli')?.value?.trim(),date=document.getElementById('rev-date')?.value||getLocalDateStr(),note=document.getElementById('rev-note')?.value?.trim();
   if(!amount){showError('BOS-DATA-001');return;}
