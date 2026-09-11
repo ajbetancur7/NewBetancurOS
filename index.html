@@ -1472,8 +1472,6 @@ function renderHome(){
   const pn1=pu1?.name?.split(' ')[0]||'AJ',pn2=pu2?.name?.split(' ')[0]||'Partner';
   const isMe1=pu1?.id===S.profile?.id,isMe2=pu2?.id===S.profile?.id;
 document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">${pn1}${isMe1?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">${pn2}${isMe2?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
-  const gu=(S.data.grocery||[]).filter(g=>!g.checked).length;
-  document.getElementById('grocery-count').textContent=gu+' item'+(gu===1?'':'s');const gc=document.getElementById('grocery-count');if(gc)gc.closest&&gc.closest('.fab-grocery')&&(gc.closest('.fab-grocery').onclick=()=>go('grocery'));
   const day=now.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
   const _todayD=now.getDate();
   const _isEffPaid=b=>b.paid||(b.auto_pay&&(!b.due_day||_todayD>=b.due_day));
