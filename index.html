@@ -1174,8 +1174,8 @@ function deleteDayNote(i){
 
 // DAILY CHECKLIST
 const DCL_KEY='bos_daily_checklist';
-function getChecklist(){try{return JSON.parse(localStorage.getItem(DCL_KEY)||'null');}catch(e){return null;}}
-function saveChecklist(d){localStorage.setItem(DCL_KEY,JSON.stringify(d));}
+function getChecklist(){try{const up=lsGet('bos_daily_checklist');if(up)return JSON.parse(up);const g=localStorage.getItem(DCL_KEY);return g?JSON.parse(g):null;}catch(e){return null;}}
+function saveChecklist(d){const j=JSON.stringify(d);localStorage.setItem(DCL_KEY,j);lsSet('bos_daily_checklist',j);syncPreference('daily_checklist',j);}
 function resetChecklistIfNewDay(){
   const today=getLocalDateStr();let data=getChecklist();
   if(!data){data={date:today,items:[]};saveChecklist(data);return data;}
@@ -1213,8 +1213,8 @@ function saveChecklistItem(){
   const data=resetChecklistIfNewDay();data.items.push({text,done:false});saveChecklist(data);closeModal();renderDailyChecklist();
 }
 // SIGNAL TO NOISE
-function getSignalNoise(){return JSON.parse(localStorage.getItem('bos_signal_noise')||'{}');}
-function saveSignalNoise(d){localStorage.setItem('bos_signal_noise',JSON.stringify(d));}
+function getSignalNoise(){try{const up=lsGet('bos_signal_noise');if(up)return JSON.parse(up);return JSON.parse(localStorage.getItem('bos_signal_noise')||'{}');}catch(e){return{};}}
+function saveSignalNoise(d){const j=JSON.stringify(d);localStorage.setItem('bos_signal_noise',j);lsSet('bos_signal_noise',j);syncPreference('signal_noise',j);}
 function renderSignalNoise(){
   const el=document.getElementById('signal-noise-card');if(!el)return;
   const uid=S.profile?.id||'';
@@ -1356,6 +1356,8 @@ async function loadAll(){
       if(key==='prs')localStorage.setItem('bos_prs',value);
       if(key==='aj_income')localStorage.setItem('aj_income',value);
       if(key==='jul_income')localStorage.setItem('jul_income',value);
+      if(key==='daily_checklist')localStorage.setItem(DCL_KEY,value);
+      if(key==='signal_noise')localStorage.setItem('bos_signal_noise',value);
       // bills_reset_month is already user-prefixed via lsGet/lsSet — nothing extra needed
     });
   }
@@ -1393,6 +1395,12 @@ function migrateLocalToSupabase(){
   if(localAJInc&&!hasKey('aj_income'))syncPreference('aj_income',localAJInc);
   const localJulInc=localStorage.getItem('jul_income');
   if(localJulInc&&!hasKey('jul_income'))syncPreference('jul_income',localJulInc);
+  // Daily checklist
+  const localChecklist=lsGet('bos_daily_checklist')||localStorage.getItem(DCL_KEY);
+  if(localChecklist&&!hasKey('daily_checklist'))syncPreference('daily_checklist',localChecklist);
+  // Signal to noise
+  const localSN=lsGet('bos_signal_noise')||localStorage.getItem('bos_signal_noise');
+  if(localSN&&!hasKey('signal_noise'))syncPreference('signal_noise',localSN);
 }
 // Sync a preference key+value to Supabase (fire-and-forget, localStorage is source of truth for reads)
 async function syncPreference(key,value){
