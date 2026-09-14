@@ -2840,16 +2840,19 @@ function renderBizTab(){
   else if(tab==='notes')body.innerHTML=renderBizNotes(b);
 }
 function renderBizOverview(b){
-  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],expenses=b.expenses||[],team=b.team||[];
+  const now=new Date();
+  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],expenses=b.expenses||[],team=b.team||[],rec=b.recurringExpenses||[];
   const openTasks=tasks.filter(t=>!t.done).length;
   const activeClients=clients.filter(c=>c.status==='active').length;
-  const curMonth=new Date().toISOString().slice(0,7);
-  const thisYear=String(new Date().getFullYear());
+  const curMonth=now.toISOString().slice(0,7);
+  const thisYear=String(now.getFullYear());
   const revMTD=revenue.filter(r=>r.date&&r.date.startsWith(curMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const expMTD=expenses.filter(e=>e.date&&e.date.startsWith(curMonth)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const recMTD=rec.filter(r=>(r.startMonth||'0000-00')<=curMonth).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+  const expMTD=expenses.filter(e=>e.date&&e.date.startsWith(curMonth)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0)+recMTD;
   const profitMTD=revMTD-expMTD;
   const revYTD=revenue.filter(r=>r.date&&r.date.startsWith(thisYear)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
-  const expYTD=expenses.filter(e=>e.date&&e.date.startsWith(thisYear)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const recYTD=rec.reduce((s,r)=>{let mo=0;const sm=r.startMonth||'0000-00';for(let m=1;m<=now.getMonth()+1;m++){const mk=thisYear+'-'+String(m).padStart(2,'0');if(mk>=sm&&mk<=curMonth)mo++;}return s+(parseFloat(r.amount)||0)*mo;},0);
+  const expYTD=expenses.filter(e=>e.date&&e.date.startsWith(thisYear)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0)+recYTD;
   const profitYTD=revYTD-expYTD;
   const margin=revMTD>0?Math.round(profitMTD/revMTD*100):0;
   const stageCl=b.stage==='active'||b.stage==='scaling'?'cs-active':'cs-lead';
@@ -2986,13 +2989,15 @@ function renderBizPL(b){
   const now=new Date();const thisYear=String(now.getFullYear());
   const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const rec=b.recurringExpenses||[];
+  const curMonthKey=now.toISOString().slice(0,7);
   const months=MO.map((m,i)=>{
     const key=thisYear+'-'+String(i+1).padStart(2,'0');
     const r=rev.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
     const eOne=exp.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-    const eRec=rec.filter(x=>(x.startMonth||'0000-00')<=key).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    // Only count recurring expenses up to and including the current month — never project into the future
+    const eRec=key<=curMonthKey?rec.filter(x=>(x.startMonth||'0000-00')<=key).reduce((s,x)=>s+(parseFloat(x.amount)||0),0):0;
     const e=eOne+eRec;
-    return{m,r,e,p:r-e,isCur:key===now.toISOString().slice(0,7)};
+    return{m,r,e,p:r-e,isCur:key===curMonthKey};
   }).filter(x=>x.r>0||x.e>0);
   const ytdRev=rev.filter(x=>x.date&&x.date.startsWith(thisYear)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
   const ytdExpOne=exp.filter(x=>x.date&&x.date.startsWith(thisYear)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
