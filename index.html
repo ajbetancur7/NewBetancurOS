@@ -607,8 +607,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div class="card" id="daily-rules-card" style="padding:12px 14px"></div>
       <div class="card" id="daily-checklist-card" style="padding:12px 14px"></div>
       <div class="card" id="signal-noise-card" style="padding:12px 14px"></div>
-      <div class="sec-label">&#9996;&#65039; Spirit</div>
-      <div id="home-spirit"></div>
       <div class="card" style="padding:0;overflow:hidden">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
           <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
@@ -1574,7 +1572,7 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
   const acts=S.data.activity||[];
   document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
   const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
-  renderDailyRules();renderDailyChecklist();renderHomeSpirit();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  renderDailyRules();renderDailyChecklist();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
@@ -2825,9 +2823,31 @@ function renderBusiness(){
 }
 function switchBiz(id){S.currentBizId=id;S.currentBizTab='overview';renderBusiness();}
 function switchBizTab(tab){S.currentBizTab=tab;renderBizTab();const tabs=['overview','revenue','expenses','p&l','clients','tasks','team','notes'];document.querySelectorAll('.bist').forEach((t,i)=>t.classList.toggle('on',tabs[i]===tab));}
+function autoApplyScheduledExpenses(bid){
+  const raw=(S.data.businesses||[]).find(x=>x.id===bid);if(!raw)return;
+  const b=getBizExt(raw);
+  const autoRec=(b.recurringExpenses||[]).filter(r=>r.scheduledDay);
+  if(!autoRec.length)return;
+  const now=getTZ();
+  const todayDay=now.getDate();
+  const curMonthKey=getLocalDateStr().slice(0,7);
+  let expenses=[...(b.expenses||[])];
+  let changed=false;
+  autoRec.forEach(r=>{
+    if((r.startMonth||'0000-00')>curMonthKey)return;
+    if(todayDay<r.scheduledDay)return;
+    const autoId=r.id+'_'+curMonthKey;
+    if(expenses.some(e=>e.autoId===autoId))return;
+    expenses.push({id:uid4(),autoId,amount:parseFloat(r.amount),category:r.category||'Other',date:curMonthKey+'-'+String(r.scheduledDay).padStart(2,'0'),type:'auto',note:r.name||'Auto-scheduled'});
+    changed=true;
+  });
+  if(changed)saveBizExt(bid,'expenses',expenses);
+}
 function renderBizTab(){
   const body=document.getElementById('biz-body');if(!body)return;
-  const raw=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);if(!raw){body.innerHTML='';return;}
+  if(!(S.data.businesses||[]).find(x=>x.id===S.currentBizId)){body.innerHTML='';return;}
+  autoApplyScheduledExpenses(S.currentBizId);
+  const raw=(S.data.businesses||[]).find(x=>x.id===S.currentBizId);
   const b=getBizExt(raw);
   const tab=S.currentBizTab||'overview';
   if(tab==='overview')body.innerHTML=renderBizOverview(b);
@@ -2840,11 +2860,11 @@ function renderBizTab(){
   else if(tab==='notes')body.innerHTML=renderBizNotes(b);
 }
 function renderBizOverview(b){
-  const now=new Date();
-  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],expenses=b.expenses||[],team=b.team||[],rec=b.recurringExpenses||[];
+  const now=getTZ();
+  const tasks=b.tasks||[],clients=b.clients||[],revenue=b.revenue||[],expenses=b.expenses||[],team=b.team||[],rec=(b.recurringExpenses||[]).filter(r=>!r.scheduledDay);
   const openTasks=tasks.filter(t=>!t.done).length;
   const activeClients=clients.filter(c=>c.status==='active').length;
-  const curMonth=now.toISOString().slice(0,7);
+  const curMonth=getLocalDateStr().slice(0,7);
   const thisYear=String(now.getFullYear());
   const revMTD=revenue.filter(r=>r.date&&r.date.startsWith(curMonth)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
   const recMTD=rec.filter(r=>(r.startMonth||'0000-00')<=curMonth).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
@@ -2868,10 +2888,10 @@ function renderBizOverview(b){
     <div class="jcta">Get business analysis &#8594;</div>
   </div>
   <div class="biz-kpi-row">
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${revMTD.toLocaleString()}</div><div class="biz-kpi-sub">YTD: $${revYTD.toLocaleString()}</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Net Profit MTD</div><div class="biz-kpi-val" style="color:${profitMTD>=0?'var(--green)':'var(--red)'}">$${profitMTD.toLocaleString()}</div><div class="biz-kpi-sub">${margin}% margin</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Active Clients</div><div class="biz-kpi-val">${activeClients}</div><div class="biz-kpi-sub">${clients.filter(c=>c.status==='lead').length} leads</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Open Tasks</div><div class="biz-kpi-val" style="color:${openTasks>0?'var(--gold)':'var(--green)'}">${openTasks}</div><div class="biz-kpi-sub">Team: ${team.length}</div></div>
+    <div class="biz-kpi" onclick="switchBizTab('revenue')" style="cursor:pointer"><div class="biz-kpi-lbl">Revenue MTD</div><div class="biz-kpi-val" style="color:var(--green)">$${revMTD.toLocaleString()}</div><div class="biz-kpi-sub">YTD: $${revYTD.toLocaleString()}</div></div>
+    <div class="biz-kpi" onclick="switchBizTab('p&l')" style="cursor:pointer"><div class="biz-kpi-lbl">Net Profit MTD</div><div class="biz-kpi-val" style="color:${profitMTD>=0?'var(--green)':'var(--red)'}">$${profitMTD.toLocaleString()}</div><div class="biz-kpi-sub">${margin}% margin</div></div>
+    <div class="biz-kpi" onclick="switchBizTab('clients')" style="cursor:pointer"><div class="biz-kpi-lbl">Active Clients</div><div class="biz-kpi-val">${activeClients}</div><div class="biz-kpi-sub">${clients.filter(c=>c.status==='lead').length} leads</div></div>
+    <div class="biz-kpi" onclick="switchBizTab('tasks')" style="cursor:pointer"><div class="biz-kpi-lbl">Open Tasks</div><div class="biz-kpi-val" style="color:${openTasks>0?'var(--gold)':'var(--green)'}">${openTasks}</div><div class="biz-kpi-sub">Team: ${team.length}</div></div>
   </div>
   ${kpis.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">KPIs</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${kpis.map(k=>`<div><div style="font-size:10px;color:var(--white);opacity:.4">${k.label}</div><div style="font-size:14px;font-weight:700;color:var(--white)">${k.value}</div>${k.trend?`<div style="font-size:10px;font-weight:700;color:${k.trend.includes('\u2191')?'var(--green)':'var(--red)'}">${k.trend}</div>`:''}</div>`).join('')}</div></div><button class="btn-gold-outline" onclick="addKPI('${b.id}')">+ Add KPI</button>`:'<button class="btn-gold-outline" onclick="addKPI(\''+b.id+'\')">+ Add KPI</button>'}
   ${topTasks.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Priority Tasks</div>${topTasks.map(t=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div class="chk" onclick="togBizTask('${b.id}','${t.id}')" style="cursor:pointer;flex-shrink:0"></div><div style="flex:1"><div style="font-size:13px;color:var(--white);font-weight:600">${t.text}</div>${t.due?`<div style="font-size:10px;color:var(--gold);margin-top:2px">Due ${t.due}</div>`:''}</div></div>`).join('')}</div><button class="btn-gold-outline" onclick="switchBizTab('tasks')">View All Tasks &#8594;</button>`:''}`;
@@ -2890,7 +2910,7 @@ function renderBizRevenue(b){
     const key=viewYear+'-'+String(i+1).padStart(2,'0');
     const total=rev.filter(r=>r.date&&r.date.startsWith(key)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
     const isSelected=key===selMonth;
-    const isCur=key===now.toISOString().slice(0,7);
+    const isCur=key===getLocalDateStr().slice(0,7);
     return`<div onclick="setBizRevMonth('${key}')" style="flex-shrink:0;width:calc((100% - 33px)/4);text-align:center;padding:9px 4px 8px;border-radius:9px;cursor:pointer;background:${isSelected?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${isSelected?'var(--gold)':isCur?'rgba(232,188,80,.4)':'var(--border)'}">
       <div style="font-size:10px;font-weight:700;color:${isSelected?'var(--gd)':'rgba(255,255,255,.55)'}">${m}</div>
       <div style="font-size:12px;font-weight:700;color:${isSelected?'var(--gd)':total>0?'var(--green)':'rgba(255,255,255,.2)'};margin-top:3px">${total>0?'$'+total.toLocaleString():'\u2014'}</div>
@@ -2962,39 +2982,43 @@ function renderBizNotes(b){
 // Expenses tab
 function renderBizExpenses(b){
   const exp=(b.expenses||[]).sort((a,z)=>new Date(z.date)-new Date(a.date));
-  const rec=b.recurringExpenses||[];
-  const now=new Date();
-  const curMonth=now.toISOString().slice(0,7);
+  const allRec=b.recurringExpenses||[];
+  const rec=allRec.filter(r=>!r.scheduledDay);
+  const autoRec=allRec.filter(r=>r.scheduledDay);
+  const now=getTZ();
+  const curMonth=getLocalDateStr().slice(0,7);
   const thisYear=String(now.getFullYear());
   const recMonthly=rec.filter(r=>(r.startMonth||'0000-00')<=curMonth).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
   const expMTD=exp.filter(e=>e.date&&e.date.startsWith(curMonth)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0)+recMonthly;
   const recYTD=rec.reduce((s,r)=>{let mo=0;const sm=r.startMonth||'0000-00';for(let m=1;m<=now.getMonth()+1;m++){const mk=thisYear+'-'+String(m).padStart(2,'0');if(mk>=sm&&mk<=curMonth)mo++;}return s+(parseFloat(r.amount)||0)*mo;},0);
   const expYTD=exp.filter(e=>e.date&&e.date.startsWith(thisYear)).reduce((s,e)=>s+(parseFloat(e.amount)||0),0)+recYTD;
   const byCat=Object.entries(exp.reduce((acc,e)=>{const c=e.category||'Other';acc[c]=(acc[c]||0)+(parseFloat(e.amount)||0);return acc;},{})).map(([cat,total])=>({cat,total})).sort((a,z)=>z.total-a.total);
+  const todayDay=now.getDate();
   return`<div class="biz-kpi-row">
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses MTD</div><div class="biz-kpi-val" style="color:var(--red)">$${expMTD.toLocaleString()}</div><div class="biz-kpi-sub">${rec.length} recurring + ${exp.filter(e=>e.date&&e.date.startsWith(curMonth)).length} logged</div></div>
-    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses YTD</div><div class="biz-kpi-val">$${expYTD.toLocaleString()}</div><div class="biz-kpi-sub">One-time: $${exp.reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses MTD</div><div class="biz-kpi-val" style="color:var(--red)">$${expMTD.toLocaleString()}</div><div class="biz-kpi-sub">${rec.length} fixed + ${autoRec.length} auto-sched</div></div>
+    <div class="biz-kpi"><div class="biz-kpi-lbl">Expenses YTD</div><div class="biz-kpi-val">$${expYTD.toLocaleString()}</div><div class="biz-kpi-sub">Logged: $${exp.reduce((s,e)=>s+(parseFloat(e.amount)||0),0).toLocaleString()}</div></div>
   </div>
-  ${rec.length?`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Recurring Monthly</span><span style="font-size:13px;font-weight:700;color:var(--red)">$${rec.reduce((s,r)=>s+(parseFloat(r.amount)||0),0).toLocaleString()}/mo</span></div>${rec.map(r=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(r.amount||0).toLocaleString()}<span style="font-size:10px;font-weight:400;opacity:.5">/mo</span></div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${r.category||'Other'}</div><div class="rev-meta">${r.name||''}${r.startMonth?' · Since '+r.startMonth:''}</div></div><div style="display:flex;align-items:center;gap:8px"><span onclick="editRecurringExpense('${b.id}','${r.id}')" style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)">Edit</span><span class="del-x" onclick="delRecurringExpense('${b.id}','${r.id}')">&#215;</span></div></div>`).join('')}</div>`:''}
+  ${rec.length?`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Fixed Recurring</span><span style="font-size:13px;font-weight:700;color:var(--red)">$${rec.reduce((s,r)=>s+(parseFloat(r.amount)||0),0).toLocaleString()}/mo</span></div>${rec.map(r=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(r.amount||0).toLocaleString()}<span style="font-size:10px;font-weight:400;opacity:.5">/mo</span></div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${r.category||'Other'}</div><div class="rev-meta">${r.name||''}${r.startMonth?' · Since '+r.startMonth:''}</div></div><div style="display:flex;align-items:center;gap:8px"><span onclick="editRecurringExpense('${b.id}','${r.id}')" style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)">Edit</span><span class="del-x" onclick="delRecurringExpense('${b.id}','${r.id}')">&#215;</span></div></div>`).join('')}</div>`:''}
+  ${autoRec.length?`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Auto-Scheduled</span><span style="font-size:10px;color:rgba(255,255,255,.4)">fires on set day each month</span></div>${autoRec.map(r=>{const nextFire=todayDay<r.scheduledDay?`Day ${r.scheduledDay} this month`:`Day ${r.scheduledDay} next month`;return`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(r.amount||0).toLocaleString()}<span style="font-size:10px;font-weight:400;opacity:.5">/mo</span></div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${r.category||'Other'}</div><div class="rev-meta">${r.name||''} · Next: ${nextFire}</div></div><div style="display:flex;align-items:center;gap:8px"><span onclick="editRecurringExpense('${b.id}','${r.id}')" style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)">Edit</span><span class="del-x" onclick="delRecurringExpense('${b.id}','${r.id}')">&#215;</span></div></div>`;}).join('')}</div>`:''}
   ${byCat.length?`<div class="card" style="padding:12px"><div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">By Category</div>${byCat.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)"><span style="font-size:12px;color:var(--white)">${x.cat}</span><span style="font-size:13px;font-weight:700;color:var(--red)">$${x.total.toLocaleString()}</span></div>`).join('')}</div>`:''}
   <div class="card" style="padding:12px">
     <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Expense Log</div>
-    ${exp.length?exp.map((e,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(e.amount||0).toLocaleString()}${e.type==='monthly'?' <span style="font-size:10px;font-weight:400;opacity:.5">(month)</span>':''}</div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${e.category||'Other'}</div><div class="rev-meta">${e.date||''}${e.note?' · '+e.note:''}</div></div><div style="display:flex;align-items:center;gap:8px"><span onclick="editBizExpense('${b.id}','${e.id||i}')" style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)">Edit</span><span class="del-x" onclick="delBizExpense('${b.id}','${e.id||i}')">&#215;</span></div></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:6px 0">No expenses logged yet.</div>'}
+    ${exp.length?exp.map((e,i)=>`<div class="rev-row"><div style="flex:1"><div class="rev-amt" style="color:var(--red)">-$${parseFloat(e.amount||0).toLocaleString()}${e.type==='monthly'?' <span style="font-size:10px;font-weight:400;opacity:.5">(month)</span>':e.type==='auto'?' <span style="font-size:10px;font-weight:400;opacity:.5">(auto)</span>':''}</div><div class="rev-client-tag" style="color:rgba(255,255,255,.5)">${e.category||'Other'}</div><div class="rev-meta">${e.date||''}${e.note?' · '+e.note:''}</div></div><div style="display:flex;align-items:center;gap:8px">${!e.autoId?`<span onclick="editBizExpense('${b.id}','${e.id||i}')" style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.07)">Edit</span>`:''}<span class="del-x" onclick="delBizExpense('${b.id}','${e.id||i}')">&#215;</span></div></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:6px 0">No expenses logged yet.</div>'}
   </div>
   <button class="btn-gold" onclick="addBizExpense('${b.id}')">+ Log Expense</button>`;
 }
 // P&L tab
 function renderBizPL(b){
   const rev=b.revenue||[],exp=b.expenses||[];
-  const now=new Date();const thisYear=String(now.getFullYear());
+  const now=getTZ();const thisYear=String(now.getFullYear());
   const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const rec=b.recurringExpenses||[];
-  const curMonthKey=now.toISOString().slice(0,7);
+  const rec=(b.recurringExpenses||[]).filter(r=>!r.scheduledDay);
+  const curMonthKey=getLocalDateStr().slice(0,7);
   const months=MO.map((m,i)=>{
     const key=thisYear+'-'+String(i+1).padStart(2,'0');
     const r=rev.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
     const eOne=exp.filter(x=>x.date&&x.date.startsWith(key)).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-    // Only count recurring expenses up to and including the current month — never project into the future
+    // Only count fixed recurring expenses up to and including the current month — never project into the future
     const eRec=key<=curMonthKey?rec.filter(x=>(x.startMonth||'0000-00')<=key).reduce((s,x)=>s+(parseFloat(x.amount)||0),0):0;
     const e=eOne+eRec;
     return{m,r,e,p:r-e,isCur:key===curMonthKey};
@@ -3031,16 +3055,19 @@ function renderBizPL(b){
 // Expenses CRUD
 function addBizExpense(bid){
   const today=getLocalDateStr(),curM=today.slice(0,7);
-  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Expense</div><div style="display:flex;gap:6px;margin-bottom:14px"><button id="et-one" onclick="setExpType('onetime')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--gold);color:var(--gd)">One-Time</button><button id="et-rec" onclick="setExpType('recurring')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--bg-dark);color:rgba(255,255,255,.6)">Recurring</button><button id="et-mon" onclick="setExpType('monthly')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--bg-dark);color:rgba(255,255,255,.6)">By Month</button></div><input type="hidden" id="exp-type" value="onetime"><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="exp-amt" type="number" placeholder="0.00" inputmode="decimal"></div><div class="field-group" id="exp-name-grp" style="display:none"><div class="field-label">Name / Description</div><input class="field-input" id="exp-name" placeholder="e.g. Office Rent, Insurance..."></div><div class="field-group"><div class="field-label">Category</div><input class="field-input" id="exp-cat" list="exp-cat-list" placeholder="e.g. Supplies, Fuel, Labor..."><datalist id="exp-cat-list"><option>Supplies</option><option>Fuel</option><option>Labor</option><option>Equipment</option><option>Marketing</option><option>Insurance</option><option>Software</option><option>Rent</option><option>Utilities</option><option>Other</option></datalist></div><div class="field-group" id="exp-date-grp"><div class="field-label">Date</div><input class="field-input" id="exp-date" type="date" value="${today}"></div><div class="field-group" id="exp-month-grp" style="display:none"><div class="field-label">Month</div><input class="field-input" id="exp-month" type="month" value="${curM}"></div><div class="field-group" id="exp-startmon-grp" style="display:none"><div class="field-label">Starting Month</div><input class="field-input" id="exp-startmon" type="month" value="${curM}"></div><div class="field-group" id="exp-note-grp"><div class="field-label">Note (optional)</div><input class="field-input" id="exp-note" placeholder="Details..."></div><button class="btn-gold" onclick="saveBizExpense('${bid}')">Log Expense</button></div>`);
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Expense</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:14px"><button id="et-one" onclick="setExpType('onetime')" style="padding:8px 2px;font-size:10px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--gold);color:var(--gd)">One-Time</button><button id="et-rec" onclick="setExpType('recurring')" style="padding:8px 2px;font-size:10px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--bg-dark);color:rgba(255,255,255,.6)">Fixed/Mo</button><button id="et-aut" onclick="setExpType('auto')" style="padding:8px 2px;font-size:10px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--bg-dark);color:rgba(255,255,255,.6)">Auto-Date</button><button id="et-mon" onclick="setExpType('monthly')" style="padding:8px 2px;font-size:10px;font-weight:700;border-radius:8px;cursor:pointer;border:none;background:var(--bg-dark);color:rgba(255,255,255,.6)">By Month</button></div><input type="hidden" id="exp-type" value="onetime"><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Amount ($)</div><input class="field-input" id="exp-amt" type="number" placeholder="0.00" inputmode="decimal"></div><div class="field-group" id="exp-name-grp" style="display:none"><div class="field-label">Name / Description</div><input class="field-input" id="exp-name" placeholder="e.g. Office Rent, Insurance..."></div><div class="field-group"><div class="field-label">Category</div><input class="field-input" id="exp-cat" list="exp-cat-list" placeholder="e.g. Supplies, Fuel, Labor..."><datalist id="exp-cat-list"><option>Supplies</option><option>Fuel</option><option>Labor</option><option>Equipment</option><option>Marketing</option><option>Insurance</option><option>Software</option><option>Rent</option><option>Utilities</option><option>Other</option></datalist></div><div class="field-group" id="exp-date-grp"><div class="field-label">Date</div><input class="field-input" id="exp-date" type="date" value="${today}"></div><div class="field-group" id="exp-day-grp" style="display:none"><div class="field-label">Day of Month it fires (1–28)</div><input class="field-input" id="exp-day" type="number" min="1" max="28" placeholder="e.g. 1, 15, 28" inputmode="numeric"></div><div class="field-group" id="exp-month-grp" style="display:none"><div class="field-label">Month</div><input class="field-input" id="exp-month" type="month" value="${curM}"></div><div class="field-group" id="exp-startmon-grp" style="display:none"><div class="field-label">Starting Month</div><input class="field-input" id="exp-startmon" type="month" value="${curM}"></div><div class="field-group" id="exp-note-grp"><div class="field-label">Note (optional)</div><input class="field-input" id="exp-note" placeholder="Details..."></div><button class="btn-gold" onclick="saveBizExpense('${bid}')">Log Expense</button></div>`);
   setTimeout(()=>document.getElementById('exp-amt')?.focus(),80);
 }
 function setExpType(t){
   document.getElementById('exp-type').value=t;
-  ['onetime','recurring','monthly'].forEach(k=>{const b=document.getElementById('et-'+k.slice(0,3));if(b){b.style.background=k===t?'var(--gold)':'var(--bg-dark)';b.style.color=k===t?'var(--gd)':'rgba(255,255,255,.6)';}});
+  [{k:'onetime',id:'et-one'},{k:'recurring',id:'et-rec'},{k:'auto',id:'et-aut'},{k:'monthly',id:'et-mon'}].forEach(({k,id})=>{const b=document.getElementById(id);if(b){b.style.background=k===t?'var(--gold)':'var(--bg-dark)';b.style.color=k===t?'var(--gd)':'rgba(255,255,255,.6)';}});
   const sh=(id,v)=>{const el=document.getElementById(id);if(el)el.style.display=v?'':'none';};
-  sh('exp-name-grp',t==='recurring');sh('exp-date-grp',t==='onetime');
-  sh('exp-month-grp',t==='monthly');sh('exp-startmon-grp',t==='recurring');
-  sh('exp-note-grp',t!=='recurring');
+  sh('exp-name-grp',t==='recurring'||t==='auto');
+  sh('exp-date-grp',t==='onetime');
+  sh('exp-day-grp',t==='auto');
+  sh('exp-month-grp',t==='monthly');
+  sh('exp-startmon-grp',t==='recurring'||t==='auto');
+  sh('exp-note-grp',t!=='recurring'&&t!=='auto');
 }
 function saveBizExpense(bid){
   const type=document.getElementById('exp-type')?.value||'onetime';
@@ -3049,11 +3076,17 @@ function saveBizExpense(bid){
   const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,expenses:[],recurringExpenses:[]});
   if(type==='recurring'){
     const name=document.getElementById('exp-name')?.value?.trim()||category;
-    const startMonth=document.getElementById('exp-startmon')?.value||new Date().toISOString().slice(0,7);
+    const startMonth=document.getElementById('exp-startmon')?.value||getLocalDateStr().slice(0,7);
     const recArr=[...(b.recurringExpenses||[]),{id:uid4(),name,amount:parseFloat(amount),category,startMonth}];
     saveBizExt(bid,'recurringExpenses',recArr);
+  } else if(type==='auto'){
+    const name=document.getElementById('exp-name')?.value?.trim()||category;
+    const startMonth=document.getElementById('exp-startmon')?.value||getLocalDateStr().slice(0,7);
+    const scheduledDay=parseInt(document.getElementById('exp-day')?.value)||1;
+    const recArr=[...(b.recurringExpenses||[]),{id:uid4(),name,amount:parseFloat(amount),category,startMonth,scheduledDay}];
+    saveBizExt(bid,'recurringExpenses',recArr);
   } else if(type==='monthly'){
-    const month=document.getElementById('exp-month')?.value||new Date().toISOString().slice(0,7);
+    const month=document.getElementById('exp-month')?.value||getLocalDateStr().slice(0,7);
     const note=document.getElementById('exp-note')?.value?.trim()||'';
     const expenses=[...(b.expenses||[]),{id:uid4(),amount:parseFloat(amount),category,date:month+'-01',type:'monthly',note}];
     saveBizExt(bid,'expenses',expenses);
