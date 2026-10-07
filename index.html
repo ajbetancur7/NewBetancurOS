@@ -1406,8 +1406,8 @@ async function loadAll(){
         if(key==='jul_status')localStorage.setItem('jul_status',value);
         // Chore day assignments — merge partner's, mine take precedence
         if(key==='chore_days'){try{const ex=localStorage.getItem('bos_chore_days');if(!ex){localStorage.setItem('bos_chore_days',value);}else{const mine=JSON.parse(ex);const pDays=JSON.parse(value);localStorage.setItem('bos_chore_days',JSON.stringify({...pDays,...mine}));}}catch(e){}}
-        // Miami data — take newer version (by lastUpdated) for cross-device sync
-        if(key==='miami_data'){try{const ex=localStorage.getItem(MIAMI_KEY);if(!ex){localStorage.setItem(MIAMI_KEY,value);}else{const cur=JSON.parse(ex);const pm=JSON.parse(value);if(pm.lastUpdated&&(!cur.lastUpdated||new Date(pm.lastUpdated)>new Date(cur.lastUpdated))){const merged={...pm,actionHistory:cur.actionHistory||[]};localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));}}}catch(e){}}
+        // Miami data — real data (paychecks/vault balances) always beats defaults; if both real, newer wins
+        if(key==='miami_data'){try{const ex=localStorage.getItem(MIAMI_KEY);const pm=JSON.parse(value);if(!ex){localStorage.setItem(MIAMI_KEY,value);}else{const cur=JSON.parse(ex);const pReal=(pm.paychecks?.length>0)||(pm.vaults||[]).some(v=>(v.balance||0)>0);const cReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);const takePartner=(pReal&&!cReal)||(pReal&&cReal&&pm.lastUpdated&&(!cur.lastUpdated||new Date(pm.lastUpdated)>new Date(cur.lastUpdated)));if(takePartner){localStorage.setItem(MIAMI_KEY,JSON.stringify({...pm,actionHistory:cur.actionHistory||[]}));}}}catch(e){}}
         // Business ext data: fallback sync via prefs (primary is now businesses.notes in Supabase)
         if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');const cur=localStorage.getItem('bos_biz_ext_'+bid);if(!cur)localStorage.setItem('bos_biz_ext_'+bid,value);}
         // Signal-to-noise: merge partner's slice so each person sees the other's items live
@@ -1521,6 +1521,17 @@ function migrateLocalToSupabase(){
     const extData=localStorage.getItem('bos_biz_ext_'+b.id);
     if(extData&&!hasKey('biz_ext_'+b.id))syncPreference('biz_ext_'+b.id,extData);
   });
+  // Miami Chapter financial data — push existing localStorage to Supabase for cross-device sync
+  const localMiami=localStorage.getItem(MIAMI_KEY);
+  if(localMiami&&!hasKey('miami_data')){try{const m=JSON.parse(localMiami);const{actionHistory,...syncData}=m;syncPreference('miami_data',JSON.stringify(syncData));}catch(e){}}
+  // Chore day assignments
+  const localChoreDays=localStorage.getItem('bos_chore_days');
+  if(localChoreDays&&!hasKey('chore_days'))syncPreference('chore_days',localChoreDays);
+  // Status indicators
+  const localAJStatus=localStorage.getItem('aj_status');
+  if(localAJStatus&&!hasKey('aj_status'))syncPreference('aj_status',localAJStatus);
+  const localJulStatus=localStorage.getItem('jul_status');
+  if(localJulStatus&&!hasKey('jul_status'))syncPreference('jul_status',localJulStatus);
 }
 // Sync a preference key+value to Supabase (fire-and-forget, localStorage is source of truth for reads)
 async function syncPreference(key,value){
