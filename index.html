@@ -1386,7 +1386,27 @@ async function loadAll(){
     sb.from('tithe_records').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('savings_goals').select('*').eq('household_id',hid).catch(()=>[]),
   ]);
-  Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings,users,tithe,savings});
+  // Separate the hidden Miami sentinel from real meetings before storing
+  const miamiSentinel=(meetings||[]).find(m=>m.title==='__miami_data__');
+  S._miamiSentinelId=miamiSentinel?.id||null;
+  const realMeetings=(meetings||[]).filter(m=>m.title!=='__miami_data__');
+  Object.assign(S.data,{workouts,workout_logs:wlogs,supplements:supps,supplement_logs:slogs,meetings:realMeetings,users,tithe,savings});
+  // Load Miami data from household-scoped sentinel — same record for every household member
+  if(miamiSentinel?.notes){
+    try{
+      const sbMiami=JSON.parse(miamiSentinel.notes);
+      const ex=localStorage.getItem(MIAMI_KEY);
+      if(!ex){
+        localStorage.setItem(MIAMI_KEY,miamiSentinel.notes);
+      } else {
+        const cur=JSON.parse(ex);
+        const sbReal=(sbMiami.paychecks?.length>0)||(sbMiami.vaults||[]).some(v=>(v.balance||0)>0);
+        const curReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);
+        const takeSB=(sbReal&&!curReal)||(sbReal&&curReal&&sbMiami.lastUpdated&&(!cur.lastUpdated||new Date(sbMiami.lastUpdated)>new Date(cur.lastUpdated)));
+        if(takeSB)localStorage.setItem(MIAMI_KEY,JSON.stringify({...sbMiami,actionHistory:cur.actionHistory||[]}));
+      }
+    }catch(e){}
+  }
   // Load partner (other admin) supplements for the Supps tab view-only section
   const partnerUser=(users||[]).find(u=>u.id!==uid&&u.role==='admin');
   S.data.partner=partnerUser||null;
@@ -1521,9 +1541,9 @@ function migrateLocalToSupabase(){
     const extData=localStorage.getItem('bos_biz_ext_'+b.id);
     if(extData&&!hasKey('biz_ext_'+b.id))syncPreference('biz_ext_'+b.id,extData);
   });
-  // Miami Chapter financial data — push existing localStorage to Supabase for cross-device sync
+  // Miami Chapter financial data — push existing localStorage to Supabase (both sentinel row + household meeting)
   const localMiami=localStorage.getItem(MIAMI_KEY);
-  if(localMiami&&!hasKey('miami_data')){try{const m=JSON.parse(localMiami);const{actionHistory,...syncData}=m;syncPreference('miami_data',JSON.stringify(syncData));}catch(e){}}
+  if(localMiami){try{const m=JSON.parse(localMiami);const hasReal=(m.paychecks?.length>0)||(m.vaults||[]).some(v=>(v.balance||0)>0);if(hasReal){const{actionHistory,...syncData}=m;const sj=JSON.stringify(syncData);if(!hasKey('miami_data'))syncPreference('miami_data',sj);if(!S._miamiSentinelId)_saveMiamiToSB(sj);}}catch(e){}}
   // Chore day assignments
   const localChoreDays=localStorage.getItem('bos_chore_days');
   if(localChoreDays&&!hasKey('chore_days'))syncPreference('chore_days',localChoreDays);
@@ -3853,7 +3873,18 @@ const MIAMI_MILESTONE_DEFAULTS=[
   {id:'m11',title:'Net worth $1,000,000',sub:'Millionaire by 30 — mission complete',target:'Age 29–30',status:'locked'}
 ];
 function getMiamiData(){try{const r=localStorage.getItem(MIAMI_KEY);if(r)return JSON.parse(r);}catch(e){}return initMiamiData();}
-function saveMiamiData(data){data.lastUpdated=new Date().toISOString();localStorage.setItem(MIAMI_KEY,JSON.stringify(data));const{actionHistory,...syncData}=data;syncPreference('miami_data',JSON.stringify(syncData));}
+function saveMiamiData(data){data.lastUpdated=new Date().toISOString();const j=JSON.stringify(data);localStorage.setItem(MIAMI_KEY,j);const{actionHistory,...syncData}=data;const sj=JSON.stringify(syncData);syncPreference('miami_data',sj);_saveMiamiToSB(sj);}
+async function _saveMiamiToSB(json){
+  try{
+    if(!S.household?.id)return;
+    if(S._miamiSentinelId){
+      await sb.from('meetings').update({notes:json}).eq('id',S._miamiSentinelId);
+    } else {
+      const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile?.id,shared:true,title:'__miami_data__',meeting_date:'2000-01-01',attendees:'',category:'personal',notes:json,action_items:[]});
+      if(r?.[0]){S._miamiSentinelId=r[0].id;}
+    }
+  }catch(e){}
+}
 function initMiamiData(){const data={vaults:JSON.parse(JSON.stringify(MIAMI_VAULT_DEFAULTS)),expenses:JSON.parse(JSON.stringify(MIAMI_EXPENSE_DEFAULTS)),debts:JSON.parse(JSON.stringify(MIAMI_DEBT_DEFAULTS)),assets:JSON.parse(JSON.stringify(MIAMI_ASSET_DEFAULTS)),milestones:JSON.parse(JSON.stringify(MIAMI_MILESTONE_DEFAULTS)),income:{takeHome:12500,gross:16667},airbnb:{revenue:0,extraExpenses:0},paychecks:[],actionHistory:[],isLive:false,goLiveDate:null,lastUpdated:new Date().toISOString()};saveMiamiData(data);return data;}
 function logMiamiAction(action,detail){const data=getMiamiData();data.actionHistory=[{id:uid4(),who:S.profile?.name?.split(' ')[0]||'Unknown',userId:S.profile?.id||'',action,detail,ts:new Date().toISOString()},...(data.actionHistory||[])].slice(0,300);saveMiamiData(data);}
 function applyVaultRules(data){
