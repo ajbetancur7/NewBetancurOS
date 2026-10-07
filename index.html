@@ -1391,6 +1391,30 @@ async function loadAll(){
   S.data.partner=partnerUser||null;
   if(partnerUser){const ps=await sb.from('supplements').select('*').eq('user_id',partnerUser.id).catch(()=>[]);S.data.partner_supplements=ps||[];}
   else{S.data.partner_supplements=[];}
+  // Load partner sentinel row — sync biz_ext + signal-noise across household devices
+  if(partnerUser){
+    const pAllScheds=await sb.from('schedules').select('*').eq('user_id',partnerUser.id).catch(()=>[]);
+    const pPrefRow=(pAllScheds||[]).find(s=>s.week_of==='9999-01-01')||null;
+    if(pPrefRow?.items){
+      pPrefRow.items.forEach(({key,value})=>{
+        // Business ext data: always sync from partner so revenue/expenses match on both devices
+        if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');localStorage.setItem('bos_biz_ext_'+bid,value);}
+        // Signal-to-noise: merge partner's slice so each person sees the other's items live
+        if(key==='signal_noise'){
+          try{
+            const pSN=JSON.parse(value);
+            const mySN=JSON.parse(localStorage.getItem('bos_signal_noise')||'{}');
+            if(pSN[partnerUser.id]){
+              mySN[partnerUser.id]=pSN[partnerUser.id];
+              const merged=JSON.stringify(mySN);
+              localStorage.setItem('bos_signal_noise',merged);
+              localStorage.setItem('bos_signal_noise_'+(localStorage.getItem('bos_uid')||''),merged);
+            }
+          }catch(e){}
+        }
+      });
+    }
+  }
   // Bill reset handled by checkMonthlyBillReset() in renderBudget
   const wof=getWeekOf(new Date());
   // Load ALL schedule rows — find this week's or most recent, never delete items
@@ -2143,7 +2167,7 @@ async function improveWorkoutPlan(day,name){
   const planEl=document.getElementById('wod-preview-edit');
   const currentPlan=planEl?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'';
   const prs=getPRs();
-  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'None logged';
+  const prText=prs.length?prs.map(prToText).join('\n'):'None logged';
   const jarvisMemory=lsGet('bos_jarvis_memory')||'';
   const mainGoal=lsGet('bos_main_goal')||'Build strength and muscle';
   const systemCtx=`You are modifying a ${name} workout plan for ${S.profile?.name?.split(' ')[0]||'AJ'}.${jarvisMemory?'\nCoach memory: '+jarvisMemory:''}
@@ -2280,7 +2304,7 @@ async function getInlineWorkoutPlanCtx(day,name,daySessions,totalSessions,custom
     :'No previous sessions for this day yet.';
 
   const prs=getPRs();
-  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'No PRs logged yet — use intermediate weights.';
+  const prText=prs.length?prs.map(prToText).join('\n'):'No PRs logged yet — use intermediate weights.';
   const mainGoal=lsGet('bos_main_goal')||'';
   const nutritionRules=lsGet('bos_nutrition_rules')||'';
   const fasting=lsGet('bos_fasting')||'';
@@ -2367,7 +2391,7 @@ async function sendWorkoutChat(day,name){
   const planEl=document.getElementById('wod-plan-edit');
   const currentPlan=planEl?.value||localStorage.getItem(lsKey('bos_current_plan_'+day))||'No plan generated.';
   const prs=getPRs();
-  const prText=prs.length?prs.map(p=>p.lift+' — '+p.weight+'lbs x'+p.reps+(p.notes?' ('+p.notes+')':'')).join('\n'):'None logged';
+  const prText=prs.length?prs.map(prToText).join('\n'):'None logged';
   const jarvisMemory=lsGet('bos_jarvis_memory')||'';
   const systemCtx=`You are a gym coach standing next to ${S.profile?.name?.split(' ')[0]||'AJ'} mid-workout. Split: ${name} (${day}).${jarvisMemory?'\nCoach memory: '+jarvisMemory:''}
 
@@ -2428,104 +2452,174 @@ async function logWorkout(){const today=getLocalDateStr();if((S.data.workout_log
 function editSplit(){const w=S.data.workouts||[];const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Workout Split</div><div style="display:flex;flex-direction:column;gap:8px">${days.map(d=>{const wd=w.find(x=>x.day_of_week===d)||{};return`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--gold);width:32px">${d.slice(0,3).toUpperCase()}</span><input class="field-input" id="ws-${d}" style="flex:1;padding:8px 10px;font-size:12px" value="${wd.name||''}" placeholder="Rest..."><input class="field-input" id="wt-${d}" style="width:70px;padding:8px 10px;font-size:12px" value="${wd.workout_time||'10:00'}"></div>`;}).join('')}<button class="btn-gold" onclick="saveSplit()" style="margin-top:8px">Save Split</button></div>`);}
 async function saveSplit(){const days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];try{for(const d of days){const name=document.getElementById('ws-'+d)?.value?.trim(),time=document.getElementById('wt-'+d)?.value?.trim()||'10:00';const ex=(S.data.workouts||[]).find(w=>w.day_of_week===d);if(ex){if(name!==ex.name||time!==ex.workout_time){await sb.from('workouts').update({name,workout_time:time}).eq('id',ex.id);S.data.workouts=S.data.workouts.map(w=>w.id===ex.id?{...w,name,workout_time:time}:w);}}else if(name){const r=await sb.from('workouts').insert({user_id:S.profile.id,day_of_week:d,name,workout_time:time});if(r?.[0])S.data.workouts=[...S.data.workouts||[],...r];}}closeModal();showSuccess('Split saved!');renderHealth();}catch(e){showError(e.message);}}
 function renderPRs(c){
-  const prs=JSON.parse(localStorage.getItem('bos_prs')||'[]');
-  const rows=prs.length
-    ?prs.map((pr,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border)">'
-        +'<div style="flex:1">'
-          +'<div style="font-size:13px;font-weight:600;color:var(--white)">'+pr.lift+'</div>'
-          +'<div style="font-size:10px;color:var(--gold);margin-top:2px">'+pr.weight+' lbs \u00b7 '+pr.reps+' rep'+(pr.reps!=='1'?'s':'')+' '+(pr.notes?'\u00b7 '+pr.notes:'')+'</div>'
-        +'</div>'
-        +'<button class="btn-white-sm" onclick="editPR('+i+')">Edit</button>'
-        +'<span class="del-x" onclick="deletePR('+i+')">&#215;</span>'
-        +'</div>').join('')
-    :'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:12px 0">No PRs logged yet. Add your max lifts so Jarvis can give accurate weight suggestions.</div>';
-
+  const prs=getPRs();
+  const byType={strength:[],running:[],calisthenics:[]};
+  prs.forEach((pr,i)=>{const t=pr.type||'strength';if(byType[t])byType[t].push({pr,i});else byType.strength.push({pr,i});});
+  function prRow({pr,i}){
+    const t=pr.type||'strength';
+    let sub='';
+    if(t==='running')sub=(pr.time||'?')+(pr.notes?' \u00b7 '+pr.notes:'');
+    else if(t==='calisthenics')sub=(pr.reps||'?')+' reps max'+(pr.notes?' \u00b7 '+pr.notes:'');
+    else sub=(pr.weight||'?')+' lbs \u00b7 '+(pr.reps||'?')+' rep'+((pr.reps||'1')!=='1'?'s':'')+(pr.notes?' \u00b7 '+pr.notes:'');
+    const name=t==='running'?(pr.event||'Run'):t==='calisthenics'?(pr.exercise||'Exercise'):(pr.lift||'Lift');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border)">'
+      +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:600;color:var(--white)">'+name+'</div>'
+        +'<div style="font-size:10px;color:var(--gold);margin-top:2px">'+sub+'</div>'
+      +'</div>'
+      +'<button class="btn-white-sm" onclick="editPR('+i+')">Edit</button>'
+      +'<span class="del-x" onclick="deletePR('+i+')">&#215;</span>'
+      +'</div>';
+  }
+  function section(label,items,emptyMsg){
+    if(!items.length)return '';
+    return '<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin:10px 0 4px">'+label+'</div>'
+      +'<div class="card">'+items.map(prRow).join('')+'</div>';
+  }
+  const hasAny=prs.length>0;
   c.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-    +'<span style="font-size:15px;font-weight:700;color:var(--white)">Max Lifts & PRs</span>'
+    +'<span style="font-size:15px;font-weight:700;color:var(--white)">Personal Records</span>'
     +'<button class="btn-gold-sm" onclick="addPR()">+ Add PR</button>'
     +'</div>'
-    +'<div class="card">'+rows+'</div>'
+    +(hasAny
+      ?(section('Strength / Lifts',byType.strength)+section('Running & Cardio',byType.running)+section('Calisthenics',byType.calisthenics))
+      :'<div class="card"><div style="font-size:12px;color:var(--white);opacity:0.4;padding:12px 0">No PRs yet. Log your mile time, max pushups, or best lifts so Jarvis can personalize your plans.</div></div>'
+    )
     +'<div class="jcard" style="margin-top:8px">'
       +'<div class="jlabel">How Jarvis Uses These</div>'
-      +'<div class="jtext">When you generate a workout plan, Jarvis reads your PRs to suggest weights as a percentage of your max — typically 70-85% for hypertrophy, 85-95% for strength work.</div>'
+      +'<div class="jtext">Jarvis reads all your PRs when building workout plans — strength PRs set your weight targets, running PRs pace your cardio goals, calisthenics PRs anchor bodyweight progressions.</div>'
     +'</div>';
 }
 
 function getPRs(){return JSON.parse(localStorage.getItem('bos_prs')||lsGet('bos_prs')||'[]');}
 function savePRs(prs){const j=JSON.stringify(prs);localStorage.setItem('bos_prs',j);lsSet('bos_prs',j);syncPreference('prs',j);}
+function prToText(p){const t=p.type||'strength';if(t==='running')return(p.event||'Run')+' — '+(p.time||'?')+(p.notes?' ('+p.notes+')':'');if(t==='calisthenics')return(p.exercise||'Exercise')+' — '+(p.reps||'?')+' reps max'+(p.notes?' ('+p.notes+')':'');return(p.lift||'Lift')+' — '+(p.weight||'?')+'lbs x'+(p.reps||'?')+(p.notes?' ('+p.notes+')':'');}
+
+function switchPRType(t){
+  ['strength','running','calisthenics'].forEach(x=>{
+    const btn=document.getElementById('prt-'+x);
+    const sec=document.getElementById('prsec-'+x);
+    if(btn)btn.style.background=x===t?'var(--gold)':'var(--bg-dark)';
+    if(btn)btn.style.color=x===t?'var(--gd)':'var(--white)';
+    if(sec)sec.style.display=x===t?'flex':'none';
+  });
+  const hi=document.getElementById('pr-type-hidden');
+  if(hi)hi.value=t;
+}
 
 function addPR(){
   showModal('<div class="sheet-handle"></div>'
-    +'<div class="sheet-title">Add Max Lift / PR</div>'
-    +'<div style="display:flex;flex-direction:column;gap:10px">'
-    +'<div class="field-group"><div class="field-label">Lift Name</div>'
-    +'<input class="field-input" id="pr-lift" placeholder="e.g. Bench Press, Squat, Deadlift"></div>'
-    +'<div style="display:flex;gap:8px">'
-    +'<div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div>'
-    +'<input class="field-input" id="pr-weight" type="number" placeholder="225"></div>'
-    +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div>'
-    +'<input class="field-input" id="pr-reps" type="number" placeholder="1" value="1"></div>'
+    +'<div class="sheet-title">Add PR</div>'
+    +'<input type="hidden" id="pr-type-hidden" value="strength">'
+    +'<div style="display:flex;gap:6px;margin-bottom:12px">'
+      +'<button id="prt-strength" class="btn-white-sm" style="flex:1;background:var(--gold);color:var(--gd);font-size:10px" onclick="switchPRType(\'strength\')">Strength</button>'
+      +'<button id="prt-running" class="btn-white-sm" style="flex:1;background:var(--bg-dark);color:var(--white);font-size:10px" onclick="switchPRType(\'running\')">Running</button>'
+      +'<button id="prt-calisthenics" class="btn-white-sm" style="flex:1;background:var(--bg-dark);color:var(--white);font-size:10px" onclick="switchPRType(\'calisthenics\')">Calisthenics</button>'
     +'</div>'
-    +'<div class="field-group"><div class="field-label">Notes (optional)</div>'
-    +'<input class="field-input" id="pr-notes" placeholder="e.g. paused, belt, raw"></div>'
-    +'<button class="btn-gold" onclick="savePRNew()">Save PR</button>'
-    +'</div>');
+    +'<div id="prsec-strength" style="display:flex;flex-direction:column;gap:10px">'
+      +'<div class="field-group"><div class="field-label">Lift Name</div><input class="field-input" id="pr-lift" placeholder="e.g. Bench Press, Squat, Deadlift"></div>'
+      +'<div style="display:flex;gap:8px">'
+        +'<div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div><input class="field-input" id="pr-weight" type="number" placeholder="225"></div>'
+        +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div><input class="field-input" id="pr-reps" type="number" placeholder="1" value="1"></div>'
+      +'</div>'
+      +'<div class="field-group"><div class="field-label">Notes (optional)</div><input class="field-input" id="pr-notes-s" placeholder="e.g. paused, belt, raw"></div>'
+    +'</div>'
+    +'<div id="prsec-running" style="display:none;flex-direction:column;gap:10px">'
+      +'<div class="field-group"><div class="field-label">Distance / Event</div><input class="field-input" id="pr-event" placeholder="e.g. Mile, 5K, 10K, Half Marathon"></div>'
+      +'<div class="field-group"><div class="field-label">Best Time (e.g. 6:30 or 25:10)</div><input class="field-input" id="pr-time" placeholder="MM:SS"></div>'
+      +'<div class="field-group"><div class="field-label">Notes (optional)</div><input class="field-input" id="pr-notes-r" placeholder="e.g. track, road, heat"></div>'
+    +'</div>'
+    +'<div id="prsec-calisthenics" style="display:none;flex-direction:column;gap:10px">'
+      +'<div class="field-group"><div class="field-label">Exercise</div><input class="field-input" id="pr-exercise" placeholder="e.g. Pushups, Pullups, Dips, Pistol Squats"></div>'
+      +'<div class="field-group"><div class="field-label">Max Reps (in one set)</div><input class="field-input" id="pr-creps" type="number" placeholder="20"></div>'
+      +'<div class="field-group"><div class="field-label">Notes (optional)</div><input class="field-input" id="pr-notes-c" placeholder="e.g. strict form, weighted"></div>'
+    +'</div>'
+    +'<button class="btn-gold" style="margin-top:12px" onclick="savePRNew()">Save PR</button>');
 }
 
 function savePRNew(){
-  const lift=document.getElementById('pr-lift')?.value?.trim();
-  const weight=document.getElementById('pr-weight')?.value?.trim();
-  const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
-  const notes=document.getElementById('pr-notes')?.value?.trim()||'';
-  if(!lift||!weight){showError('BOS-DATA-001');return;}
-  const prs=getPRs();
-  prs.push({lift,weight,reps,notes,date:getLocalDateStr()});
-  savePRs(prs);
-  closeModal();
-  showSuccess('PR saved!');
+  const t=document.getElementById('pr-type-hidden')?.value||'strength';
+  const notes=document.getElementById('pr-notes-'+t[0])?.value?.trim()||'';
+  let entry={type:t,date:getLocalDateStr(),notes};
+  if(t==='strength'){
+    const lift=document.getElementById('pr-lift')?.value?.trim();
+    const weight=document.getElementById('pr-weight')?.value?.trim();
+    const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
+    if(!lift||!weight){showError('BOS-DATA-001');return;}
+    entry={...entry,lift,weight,reps};
+  }else if(t==='running'){
+    const event=document.getElementById('pr-event')?.value?.trim();
+    const time=document.getElementById('pr-time')?.value?.trim();
+    if(!event||!time){showError('BOS-DATA-001');return;}
+    entry={...entry,event,time};
+  }else{
+    const exercise=document.getElementById('pr-exercise')?.value?.trim();
+    const reps=document.getElementById('pr-creps')?.value?.trim();
+    if(!exercise||!reps){showError('BOS-DATA-001');return;}
+    entry={...entry,exercise,reps};
+  }
+  const prs=getPRs();prs.push(entry);savePRs(prs);
+  closeModal();showSuccess('PR saved!');
   renderPRs(document.getElementById('health-content'));
 }
 
 function editPR(i){
-  const prs=getPRs();
-  const pr=prs[i];
-  if(!pr)return;
+  const prs=getPRs();const pr=prs[i];if(!pr)return;
+  const t=pr.type||'strength';
+  let fields='';
+  if(t==='strength'){
+    fields='<div class="field-group"><div class="field-label">Lift Name</div><input class="field-input" id="pr-lift" value="'+(pr.lift||'')+'"></div>'
+      +'<div style="display:flex;gap:8px"><div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div><input class="field-input" id="pr-weight" type="number" value="'+(pr.weight||'')+'"></div>'
+      +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div><input class="field-input" id="pr-reps" type="number" value="'+(pr.reps||'1')+'"></div></div>'
+      +'<div class="field-group"><div class="field-label">Notes</div><input class="field-input" id="pr-notes-s" value="'+(pr.notes||'')+'"></div>';
+  }else if(t==='running'){
+    fields='<div class="field-group"><div class="field-label">Distance / Event</div><input class="field-input" id="pr-event" value="'+(pr.event||'')+'"></div>'
+      +'<div class="field-group"><div class="field-label">Best Time</div><input class="field-input" id="pr-time" value="'+(pr.time||'')+'"></div>'
+      +'<div class="field-group"><div class="field-label">Notes</div><input class="field-input" id="pr-notes-r" value="'+(pr.notes||'')+'"></div>';
+  }else{
+    fields='<div class="field-group"><div class="field-label">Exercise</div><input class="field-input" id="pr-exercise" value="'+(pr.exercise||'')+'"></div>'
+      +'<div class="field-group"><div class="field-label">Max Reps</div><input class="field-input" id="pr-creps" type="number" value="'+(pr.reps||'')+'"></div>'
+      +'<div class="field-group"><div class="field-label">Notes</div><input class="field-input" id="pr-notes-c" value="'+(pr.notes||'')+'"></div>';
+  }
+  const typeLabel=t==='running'?'Running PR':t==='calisthenics'?'Calisthenics PR':'Strength PR';
   showModal('<div class="sheet-handle"></div>'
-    +'<div class="sheet-title">Edit PR</div>'
-    +'<div style="display:flex;flex-direction:column;gap:10px">'
-    +'<div class="field-group"><div class="field-label">Lift Name</div>'
-    +'<input class="field-input" id="pr-lift" value="'+pr.lift+'"></div>'
-    +'<div style="display:flex;gap:8px">'
-    +'<div class="field-group" style="flex:1"><div class="field-label">Max Weight (lbs)</div>'
-    +'<input class="field-input" id="pr-weight" type="number" value="'+pr.weight+'"></div>'
-    +'<div class="field-group" style="flex:1"><div class="field-label">Reps</div>'
-    +'<input class="field-input" id="pr-reps" type="number" value="'+pr.reps+'"></div>'
-    +'</div>'
-    +'<div class="field-group"><div class="field-label">Notes</div>'
-    +'<input class="field-input" id="pr-notes" value="'+(pr.notes||'')+'"></div>'
+    +'<div class="sheet-title">Edit '+typeLabel+'</div>'
+    +'<input type="hidden" id="pr-type-hidden" value="'+t+'">'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'+fields
     +'<button class="btn-gold" onclick="savePREdit('+i+')">Save</button>'
     +'<button class="btn-red-outline" onclick="deletePR('+i+');closeModal()">Delete</button>'
     +'</div>');
 }
 
 function savePREdit(i){
-  const lift=document.getElementById('pr-lift')?.value?.trim();
-  const weight=document.getElementById('pr-weight')?.value?.trim();
-  const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
-  const notes=document.getElementById('pr-notes')?.value?.trim()||'';
-  if(!lift||!weight)return;
+  const t=document.getElementById('pr-type-hidden')?.value||'strength';
+  const notes=document.getElementById('pr-notes-'+t[0])?.value?.trim()||'';
   const prs=getPRs();
-  prs[i]={...prs[i],lift,weight,reps,notes};
-  savePRs(prs);
-  closeModal();
-  showSuccess('PR updated!');
+  let updated={...prs[i],type:t,notes};
+  if(t==='strength'){
+    const lift=document.getElementById('pr-lift')?.value?.trim();
+    const weight=document.getElementById('pr-weight')?.value?.trim();
+    const reps=document.getElementById('pr-reps')?.value?.trim()||'1';
+    if(!lift||!weight)return;
+    updated={...updated,lift,weight,reps};
+  }else if(t==='running'){
+    const event=document.getElementById('pr-event')?.value?.trim();
+    const time=document.getElementById('pr-time')?.value?.trim();
+    if(!event||!time)return;
+    updated={...updated,event,time};
+  }else{
+    const exercise=document.getElementById('pr-exercise')?.value?.trim();
+    const reps=document.getElementById('pr-creps')?.value?.trim();
+    if(!exercise||!reps)return;
+    updated={...updated,exercise,reps};
+  }
+  prs[i]=updated;savePRs(prs);
+  closeModal();showSuccess('PR updated!');
   renderPRs(document.getElementById('health-content'));
 }
 
 function deletePR(i){
-  const prs=getPRs();
-  prs.splice(i,1);
-  savePRs(prs);
+  const prs=getPRs();prs.splice(i,1);savePRs(prs);
   renderPRs(document.getElementById('health-content'));
 }
 
@@ -3557,7 +3651,7 @@ async function sendJMsg(text){
   const workoutHistory={};
   days.forEach(d=>{const notes=JSON.parse(localStorage.getItem(lsKey('bos_workout_notes_'+d))||'[]');if(notes.length>0)workoutHistory[d]=notes.slice(0,5).map(n=>n.date+': '+(n.duration?'['+n.duration+' energy:'+n.energy+'/5] ':'')+n.notes).join(' | ');});
   const prs=JSON.parse(lsGet('bos_prs')||'[]');
-  const prSummary=prs.length?prs.map(p=>p.lift+' '+p.weight+'lbs x'+p.reps).join(', '):'none logged';
+  const prSummary=prs.length?prs.map(prToText).join(', '):'none logged';
   const recentLogs=[...(S.data.workout_logs||[])].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10);
   const bodyLog=JSON.parse(lsGet('bos_body_log')||'[]');
   const latestBody=bodyLog[0]||{};
