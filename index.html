@@ -1397,8 +1397,11 @@ async function loadAll(){
     const pPrefRow=(pAllScheds||[]).find(s=>s.week_of==='9999-01-01')||null;
     if(pPrefRow?.items){
       pPrefRow.items.forEach(({key,value})=>{
-        // Business ext data: always sync from partner so revenue/expenses match on both devices
-        if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');localStorage.setItem('bos_biz_ext_'+bid,value);}
+        // Income values are household-shared — sync from partner in case they updated it
+        if(key==='aj_income')localStorage.setItem('aj_income',value);
+        if(key==='jul_income')localStorage.setItem('jul_income',value);
+        // Business ext data: fallback sync via prefs (primary is now businesses.notes in Supabase)
+        if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');const cur=localStorage.getItem('bos_biz_ext_'+bid);if(!cur)localStorage.setItem('bos_biz_ext_'+bid,value);}
         // Signal-to-noise: merge partner's slice so each person sees the other's items live
         if(key==='signal_noise'){
           try{
@@ -2885,12 +2888,42 @@ async function sendEncouragement(){
 // BUSINESS COMMAND CENTER
 // revenue, expenses, clients stored in localStorage (not Supabase schema columns)
 function getBizExt(b){
-  try{const e=JSON.parse(localStorage.getItem('bos_biz_ext_'+b.id)||'{}');return{...b,revenue:e.revenue||b.revenue||[],expenses:e.expenses||b.expenses||[],clients:e.clients||b.clients||[],recurringExpenses:e.recurringExpenses||b.recurringExpenses||[]};}catch(e){return{...b,revenue:[],expenses:[],clients:[],recurringExpenses:[]};}
+  if(!b)return{revenue:[],expenses:[],clients:[],recurringExpenses:[]};
+  // Primary: businesses.notes has a hidden __biz_ext__ entry — shared across all household devices via Supabase
+  const extNote=(b.notes||[]).find(n=>n.title==='__biz_ext__');
+  if(extNote){
+    try{
+      const parsed=JSON.parse(extNote.text);
+      // Keep localStorage in sync as a fast offline cache
+      localStorage.setItem('bos_biz_ext_'+b.id,extNote.text);
+      return{...b,revenue:parsed.revenue||[],expenses:parsed.expenses||[],clients:parsed.clients||[],recurringExpenses:parsed.recurringExpenses||[]};
+    }catch(e){}
+  }
+  // Fallback: localStorage (offline / first-use before any Supabase save)
+  try{const e=JSON.parse(localStorage.getItem('bos_biz_ext_'+b.id)||'{}');return{...b,revenue:e.revenue||[],expenses:e.expenses||[],clients:e.clients||[],recurringExpenses:e.recurringExpenses||[]};}catch(e){return{...b,revenue:[],expenses:[],clients:[],recurringExpenses:[]};}
 }
 function saveBizExt(bid,field,value){
   const key='bos_biz_ext_'+bid;
-  try{const e=JSON.parse(localStorage.getItem(key)||'{}');e[field]=value;const j=JSON.stringify(e);localStorage.setItem(key,j);syncPreference('biz_ext_'+bid,j);}catch(e){}
+  try{
+    const e=JSON.parse(localStorage.getItem(key)||'{}');
+    e[field]=value;
+    const j=JSON.stringify(e);
+    localStorage.setItem(key,j);
+    // Primary: push to Supabase businesses.notes so both household users see it immediately
+    _saveBizExtToSB(bid,j);
+    // Secondary backup: sentinel row pref (cross-device fallback)
+    syncPreference('biz_ext_'+bid,j);
+  }catch(e){}
   S.data.businesses=S.data.businesses.map(b=>b.id===bid?{...b,[field]:value}:b);
+}
+async function _saveBizExtToSB(bid,extJson){
+  try{
+    const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;
+    const notes=(b.notes||[]).filter(n=>n.title!=='__biz_ext__');
+    notes.push({title:'__biz_ext__',text:extJson});
+    await sb.from('businesses').update({notes}).eq('id',bid);
+    S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,notes}:x);
+  }catch(e){}
 }
 function renderBusiness(){
   const bizs=S.data.businesses||[];
@@ -3067,9 +3100,10 @@ function renderBizTeam(b){
   <button class="btn-gold" onclick="addTeam('${b.id}')">+ Add Team Member</button>`;
 }
 function renderBizNotes(b){
-  const notes=(b.notes||[]).slice().reverse();
+  // Exclude the hidden __biz_ext__ system entry; track original index for correct deletion
+  const visList=(b.notes||[]).map((n,origIdx)=>({n,origIdx})).filter(({n})=>n.title!=='__biz_ext__').reverse();
   return`<div style="display:flex;flex-direction:column;gap:8px">
-    ${notes.length?notes.map((n,i)=>`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${n.title||'Note'}</span><span style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--gold)">${n.date||''}</span><span class="del-x" onclick="delBizNote('${b.id}',${(b.notes||[]).length-1-i})">&#215;</span></span></div><div style="font-size:12px;color:var(--white);opacity:.8;line-height:1.6">${n.text}</div></div>`).join(''):'<div class="card" style="padding:12px;font-size:12px;color:var(--white);opacity:.4">No notes yet. Log meetings, ideas, or decisions.</div>'}
+    ${visList.length?visList.map(({n,origIdx})=>`<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--white)">${n.title||'Note'}</span><span style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--gold)">${n.date||''}</span><span class="del-x" onclick="delBizNote('${b.id}',${origIdx})">&#215;</span></span></div><div style="font-size:12px;color:var(--white);opacity:.8;line-height:1.6">${n.text}</div></div>`).join(''):'<div class="card" style="padding:12px;font-size:12px;color:var(--white);opacity:.4">No notes yet. Log meetings, ideas, or decisions.</div>'}
   </div>
   <button class="btn-gold" onclick="addBizNote('${b.id}')">+ Add Note</button>`;
 }
