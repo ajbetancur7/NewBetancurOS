@@ -1309,8 +1309,9 @@ function saveMySignalItems(){
   const sn=getSignalNoise();sn[uid]={items};saveSignalNoise(sn);
   closeModal();showSuccess('Top 3 saved!');renderSignalNoise();
 }
-function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';localStorage.setItem('aj_status',s==='home'?'work':'home');renderHome();}
-function toggleJulStatus(){const s=localStorage.getItem('jul_status')||'home';showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="localStorage.setItem('jul_status','home');closeModal();renderHome()">At Home</button><button class="btn-white" style="flex:1" onclick="localStorage.setItem('jul_status','work');closeModal();renderHome()">At Work</button></div>`);}
+function _setStatus(who,val){localStorage.setItem(who+'_status',val);syncPreference(who+'_status',val);closeModal();renderHome();}
+function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';const ns=s==='home'?'work':'home';localStorage.setItem('aj_status',ns);syncPreference('aj_status',ns);renderHome();}
+function toggleJulStatus(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Juliette's Status</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn-gold" style="flex:1" onclick="_setStatus('jul','home')">At Home</button><button class="btn-white" style="flex:1" onclick="_setStatus('jul','work')">At Work</button></div>`);}
 function isDesktop(){return window.innerWidth>=768;}
 function setupNav(){
   document.getElementById('drawer-user-name').textContent=S.profile?.name||'User';
@@ -1400,6 +1401,13 @@ async function loadAll(){
         // Income values are household-shared — sync from partner in case they updated it
         if(key==='aj_income')localStorage.setItem('aj_income',value);
         if(key==='jul_income')localStorage.setItem('jul_income',value);
+        // Status — sync partner's at-home/at-work indicator
+        if(key==='aj_status')localStorage.setItem('aj_status',value);
+        if(key==='jul_status')localStorage.setItem('jul_status',value);
+        // Chore day assignments — merge partner's, mine take precedence
+        if(key==='chore_days'){try{const ex=localStorage.getItem('bos_chore_days');if(!ex){localStorage.setItem('bos_chore_days',value);}else{const mine=JSON.parse(ex);const pDays=JSON.parse(value);localStorage.setItem('bos_chore_days',JSON.stringify({...pDays,...mine}));}}catch(e){}}
+        // Miami data — take newer version (by lastUpdated) for cross-device sync
+        if(key==='miami_data'){try{const ex=localStorage.getItem(MIAMI_KEY);if(!ex){localStorage.setItem(MIAMI_KEY,value);}else{const cur=JSON.parse(ex);const pm=JSON.parse(value);if(pm.lastUpdated&&(!cur.lastUpdated||new Date(pm.lastUpdated)>new Date(cur.lastUpdated))){const merged={...pm,actionHistory:cur.actionHistory||[]};localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));}}}catch(e){}}
         // Business ext data: fallback sync via prefs (primary is now businesses.notes in Supabase)
         if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');const cur=localStorage.getItem('bos_biz_ext_'+bid);if(!cur)localStorage.setItem('bos_biz_ext_'+bid,value);}
         // Signal-to-noise: merge partner's slice so each person sees the other's items live
@@ -1454,6 +1462,10 @@ async function loadAll(){
       if(key==='prs')localStorage.setItem('bos_prs',value);
       if(key==='aj_income')localStorage.setItem('aj_income',value);
       if(key==='jul_income')localStorage.setItem('jul_income',value);
+      if(key==='aj_status')localStorage.setItem('aj_status',value);
+      if(key==='jul_status')localStorage.setItem('jul_status',value);
+      if(key==='miami_data')localStorage.setItem(MIAMI_KEY,value);
+      if(key==='chore_days')localStorage.setItem('bos_chore_days',value);
       if(key==='daily_checklist')localStorage.setItem(DCL_KEY,value);
       if(key==='signal_noise')localStorage.setItem('bos_signal_noise',value);
       if(key==='daily_rules')localStorage.setItem(RULES_KEY,value);
@@ -1607,7 +1619,7 @@ document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" oncl
 // CHORES
 const CHORE_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 function getChoredays(){return JSON.parse(localStorage.getItem('bos_chore_days')||'{}');}
-function setChoreday(id,day){const d=getChoredays();if(!day||day==='Any')delete d[id];else d[id]=day;localStorage.setItem('bos_chore_days',JSON.stringify(d));}
+function setChoreday(id,day){const d=getChoredays();if(!day||day==='Any')delete d[id];else d[id]=day;const j=JSON.stringify(d);localStorage.setItem('bos_chore_days',j);syncPreference('chore_days',j);}
 function switchChoresDay(day){S.choresDay=day;renderChores();}
 function renderChores(){
   const chores=S.data.chores||[];
@@ -3077,7 +3089,7 @@ function renderBizClients(b){
     ${clients.length?clients.map((c,i)=>`<div class="client-row">
       <div class="client-av">${(c.name||'?').slice(0,2).toUpperCase()}</div>
       <div class="client-info"><div class="client-name">${c.name}</div><div class="client-meta">${[c.phone,c.email,c.address].filter(Boolean).join(' · ')||'No contact info'}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="cs ${c.status==='active'?'cs-active':c.status==='lead'?'cs-lead':'cs-inactive'}">${(c.status||'lead').toUpperCase()}</span><span class="del-x" onclick="delBizClient('${b.id}','${c.id||i}')">&#215;</span></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="cs ${c.status==='active'?'cs-active':c.status==='lead'?'cs-lead':'cs-inactive'}">${(c.status||'lead').toUpperCase()}</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--gold);cursor:pointer" onclick="editBizClient('${b.id}','${c.id||i}')">&#9998;</span><span class="del-x" onclick="delBizClient('${b.id}','${c.id||i}')">&#215;</span></div></div>
     </div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:.4;padding:8px 0">No clients yet.</div>'}
   </div>
   <button class="btn-gold" onclick="addBizClient('${b.id}')">+ Add Client / Lead</button>`;
@@ -3309,6 +3321,19 @@ function delBizClient(bid,cid){
   const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,clients:[]});
   const clients=(b.clients||[]).filter((c,i)=>c.id!==cid&&String(i)!==String(cid));
   saveBizExt(bid,'clients',clients);renderBizTab();
+}
+function editBizClient(bid,cid){
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,clients:[]});
+  const c=(b.clients||[]).find((cl,i)=>cl.id===cid||String(i)===String(cid));
+  if(!c)return;
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Client</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ec-n" value="${c.name||''}"></div><div class="field-group"><div class="field-label">Phone</div><input class="field-input" id="ec-p" value="${c.phone||''}" type="tel"></div><div class="field-group"><div class="field-label">Email</div><input class="field-input" id="ec-e" value="${c.email||''}" type="email"></div><div class="field-group"><div class="field-label">Address</div><input class="field-input" id="ec-a" value="${c.address||''}"></div><div class="field-group"><div class="field-label">Status</div><select class="field-input" id="ec-s"><option value="lead" ${c.status==='lead'?'selected':''}>Lead</option><option value="active" ${c.status==='active'?'selected':''}>Active</option><option value="inactive" ${c.status==='inactive'?'selected':''}>Inactive</option></select></div><button class="btn-gold" onclick="saveEditBizClient('${bid}','${cid}')">Save</button></div>`);
+}
+function saveEditBizClient(bid,cid){
+  const name=document.getElementById('ec-n')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}
+  const phone=document.getElementById('ec-p')?.value?.trim(),email=document.getElementById('ec-e')?.value?.trim(),address=document.getElementById('ec-a')?.value?.trim(),status=document.getElementById('ec-s')?.value;
+  const b=getBizExt((S.data.businesses||[]).find(x=>x.id===bid)||{id:bid,clients:[]});
+  const clients=(b.clients||[]).map((c,i)=>(c.id===cid||String(i)===String(cid))?{...c,name,phone,email,address,status}:c);
+  saveBizExt(bid,'clients',clients);closeModal();showSuccess('Client updated!');renderBizTab();
 }
 // Tasks
 async function togBizTask(bid,tid){const b=(S.data.businesses||[]).find(x=>x.id===bid);if(!b)return;const tasks=(b.tasks||[]).map(t=>t.id===tid?{...t,done:!t.done}:t);try{await sb.from('businesses').update({tasks}).eq('id',bid);S.data.businesses=S.data.businesses.map(x=>x.id===bid?{...x,tasks}:x);renderBizTab();}catch(e){showError(e.message);}}
@@ -3817,7 +3842,7 @@ const MIAMI_MILESTONE_DEFAULTS=[
   {id:'m11',title:'Net worth $1,000,000',sub:'Millionaire by 30 — mission complete',target:'Age 29–30',status:'locked'}
 ];
 function getMiamiData(){try{const r=localStorage.getItem(MIAMI_KEY);if(r)return JSON.parse(r);}catch(e){}return initMiamiData();}
-function saveMiamiData(data){data.lastUpdated=new Date().toISOString();localStorage.setItem(MIAMI_KEY,JSON.stringify(data));}
+function saveMiamiData(data){data.lastUpdated=new Date().toISOString();localStorage.setItem(MIAMI_KEY,JSON.stringify(data));const{actionHistory,...syncData}=data;syncPreference('miami_data',JSON.stringify(syncData));}
 function initMiamiData(){const data={vaults:JSON.parse(JSON.stringify(MIAMI_VAULT_DEFAULTS)),expenses:JSON.parse(JSON.stringify(MIAMI_EXPENSE_DEFAULTS)),debts:JSON.parse(JSON.stringify(MIAMI_DEBT_DEFAULTS)),assets:JSON.parse(JSON.stringify(MIAMI_ASSET_DEFAULTS)),milestones:JSON.parse(JSON.stringify(MIAMI_MILESTONE_DEFAULTS)),income:{takeHome:12500,gross:16667},airbnb:{revenue:0,extraExpenses:0},paychecks:[],actionHistory:[],isLive:false,goLiveDate:null,lastUpdated:new Date().toISOString()};saveMiamiData(data);return data;}
 function logMiamiAction(action,detail){const data=getMiamiData();data.actionHistory=[{id:uid4(),who:S.profile?.name?.split(' ')[0]||'Unknown',userId:S.profile?.id||'',action,detail,ts:new Date().toISOString()},...(data.actionHistory||[])].slice(0,300);saveMiamiData(data);}
 function applyVaultRules(data){
