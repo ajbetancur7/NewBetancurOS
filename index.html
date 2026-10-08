@@ -1396,14 +1396,30 @@ async function loadAll(){
     try{
       const sbMiami=JSON.parse(miamiSentinel.notes);
       const ex=localStorage.getItem(MIAMI_KEY);
-      if(!ex){
-        localStorage.setItem(MIAMI_KEY,miamiSentinel.notes);
+      const cur=ex?JSON.parse(ex):null;
+      const sbReal=(sbMiami.paychecks?.length>0)||(sbMiami.vaults||[]).some(v=>(v.balance||0)>0);
+      const curReal=cur&&((cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0));
+      // Take Supabase data if it's real and local isn't, OR if both real and Supabase is newer
+      const takeSB=sbReal&&(!curReal||(sbMiami.lastUpdated&&(!cur.lastUpdated||new Date(sbMiami.lastUpdated)>new Date(cur.lastUpdated))));
+      if(takeSB||!ex){
+        const merged=JSON.stringify({...sbMiami,actionHistory:cur?.actionHistory||[]});
+        localStorage.setItem(MIAMI_KEY,merged);
+        S.data.miami={...sbMiami,actionHistory:cur?.actionHistory||[]};
       } else {
+        S.data.miami=cur;
+        // Local has real data but sentinel doesn't — push local data to fix the sentinel
+        if(curReal&&!sbReal){const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));}
+      }
+    }catch(e){}
+  } else {
+    // No sentinel yet — if local has real data, push it to Supabase immediately
+    try{
+      const ex=localStorage.getItem(MIAMI_KEY);
+      if(ex){
         const cur=JSON.parse(ex);
-        const sbReal=(sbMiami.paychecks?.length>0)||(sbMiami.vaults||[]).some(v=>(v.balance||0)>0);
-        const curReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);
-        const takeSB=(sbReal&&!curReal)||(sbReal&&curReal&&sbMiami.lastUpdated&&(!cur.lastUpdated||new Date(sbMiami.lastUpdated)>new Date(cur.lastUpdated)));
-        if(takeSB)localStorage.setItem(MIAMI_KEY,JSON.stringify({...sbMiami,actionHistory:cur.actionHistory||[]}));
+        S.data.miami=cur;
+        const hasReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);
+        if(hasReal){const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));}
       }
     }catch(e){}
   }
@@ -1541,9 +1557,9 @@ function migrateLocalToSupabase(){
     const extData=localStorage.getItem('bos_biz_ext_'+b.id);
     if(extData&&!hasKey('biz_ext_'+b.id))syncPreference('biz_ext_'+b.id,extData);
   });
-  // Miami Chapter financial data — push existing localStorage to Supabase (both sentinel row + household meeting)
+  // Miami Chapter financial data — always push real local data to keep Supabase current
   const localMiami=localStorage.getItem(MIAMI_KEY);
-  if(localMiami){try{const m=JSON.parse(localMiami);const hasReal=(m.paychecks?.length>0)||(m.vaults||[]).some(v=>(v.balance||0)>0);if(hasReal){const{actionHistory,...syncData}=m;const sj=JSON.stringify(syncData);if(!hasKey('miami_data'))syncPreference('miami_data',sj);if(!S._miamiSentinelId)_saveMiamiToSB(sj);}}catch(e){}}
+  if(localMiami){try{const m=JSON.parse(localMiami);const hasReal=(m.paychecks?.length>0)||(m.vaults||[]).some(v=>(v.balance||0)>0);if(hasReal){const{actionHistory,...syncData}=m;const sj=JSON.stringify(syncData);if(!hasKey('miami_data'))syncPreference('miami_data',sj);_saveMiamiToSB(sj);}}catch(e){}}
   // Chore day assignments
   const localChoreDays=localStorage.getItem('bos_chore_days');
   if(localChoreDays&&!hasKey('chore_days'))syncPreference('chore_days',localChoreDays);
@@ -3872,15 +3888,25 @@ const MIAMI_MILESTONE_DEFAULTS=[
   {id:'m10',title:'Betancur Fund first deployment',sub:'Pitch deck submitted, both approve',target:'Year 2',status:'locked'},
   {id:'m11',title:'Net worth $1,000,000',sub:'Millionaire by 30 — mission complete',target:'Age 29–30',status:'locked'}
 ];
-function getMiamiData(){try{const r=localStorage.getItem(MIAMI_KEY);if(r)return JSON.parse(r);}catch(e){}return initMiamiData();}
-function saveMiamiData(data){data.lastUpdated=new Date().toISOString();const j=JSON.stringify(data);localStorage.setItem(MIAMI_KEY,j);const{actionHistory,...syncData}=data;const sj=JSON.stringify(syncData);syncPreference('miami_data',sj);_saveMiamiToSB(sj);}
+function getMiamiData(){if(S.data.miami)return S.data.miami;try{const r=localStorage.getItem(MIAMI_KEY);if(r)return JSON.parse(r);}catch(e){}return initMiamiData();}
+function saveMiamiData(data){
+  data.lastUpdated=new Date().toISOString();
+  S.data.miami=data;
+  const j=JSON.stringify(data);
+  localStorage.setItem(MIAMI_KEY,j);
+  const{actionHistory,...syncData}=data;
+  const sj=JSON.stringify(syncData);
+  syncPreference('miami_data',sj);
+  _saveMiamiToSB(sj);
+}
 async function _saveMiamiToSB(json){
   try{
     if(!S.household?.id)return;
     if(S._miamiSentinelId){
       await sb.from('meetings').update({notes:json}).eq('id',S._miamiSentinelId);
     } else {
-      const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile?.id,shared:true,title:'__miami_data__',meeting_date:'2000-01-01',attendees:'',category:'personal',notes:json,action_items:[]});
+      const today=new Date().toISOString().slice(0,10);
+      const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile?.id,shared:false,title:'__miami_data__',meeting_date:today,attendees:null,category:'personal',notes:json,action_items:[]});
       if(r?.[0]){S._miamiSentinelId=r[0].id;}
     }
   }catch(e){}
