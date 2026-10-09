@@ -1397,19 +1397,28 @@ async function loadAll(){
       const sbMiami=JSON.parse(miamiSentinel.notes);
       const ex=localStorage.getItem(MIAMI_KEY);
       const cur=ex?JSON.parse(ex):null;
-      const sbReal=(sbMiami.paychecks?.length>0)||(sbMiami.vaults||[]).some(v=>(v.balance||0)>0);
-      const curReal=cur&&((cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0));
-      // Take Supabase data if it's real and local isn't, OR if both real and Supabase is newer
-      const takeSB=sbReal&&(!curReal||(sbMiami.lastUpdated&&(!cur.lastUpdated||new Date(sbMiami.lastUpdated)>new Date(cur.lastUpdated))));
-      if(takeSB||!ex){
-        const merged=JSON.stringify({...sbMiami,actionHistory:cur?.actionHistory||[]});
-        localStorage.setItem(MIAMI_KEY,merged);
-        S.data.miami={...sbMiami,actionHistory:cur?.actionHistory||[]};
-      } else {
-        S.data.miami=cur;
-        // Local has real data but sentinel doesn't — push local data to fix the sentinel
-        if(curReal&&!sbReal){const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));}
+      // "edited" = someone explicitly saved via saveMiamiData() — lastUpdated is present.
+      // Defaults from initMiamiData() have NO lastUpdated, so they never beat real data.
+      const sbEdited=!!sbMiami.lastUpdated;
+      const curEdited=!!cur?.lastUpdated;
+      if(sbEdited&&curEdited){
+        // Both users have saved data — newer wins
+        if(new Date(sbMiami.lastUpdated)>=new Date(cur.lastUpdated)){
+          const merged={...sbMiami,actionHistory:cur?.actionHistory||[]};
+          localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));S.data.miami=merged;
+        } else {
+          // Local is newer — keep it, push to fix sentinel
+          S.data.miami=cur;const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));
+        }
+      } else if(sbEdited){
+        // Only sentinel has saved data (local is defaults or empty) — use sentinel
+        const merged={...sbMiami,actionHistory:cur?.actionHistory||[]};
+        localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));S.data.miami=merged;
+      } else if(curEdited){
+        // Only local has saved data — use it, fix the sentinel
+        S.data.miami=cur;const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));
       }
+      // else: neither has been saved — both are defaults, do nothing
     }catch(e){}
   } else {
     // No meeting sentinel yet — load from localStorage, push to Supabase if real data exists
@@ -1417,9 +1426,8 @@ async function loadAll(){
       const ex=localStorage.getItem(MIAMI_KEY);
       if(ex){
         const cur=JSON.parse(ex);
-        // Don't lock S.data.miami here — let the partner sentinel sync override it if partner has better data
-        const hasReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);
-        if(hasReal){S.data.miami=cur;const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));}
+        // Only use local if it has been explicitly saved (has lastUpdated) — never push defaults
+        if(cur.lastUpdated){S.data.miami=cur;const{actionHistory,...sd}=cur;_saveMiamiToSB(JSON.stringify(sd));}
       }
     }catch(e){}
   }
@@ -1443,7 +1451,7 @@ async function loadAll(){
         // Chore day assignments — merge partner's, mine take precedence
         if(key==='chore_days'){try{const ex=localStorage.getItem('bos_chore_days');if(!ex){localStorage.setItem('bos_chore_days',value);}else{const mine=JSON.parse(ex);const pDays=JSON.parse(value);localStorage.setItem('bos_chore_days',JSON.stringify({...pDays,...mine}));}}catch(e){}}
         // Miami data — real data (paychecks/vault balances) always beats defaults; if both real, newer wins
-        if(key==='miami_data'){try{const ex=localStorage.getItem(MIAMI_KEY);const pm=JSON.parse(value);if(!ex){localStorage.setItem(MIAMI_KEY,value);S.data.miami=pm;}else{const cur=JSON.parse(ex);const pReal=(pm.paychecks?.length>0)||(pm.vaults||[]).some(v=>(v.balance||0)>0);const cReal=(cur.paychecks?.length>0)||(cur.vaults||[]).some(v=>(v.balance||0)>0);const takePartner=(pReal&&!cReal)||(pReal&&cReal&&pm.lastUpdated&&(!cur.lastUpdated||new Date(pm.lastUpdated)>new Date(cur.lastUpdated)));if(takePartner){const merged={...pm,actionHistory:cur.actionHistory||[]};localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));S.data.miami=merged;}}}catch(e){}}
+        if(key==='miami_data'){try{const ex=localStorage.getItem(MIAMI_KEY);const pm=JSON.parse(value);const cur=ex?JSON.parse(ex):null;const pmEdited=!!pm.lastUpdated;const curEdited=!!cur?.lastUpdated;const takePartner=pmEdited&&(!curEdited||new Date(pm.lastUpdated)>new Date(cur.lastUpdated));if(takePartner){const merged={...pm,actionHistory:cur?.actionHistory||[]};localStorage.setItem(MIAMI_KEY,JSON.stringify(merged));S.data.miami=merged;}}catch(e){}}
         // Business ext data: fallback sync via prefs (primary is now businesses.notes in Supabase)
         if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');const cur=localStorage.getItem('bos_biz_ext_'+bid);if(!cur)localStorage.setItem('bos_biz_ext_'+bid,value);}
         // Signal-to-noise: merge partner's slice so each person sees the other's items live
@@ -1500,7 +1508,7 @@ async function loadAll(){
       if(key==='jul_income')localStorage.setItem('jul_income',value);
       if(key==='aj_status')localStorage.setItem('aj_status',value);
       if(key==='jul_status')localStorage.setItem('jul_status',value);
-      if(key==='miami_data')localStorage.setItem(MIAMI_KEY,value);
+      if(key==='miami_data'){try{const m=JSON.parse(value);if(m.lastUpdated&&!S.data.miami?.lastUpdated){localStorage.setItem(MIAMI_KEY,value);S.data.miami=m;}}catch(e){}}
       if(key==='chore_days')localStorage.setItem('bos_chore_days',value);
       if(key==='daily_checklist')localStorage.setItem(DCL_KEY,value);
       if(key==='signal_noise')localStorage.setItem('bos_signal_noise',value);
@@ -1559,7 +1567,7 @@ function migrateLocalToSupabase(){
   });
   // Miami Chapter financial data — always push real local data to keep Supabase current
   const localMiami=localStorage.getItem(MIAMI_KEY);
-  if(localMiami){try{const m=JSON.parse(localMiami);const hasReal=(m.paychecks?.length>0)||(m.vaults||[]).some(v=>(v.balance||0)>0);if(hasReal){const{actionHistory,...syncData}=m;const sj=JSON.stringify(syncData);if(!hasKey('miami_data'))syncPreference('miami_data',sj);_saveMiamiToSB(sj);}}catch(e){}}
+  if(localMiami){try{const m=JSON.parse(localMiami);if(m.lastUpdated){const{actionHistory,...syncData}=m;const sj=JSON.stringify(syncData);if(!hasKey('miami_data'))syncPreference('miami_data',sj);_saveMiamiToSB(sj);}}catch(e){}}
   // Chore day assignments
   const localChoreDays=localStorage.getItem('bos_chore_days');
   if(localChoreDays&&!hasKey('chore_days'))syncPreference('chore_days',localChoreDays);
@@ -3911,7 +3919,7 @@ async function _saveMiamiToSB(json){
     }
   }catch(e){}
 }
-function initMiamiData(){const data={vaults:JSON.parse(JSON.stringify(MIAMI_VAULT_DEFAULTS)),expenses:JSON.parse(JSON.stringify(MIAMI_EXPENSE_DEFAULTS)),debts:JSON.parse(JSON.stringify(MIAMI_DEBT_DEFAULTS)),assets:JSON.parse(JSON.stringify(MIAMI_ASSET_DEFAULTS)),milestones:JSON.parse(JSON.stringify(MIAMI_MILESTONE_DEFAULTS)),income:{takeHome:12500,gross:16667},airbnb:{revenue:0,extraExpenses:0},paychecks:[],actionHistory:[],isLive:false,goLiveDate:null,lastUpdated:new Date().toISOString()};saveMiamiData(data);return data;}
+function initMiamiData(){return{vaults:JSON.parse(JSON.stringify(MIAMI_VAULT_DEFAULTS)),expenses:JSON.parse(JSON.stringify(MIAMI_EXPENSE_DEFAULTS)),debts:JSON.parse(JSON.stringify(MIAMI_DEBT_DEFAULTS)),assets:JSON.parse(JSON.stringify(MIAMI_ASSET_DEFAULTS)),milestones:JSON.parse(JSON.stringify(MIAMI_MILESTONE_DEFAULTS)),income:{takeHome:12500,gross:16667},airbnb:{revenue:0,extraExpenses:0},paychecks:[],actionHistory:[],isLive:false,goLiveDate:null};}
 function logMiamiAction(action,detail){const data=getMiamiData();data.actionHistory=[{id:uid4(),who:S.profile?.name?.split(' ')[0]||'Unknown',userId:S.profile?.id||'',action,detail,ts:new Date().toISOString()},...(data.actionHistory||[])].slice(0,300);saveMiamiData(data);}
 function applyVaultRules(data){
   const chaseDebt=data.debts.find(d=>d.id==='chase');
