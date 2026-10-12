@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Betancur OS">
 <title>Betancur OS</title>
-<meta name="bos-version" content="2026-05-26-v9">
+<meta name="bos-version" content="2026-10-12-v10">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -607,18 +607,8 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
-      <div class="card" id="daily-rules-card" style="padding:12px 14px"></div>
-      <div class="card" id="daily-checklist-card" style="padding:12px 14px"></div>
+      <div class="card" id="non-negotiables-card" style="padding:12px 14px"></div>
       <div class="card" id="signal-noise-card" style="padding:12px 14px"></div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px">
-          <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">&#128221; Day Notes</span>
-          <button class="btn-gold-sm" onclick="addDayNote()">+ Add</button>
-        </div>
-        <div id="day-notes-list" style="padding:0 14px 10px;display:flex;flex-direction:column;gap:4px">
-          <div style="font-size:12px;color:var(--white);opacity:0.35">Tap + Add to jot something down...</div>
-        </div>
-      </div>
       <div class="jcard" id="home-jarvis" style="cursor:pointer" onclick="openJarvis()">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span class="jlabel">Jarvis</span><span class="jbadge" id="jarvis-alert-count"></span>
@@ -626,9 +616,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
         <div class="jtext" id="jarvis-home-text">Loading your day...</div>
         <div class="jcta" onclick="openJarvis()">Ask Jarvis anything &#8594;</div>
       </div>
-      <div class="sec-label" onclick="go('health')" style="cursor:pointer">Health Streak &#8250;</div><div class="card" id="home-streak" style="cursor:pointer" onclick="go('health')"></div>
-      <div class="sec-label" onclick="openActivityDetail()" style="cursor:pointer">Activity &#8250;</div><div class="card" id="home-activity" style="cursor:pointer" onclick="go('minutes')"></div>
-      <div class="sec-label" onclick="go('schedule')" style="cursor:pointer">Reminders &#8250;</div><div class="card" id="home-reminders" style="cursor:pointer" onclick="go('schedule')"></div>
     </div>
     <div class="section" id="section-chores">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -692,10 +679,15 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
     </div>
     <div class="section" id="section-minutes">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:18px;font-weight:700;color:var(--white)">Meeting Minutes</span>
-        <button class="btn-gold-sm" onclick="showAddMeeting()">+ New</button>
+        <span style="font-size:18px;font-weight:700;color:var(--white)">The War Room</span>
+        <button class="btn-gold-sm" onclick="openWarRoomSession()">Enter Room</button>
       </div>
-      <div class="jcard"><div class="jlabel">Jarvis &#8212; Open Actions</div><div class="jtext" id="minutes-jarvis-text">Checking open action items...</div></div>
+      <div style="background:rgba(232,188,80,.08);border:0.5px solid rgba(232,188,80,.4);border-radius:10px;padding:10px 14px;font-size:11px;color:rgba(255,255,255,.65);line-height:1.6;font-style:italic">
+        Jesus sits above the table. Every piece of counsel is weighed against Him.
+      </div>
+      <div id="war-room-counselors"></div>
+      <div class="jcard"><div class="jlabel">Jarvis &#8212; Open Commitments</div><div class="jtext" id="minutes-jarvis-text">Checking open commitments...</div></div>
+      <div class="sec-label">Past Sessions</div>
       <div id="meetings-filter" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       <div id="meetings-list"></div>
     </div>
@@ -799,7 +791,7 @@ const sb=(()=>{
   };
 })();
 S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
-async function safeSave(type,id,data){try{if(type==='UPDATE_CHORE')await sb.from('chores').update(data).eq('id',id);else if(type==='UPDATE_BILL')await sb.from('bills').update(data).eq('id',id);else if(type==='UPDATE_GROCERY')await sb.from('grocery_items').update(data).eq('id',id);}catch(e){if(e.message==='BOS-SYNC-002'){S.offlineQueue.push({type,id,data,ts:Date.now()});localStorage.setItem('bos_queue',JSON.stringify(S.offlineQueue));}else showError(e.message||'BOS-SYNC-001');}}
+async function safeSave(type,id,data){try{if(type==='UPDATE_CHORE')await sb.from('chores').update(data).eq('id',id);else if(type==='UPDATE_BILL')await sb.from('bills').update(data).eq('id',id);}catch(e){if(e.message==='BOS-SYNC-002'){S.offlineQueue.push({type,id,data,ts:Date.now()});localStorage.setItem('bos_queue',JSON.stringify(S.offlineQueue));}else showError(e.message||'BOS-SYNC-001');}}
 function logActivity(action,section,item){if(!S.household)return;sb.from('activity_feed').insert({household_id:S.household.id,user_id:S.profile?.id,action,section,item_name:item}).catch(()=>{});}
 // User-scoped localStorage — keeps each person's personal data separate on the same device
 function lsKey(k){return k+'_'+(localStorage.getItem('bos_uid')||'default');}
@@ -946,11 +938,11 @@ let setupRooms=['Master Bedroom','Master Bath','Guest Room','Guest Bath','Office
 function launchSetup(){document.getElementById('splash').style.display='none';document.getElementById('setup-screen').style.display='flex';renderStep(1);}
 function renderStep(n){
   S.setupStep=n;document.getElementById('setup-step-num').textContent='Step '+n+' of 7';
-  const titles=['','Household','Family','Rooms','Budget','Pets & Vehicles','Business','Invite'];
+  const titles=['','Household','Family','Rooms','Budget','Vehicles','Business','Invite'];
   document.getElementById('setup-title-label').textContent=titles[n];
   document.getElementById('setup-body').innerHTML=buildProg(n)+buildStepContent(n);
 }
-function buildProg(cur){const steps=['Home','Family','Rooms','Budget','Pets','Biz','Invite'];return '<div class="setup-prog">'+steps.map((s,i)=>{const n=i+1,c=n<cur?'sp-done':n===cur?'sp-act':'sp-off',l=n<cur?'sp-lbl-d':n===cur?'sp-lbl-a':'sp-lbl-o';return'<div class="sp-item"><div class="sp-c '+c+'">'+(n<cur?'&#10003;':n)+'</div><span class="sp-lbl '+l+'">'+s+'</span></div>';}).join('')+'</div>';}
+function buildProg(cur){const steps=['Home','Family','Rooms','Budget','Vehicles','Biz','Invite'];return '<div class="setup-prog">'+steps.map((s,i)=>{const n=i+1,c=n<cur?'sp-done':n===cur?'sp-act':'sp-off',l=n<cur?'sp-lbl-d':n===cur?'sp-lbl-a':'sp-lbl-o';return'<div class="sp-item"><div class="sp-c '+c+'">'+(n<cur?'&#10003;':n)+'</div><span class="sp-lbl '+l+'">'+s+'</span></div>';}).join('')+'</div>';}
 function jv(t){return'<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext">'+t+'</div></div>';}
 function snav(n){return'<div class="setup-nav">'+(n>1?'<button class="btn-white" style="flex:1;padding:11px;font-size:12px" onclick="renderStep('+(n-1)+')">&#8249; Back</button>':'')+'<button class="btn-gold" style="flex:2;padding:11px;font-size:12px" onclick="'+(n<7?'renderStep('+(n+1)+')':'finishSetup()')+'">Next &#8594;</button></div>';}
 function buildStepContent(n){
@@ -958,7 +950,7 @@ function buildStepContent(n){
   if(n===2)return jv('Your family is pre-loaded.')+`<div style="font-size:18px;font-weight:700;color:var(--white)">Family Members</div><div class="s-row"><div><div class="s-row-name">${S.profile?.name||'AJ Betancur'}</div><div class="s-row-sub">Admin · Head of household</div></div><span class="tag-gold" style="font-size:8px;padding:3px 8px">YOU</span></div><div class="s-row"><div><div class="s-row-name">Juliette Betancur</div><div class="s-row-sub">Admin · Week 13 · Due Nov 23 2026</div></div><span class="tag-purple" style="font-size:8px;padding:3px 8px">ADMIN</span></div><div class="s-row"><div><div class="s-row-name">Diana Betancur</div><div class="s-row-sub">Baby · Jan 7 2025 · 16 months</div></div><span class="tag-gray" style="font-size:8px;padding:3px 8px">BABY</span></div>`+snav(2);
   if(n===3)return jv('All 12 rooms loaded. Edit or remove any.')+`<div style="font-size:18px;font-weight:700;color:var(--white)">Your Rooms</div>${setupRooms.map((r,i)=>`<div class="s-row"><span class="s-row-name">${r}</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--green);font-weight:700">&#10003;</span><button class="btn-white-sm" onclick="editRoom(${i})">Edit</button><span class="del-x" onclick="removeRoom(${i})">&#215;</span></div></div>`).join('')}<div class="add-row" onclick="addRoom()"><span class="add-plus">+</span><span class="add-text">Add a room...</span></div>`+snav(3);
   if(n===4)return jv('Full budget pre-loaded — 18 bills, $9,100 income.')+`<div class="card" style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Monthly Income</span><span style="font-size:14px;font-weight:700;color:var(--white)">$9,100</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Total Bills</span><span style="font-size:14px;font-weight:700;color:var(--white)">$5,984</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--green)">Remaining</span><span style="font-size:14px;font-weight:700;color:var(--green)">$3,116</span></div><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;color:var(--gold)">Tithe</span><span style="font-size:12px;color:var(--white)">$100 every Sunday</span></div></div><p style="font-size:11px;color:var(--white);opacity:0.6;line-height:1.4">All 18 bills pre-loaded. Edit from Budget tab anytime.</p>`+snav(4);
-  if(n===5)return jv('Romeo, Nina, chickens, RAV4 all pre-loaded.')+`<div class="s-row" style="margin-bottom:6px"><div><div class="s-row-name">Romeo &amp; Nina &#128021;</div><div class="s-row-sub">Doberman ~3yr · Mixed ~10yr · Raw diet</div></div></div><div class="s-row" style="margin-bottom:6px"><div><div class="s-row-name">Chickens &#128020;</div><div class="s-row-sub">5 birds · Backyard</div></div></div><div class="s-row"><div><div class="s-row-name">2020 Toyota RAV4 &#128663;</div><div class="s-row-sub">118,172 mi · Oil due ~125,172</div></div></div>`+snav(5);
+  if(n===5)return jv('RAV4 pre-loaded. Add more from the Life tab.')+`<div class="s-row"><div><div class="s-row-name">2020 Toyota RAV4 &#128663;</div><div class="s-row-sub">118,172 mi · Oil due ~125,172</div></div></div>`+snav(5);
   if(n===6)return jv('3 businesses ready. Full onboarding from Business tab.')+`<div class="s-row" style="border-color:var(--green);margin-bottom:6px"><div><div class="s-row-name">ParkNest</div><div class="s-row-sub">Parking Tech · Active</div></div><span class="tag-green" style="font-size:8px;padding:2px 7px">ADDED</span></div><div class="s-row-a" style="margin-bottom:6px"><div><div class="s-row-name">Poof</div><div class="s-row-sub">Decompression App · Active</div></div><span class="tag-gold" style="font-size:8px;padding:2px 7px">ADDED</span></div><div class="s-row-o"><div><div class="s-row-name" style="opacity:0.6">Garage Airbnb</div><div class="s-row-sub" style="opacity:0.4">Short-term Rental · Pending</div></div></div>`+snav(6);
   if(n===7)return jv('Last step. Manage all users from Users tab anytime.')+`<div class="s-row" style="border-color:var(--green);margin-bottom:6px"><div><div class="s-row-name">Juliette Betancur</div><div class="s-row-sub">Admin · Full access</div></div><button class="btn-gold-sm" onclick="showSuccess('Share your Betancur OS URL with Juliette.')">Invite</button></div><div class="s-row-o" style="margin-bottom:14px"><div><div class="s-row-name" style="opacity:0.7">Babysitter</div><div class="s-row-sub" style="opacity:0.4">Diana + Chores only</div></div></div><button class="btn-gold" style="font-size:14px;padding:15px" onclick="finishSetup()">&#127881; Launch Betancur Operating System</button>`;
 }
@@ -968,9 +960,8 @@ function addRoom(){const n=prompt('New room:');if(n?.trim()){setupRooms.push(n.t
 async function seedData(){
   if(!S.household)return;
   const hid=S.household.id,uid=S.profile.id;
-  const [ec,ep,eb,ew,ev,ebiz]=await Promise.all([
+  const [ec,eb,ew,ev,ebiz]=await Promise.all([
     sb.from('chores').select('id').eq('household_id',hid).catch(()=>[]),
-    sb.from('pets').select('id').eq('household_id',hid).catch(()=>[]),
     sb.from('bills').select('id').eq('household_id',hid).catch(()=>[]),
     sb.from('workouts').select('id').eq('user_id',uid).catch(()=>[]),
     sb.from('vehicles').select('id').eq('household_id',hid).catch(()=>[]),
@@ -1012,7 +1003,6 @@ async function seedData(){
       ['TD Card',35,'debt',18,'monthly',false,'Credit'],
       ['Groceries / Household',400,'living',null,'monthly',false,'Credit'],
       ['Dining Out',400,'living',null,'monthly',false,'Credit'],
-      ['Dog Food',100,'pets',null,'monthly',false,'Credit'],
       ['Streaming',4.99,'subscriptions',10,'monthly',true,'Card'],
       ['Gifts / Birthdays',100,'misc',null,'monthly',false,'Manual'],
       ['Amex',155,'misc',10,'monthly',false,'Credit']
@@ -1020,11 +1010,6 @@ async function seedData(){
     for(const[name,amount,cat,due_day,due_type,auto_pay,src]of bills){
       await sb.from('bills').insert({household_id:hid,name,amount,category:cat,due_day,due_type,auto_pay,payment_source:src,paid:false}).catch(()=>{});
     }
-  }
-  if(!ep||!ep.length){
-    await sb.from('pets').insert({household_id:hid,name:'Romeo',type:'dogs',breed:'Doberman',age:'~3 years',diet:'Raw food',tasks:[{name:'Grooming',status:'overdue',color:'red'},{name:'Vet checkup',status:'ok',color:'green'},{name:'Food run',status:'due',color:'gold'}]}).catch(()=>{});
-    await sb.from('pets').insert({household_id:hid,name:'Nina',type:'dogs',breed:'Mixed',age:'~10 years',diet:'Raw food',tasks:[{name:'Senior vet checkup',status:'overdue',color:'red'},{name:'Grooming',status:'due',color:'gold'}]}).catch(()=>{});
-    await sb.from('pets').insert({household_id:hid,name:'Chickens',type:'chickens',breed:'Backyard flock',age:'Various',diet:'Chicken feed + scraps',tasks:[{name:'Check feed',status:'not_started',color:'gray'},{name:'Clean coop',status:'not_started',color:'gray'},{name:'Collect eggs',status:'not_started',color:'gray'}]}).catch(()=>{});
   }
   if(!ew||!ew.length){
     for(const[day,name,time,description]of[['monday','Upper Strength','10:00','Build pressing & pulling strength. Heavy compounds. Lower reps. Longer rest. Horizontal press, vertical pull, horizontal row, shoulder press.'],['tuesday','Lower Strength','10:00','Build lower body strength & posterior chain. Heavy squats, hinges, unilateral work. Lower reps. Controlled intensity.'],['wednesday','Recovery & Conditioning','10:00','Zone 2 cardio, mobility, stretching, sauna, optional abs/core. No heavy lifting. Improve conditioning & recovery.'],['thursday','Upper Hypertrophy','10:00','Build muscle size & aesthetics. Moderate reps, high volume, controlled tempo, mind-muscle connection. Chest, shoulders, back width.'],['friday','Lower Hypertrophy','10:00','Build leg size, glute development, hamstrings, athletic density. Higher volume, controlled reps, metabolic stress.'],['saturday','Athletic Performance','10:00','Stay explosive and athletic. Sprints, sled pushes, basketball, boxing, kettlebells, or circuits. Functional, lean, explosive.'],['sunday','Full Recovery','10:00','Walking, stretching, prayer, meal prep, nervous system reset. No training.']]){
@@ -1297,7 +1282,7 @@ function renderSignalNoise(){
   const pName=partner?.name?.split(' ')[0]||'Partner';
   const pItems=partner?(sn[partner.id]?.items||['','','']):null;
   const col=(name,items,mine)=>`<div class="sn-col"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="sn-col-label">${name}</span>${mine?`<button style="font-size:10px;font-weight:700;color:var(--gold);background:none;border:none;cursor:pointer;padding:0;font-family:inherit" onclick="showEditSignalNoise()">Edit</button>`:''}</div>${items.map((it,i)=>`<div class="sn-item"><span class="sn-num">${i+1}</span>${it?`<span class="sn-text">${it}</span>`:`<span class="sn-empty">Not set</span>`}</div>`).join('')}</div>`;
-  el.innerHTML=`<div style="font-size:9px;font-weight:700;color:var(--white);opacity:.4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Signal to Noise — Today's Top 3</div><div class="sn-wrap">${col(myName,myItems,true)}${pItems?`<div class="sn-divider"></div>${col(pName,pItems,false)}`:''}</div>`;
+  el.innerHTML=`<div style="font-size:9px;font-weight:700;color:var(--white);opacity:.4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Today's Focus \u2014 Top 3</div><div class="sn-wrap">${col(myName,myItems,true)}${pItems?`<div class="sn-divider"></div>${col(pName,pItems,false)}`:''}</div>`;
 }
 function showEditSignalNoise(){
   const uid=S.profile?.id||'';
@@ -1307,8 +1292,70 @@ function showEditSignalNoise(){
 function saveMySignalItems(){
   const uid=S.profile?.id||'';
   const items=[document.getElementById('sn-1')?.value?.trim()||'',document.getElementById('sn-2')?.value?.trim()||'',document.getElementById('sn-3')?.value?.trim()||''];
-  const sn=getSignalNoise();sn[uid]={items};saveSignalNoise(sn);
+  const sn=getSignalNoise();sn[uid]={items,date:getLocalDateStr()};saveSignalNoise(sn);
   closeModal();showSuccess('Top 3 saved!');renderSignalNoise();
+}
+function showSundayRitual(){
+  showModal(`<div class="sheet-handle"></div>
+    <div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Sunday Ritual</div>
+    <div class="sheet-title" style="margin-bottom:8px">Set Your Top 3</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:18px;line-height:1.5">It\u2019s Sunday. Before you continue, set the three things that matter most this week.</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field-group"><div class="field-label">1 \u2014 Most important</div><input class="field-input" id="sn-1" placeholder="What must get done this week?"></div>
+      <div class="field-group"><div class="field-label">2 \u2014 Second priority</div><input class="field-input" id="sn-2" placeholder="Next most important..."></div>
+      <div class="field-group"><div class="field-label">3 \u2014 Third priority</div><input class="field-input" id="sn-3" placeholder="One more..."></div>
+      <button class="btn-gold" onclick="saveMySignalItems()">Lock It In</button>
+    </div>`);
+}
+// NON-NEGOTIABLES (goals with streaks + creatine)
+const NN_KEY='bos_non_neg';
+function getNonNeg(){try{return JSON.parse(lsGet(NN_KEY)||'null')||{goals:[{id:'read',label:'Read',done:false},{id:'marine',label:'Marine Training',done:false},{id:'business',label:'Work on Business',done:false}],creatine:{am:false,pm:false},date:''};}catch(e){return{goals:[{id:'read',label:'Read',done:false},{id:'marine',label:'Marine Training',done:false},{id:'business',label:'Work on Business',done:false}],creatine:{am:false,pm:false},date:''};}}
+function saveNonNeg(d){const j=JSON.stringify(d);lsSet(NN_KEY,j);syncPreference('non_neg',j);}
+function resetNonNegIfNewDay(){
+  const today=getLocalDateStr();let d=getNonNeg();
+  if(d.date!==today){d.date=today;d.goals=d.goals.map(g=>({...g,done:false}));d.creatine={am:false,pm:false};saveNonNeg(d);}
+  return d;
+}
+function toggleNonNeg(id){const d=resetNonNegIfNewDay();d.goals=d.goals.map(g=>g.id===id?{...g,done:!g.done}:g);saveNonNeg(d);logNNDay();renderNonNeg();}
+function toggleCreatine(slot){const d=resetNonNegIfNewDay();d.creatine[slot]=!d.creatine[slot];saveNonNeg(d);renderNonNeg();}
+function getNNStreak(id){
+  // Count consecutive days this goal was done before today
+  let streak=0,date=new Date(getTZ());date.setDate(date.getDate()-1);
+  for(let i=0;i<365;i++){const ds=getLocalDateStr(date);try{const all=JSON.parse(localStorage.getItem(NN_KEY+'_log')||'{}');if(all[ds]&&all[ds][id])streak++;else break;}catch(e){break;}date.setDate(date.getDate()-1);}
+  return streak;
+}
+function logNNDay(){
+  // Called after any toggle to persist daily log for streak tracking
+  const today=getLocalDateStr();const d=getNonNeg();if(d.date!==today)return;
+  try{const log=JSON.parse(localStorage.getItem(NN_KEY+'_log')||'{}');log[today]={};d.goals.forEach(g=>{log[today][g.id]=g.done;});localStorage.setItem(NN_KEY+'_log',JSON.stringify(log));}catch(e){}
+}
+function renderNonNeg(){
+  const el=document.getElementById('non-negotiables-card');if(!el)return;
+  const d=resetNonNegIfNewDay();
+  const goalRows=d.goals.map(g=>`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07)" onclick="toggleNonNeg('${g.id}')">
+    <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid ${g.done?'var(--green)':'rgba(255,255,255,.2)'};background:${g.done?'var(--green)':'transparent'};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center">
+      ${g.done?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </div>
+    <span style="font-size:14px;font-weight:600;color:${g.done?'rgba(255,255,255,.35)':'var(--white)'};${g.done?'text-decoration:line-through':''}flex:1;cursor:pointer">${g.label}</span>
+  </div>`).join('');
+  const creatRow=(slot,label)=>`<div style="display:flex;align-items:center;gap:12px;padding:7px 0${slot==='am'?';border-bottom:0.5px solid rgba(255,255,255,.07)':''}" onclick="toggleCreatine('${slot}')">
+    <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid ${d.creatine[slot]?'var(--blue)':'rgba(255,255,255,.15)'};background:${d.creatine[slot]?'var(--blue)':'transparent'};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center">
+      ${d.creatine[slot]?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </div>
+    <span style="font-size:13px;font-weight:500;color:${d.creatine[slot]?'rgba(255,255,255,.35)':'rgba(255,255,255,.6)'};${d.creatine[slot]?'text-decoration:line-through':''}cursor:pointer">Creatine ${label}</span>
+  </div>`;
+  const doneGoals=d.goals.filter(g=>g.done).length,totalGoals=d.goals.length;
+  const doneCr=(d.creatine.am?1:0)+(d.creatine.pm?1:0);
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Non-Negotiables</span>
+      <span style="font-size:10px;color:rgba(255,255,255,.4)">${doneGoals}/${totalGoals} done</span>
+    </div>
+    ${goalRows}
+    <div style="margin-top:10px;padding-top:6px;border-top:0.5px solid rgba(255,255,255,.1)">
+      <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Creatine · ${doneCr}/2</div>
+      ${creatRow('am','AM')}${creatRow('pm','PM')}
+    </div>`;
 }
 function _setStatus(who,val){localStorage.setItem(who+'_status',val);syncPreference(who+'_status',val);closeModal();renderHome();}
 function toggleAJStatus(){const s=localStorage.getItem('aj_status')||'home';const ns=s==='home'?'work':'home';localStorage.setItem('aj_status',ns);syncPreference('aj_status',ns);renderHome();}
@@ -1324,12 +1371,11 @@ function setupNav(){
     health:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
     business:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
     life:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12m0 0C12 7 7 5 3 7c4 0 9 2 9 5zm0 0c0-3 5-5 9-5-4 2-9 2-9 5"/></svg>`,
-    minutes:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    minutes:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
     schedule:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    grocery:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
     users:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
   };
-  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','Minutes'],['schedule','Schedule'],['users','Users']];
+  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','War Room'],['schedule','Schedule'],['users','Users']];
   const savedOrder=JSON.parse(localStorage.getItem('bos_nav_order')||'[]');
   let navs=savedOrder.length?savedOrder.map(id=>DEFAULT_NAVS.find(([nid])=>nid===id)).filter(Boolean):DEFAULT_NAVS.slice();
   DEFAULT_NAVS.forEach(n=>{if(!navs.find(([id])=>id===n[0]))navs.push(n);});
@@ -1394,16 +1440,15 @@ function go(sec){
 }
 async function loadAll(){
   if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
-  const[chores,bills,pets,vehicles,businesses,activity,diana]=await Promise.all([
+  const[chores,bills,vehicles,businesses,activity,diana]=await Promise.all([
     sb.from('chores').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('bills').select('*').eq('household_id',hid).catch(()=>[]),
-    sb.from('pets').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('vehicles').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('businesses').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('activity_feed').select('*').eq('household_id',hid).catch(()=>[]),
     sb.from('diana_health').select('*').eq('household_id',hid).then(r=>r?.[0]||null).catch(()=>null),
   ]);
-  Object.assign(S.data,{chores,bills,pets,vehicles,businesses,activity,diana});
+  Object.assign(S.data,{chores,bills,vehicles,businesses,activity,diana});
   const[workouts,wlogs,supps,slogs,meetings,users,tithe,savings]=await Promise.all([
     sb.from('workouts').select('*').eq('user_id',uid).catch(()=>[]),
     sb.from('workout_logs').select('*').eq('user_id',uid).catch(()=>[]),
@@ -1544,6 +1589,7 @@ async function loadAll(){
       if(key==='daily_checklist')localStorage.setItem(DCL_KEY,value);
       if(key==='signal_noise')localStorage.setItem('bos_signal_noise',value);
       if(key==='daily_rules')localStorage.setItem(RULES_KEY,value);
+      if(key==='non_neg')lsSet(NN_KEY,value);
       if(key.startsWith('biz_ext_')){const bid=key.replace('biz_ext_','');localStorage.setItem('bos_biz_ext_'+bid,value);}
       // bills_reset_month is already user-prefixed via lsGet/lsSet — nothing extra needed
     });
@@ -1572,11 +1618,6 @@ function migrateLocalToSupabase(){
   // Anchors
   const localAnchors=lsGet('bos_anchors');
   if(localAnchors&&!hasKey('anchors'))syncPreference('anchors',localAnchors);
-  // Spiritual
-  const localBooks=lsGet('bos_spiritual_books');
-  if(localBooks&&!hasKey('spiritual_books'))syncPreference('spiritual_books',localBooks);
-  const localSNotes=lsGet('bos_spiritual_notes');
-  if(localSNotes&&!hasKey('spiritual_notes'))syncPreference('spiritual_notes',localSNotes);
   // Income
   const localAJInc=localStorage.getItem('aj_income');
   if(localAJInc&&!hasKey('aj_income'))syncPreference('aj_income',localAJInc);
@@ -1593,6 +1634,9 @@ function migrateLocalToSupabase(){
   // Daily rules
   const localRules=lsGet(RULES_KEY)||localStorage.getItem(RULES_KEY);
   if(localRules&&!hasKey('daily_rules'))syncPreference('daily_rules',localRules);
+  // Non-Negotiables
+  const localNN=lsGet(NN_KEY);
+  if(localNN&&!hasKey('non_neg'))syncPreference('non_neg',localNN);
   // Business ext data (revenue, expenses, clients)
   (S.data.businesses||[]).forEach(b=>{
     const extData=localStorage.getItem('bos_biz_ext_'+b.id);
@@ -1687,19 +1731,15 @@ function renderHome(){
   const pu1=adminUsers[0],pu2=adminUsers[1];
   const pn1=pu1?.name?.split(' ')[0]||'AJ',pn2=pu2?.name?.split(' ')[0]||'Partner';
   const isMe1=pu1?.id===S.profile?.id,isMe2=pu2?.id===S.profile?.id;
-document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">${pn1}${isMe1?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">${pn2}${isMe2?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
+  document.getElementById('pulse-strip').innerHTML=`<div class="pulse-person" onclick="toggleAJStatus()" style="cursor:pointer"><div class="pulse-name">${pn1}${isMe1?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${ajStatus==='work'?'At Work':'At Home'}</div></div><div class="pulse-person" onclick="toggleJulStatus()" style="cursor:pointer"><div class="pulse-name">${pn2}${isMe2?' <span style="font-size:7px;opacity:0.5">(you)</span>':''}</div><div class="pulse-status"><span class="sdot dot-g"></span>${julStatus==='work'?'At Work':'At Home'}</div></div>`;
   const day=now.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
   const _todayD=now.getDate();
   const _isEffPaid=b=>b.paid||(b.auto_pay&&(!b.due_day||_todayD>=b.due_day));
-  const today=getLocalDateStr(),wof=getWeekOf(now);
-  const wofP=wof.split('-');const wofBase=new Date(parseInt(wofP[0]),parseInt(wofP[1])-1,parseInt(wofP[2]));
-  const dots=['M','T','W','T','F','S','S'].map((d,i)=>{const dt=new Date(wofBase.getFullYear(),wofBase.getMonth(),wofBase.getDate()+i);const ds=getLocalDateStr(dt);const logged=(S.data.workout_logs||[]).some(l=>l.logged_date===ds);const isT=ds===today,isR=i>=5;return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${isR&&!logged?'s-rest':logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;}).join('');
-  document.getElementById('home-streak').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;cursor:pointer" onclick="go('health')"><span style="font-size:10px;font-weight:700;color:var(--white)">Workout Streak</span><button class="check-btn" onclick="logWorkout()">\u2713 Log today</button></div><div class="streak-row">${dots}</div>`;
   const bills=S.data.bills||[],ov=bills.filter(b=>!_isEffPaid(b)&&billSt(b)==='overdue').length;
-  const acts=S.data.activity||[];
-  document.getElementById('home-activity').innerHTML=acts.length?acts.slice(0,4).map(a=>`<div class="feed-row" style="cursor:pointer" onclick="openActivityDetail()"><span class="fwho">${(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone'}</span><span class="fwhat"> ${a.action}</span><span class="fwhen">${fmt(a.created_at)}</span></div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No activity yet</span></div>';
-  const rems=(S.data.reminders||[]).filter(r=>!r.done).slice(0,3);
-  renderDailyRules();renderDailyChecklist();renderDayNotes();renderSignalNoise();document.getElementById('home-reminders').innerHTML=rems.length?rems.map(r=>`<div class="ri" style="cursor:pointer" onclick="go('schedule')"><span class="rdot"></span><span class="rtext">${r.text}</span>${r.due_date?`<span class="rtime">${fmt(r.due_date)}</span>`:''}</div>`).join(''):'<div class="ri"><span class="rtext" style="opacity:0.4">No reminders</span></div>';
+  renderNonNeg();
+  renderSignalNoise();
+  // Sunday Signal/Noise ritual
+  if(day==='sunday'){const uid=S.profile?.id||'';const sn=getSignalNoise();const myItems=sn[uid]?.items||[];const snDate=sn[uid]?.date||'';const today=getLocalDateStr();if(snDate!==today&&myItems.every(i=>!i)){showSundayRitual();}}
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
@@ -2799,209 +2839,7 @@ async function savePregAppt(){
   try{await sb.from('diana_health').update({preg_appointments}).eq('id',diana.id);S.data.diana={...diana,preg_appointments};closeModal();showSuccess('OB appointment added!');renderPregnancy(document.getElementById('health-content'));}
   catch(e){showError(e.message);}
 }
-function renderHomeSpirit(){
-  const el=document.getElementById('home-spirit');if(!el)return;
-  const uid=S.profile?.id||'';
-  // Merge Supabase activity + local-cached encouragements for resilient display
-  const localEncs=JSON.parse(lsGet('bos_encs')||'[]');
-  const acts=[...(S.data.activity||[]),...localEncs];
-  const seen=new Set();
-  const encs=acts.filter(a=>a.section==='spirit').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).filter(a=>{const k=a.created_at+a.user_id;return seen.has(k)?false:(seen.add(k),true);}).slice(0,5);
-  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
-  const readCount=books.filter(b=>b.read).length;
-
-  const encHTML=encs.length
-    ?encs.map(a=>{
-        const sender=(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone';
-        const isMe=a.user_id===uid;
-        return`<div style="padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'}">
-          <div style="max-width:85%;background:${isMe?'var(--gold)':'var(--bg-dark)'};border:0.5px solid var(--border);border-radius:10px;padding:8px 11px">
-            <div style="font-size:11px;color:${isMe?'#1a1a1a':'var(--white)'};line-height:1.4">${(a.item_name||'').replace(/^sent encouragement: /,'')}</div>
-            <div style="font-size:9px;opacity:0.5;margin-top:3px;color:${isMe?'#1a1a1a':'var(--white)'}">${sender} · ${fmt(a.created_at)}</div>
-          </div>
-        </div>`;
-      }).join('')
-    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:6px 0">No messages yet. Send the first word of encouragement!</div>`;
-
-  el.innerHTML=`<div class="card" style="padding:12px">
-    <div id="spirit-enc-feed" style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px;max-height:160px;overflow-y:auto">${encHTML}</div>
-    <div style="display:flex;gap:8px">
-      <input id="home-enc-input" class="field-input" style="flex:1;padding:8px 10px;font-size:12px" placeholder="Send a scripture or word of encouragement...">
-      <button class="btn-gold-sm" onclick="sendHomeEncouragement()">Send</button>
-    </div>
-    ${books.length?`<div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">&#128218; Books (${readCount}/${books.length} read)</div>
-      ${books.slice(0,3).map((b,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
-        <div class="chk ${b.read?'checked':''}" onclick="toggleSpiritBook(${i});renderHomeSpirit()" style="cursor:pointer;width:18px;height:18px;flex-shrink:0">${b.read?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div>
-        <span style="font-size:12px;color:var(--white);${b.read?'opacity:0.4;text-decoration:line-through':''}">${b.title}</span>
-      </div>`).join('')}
-      <button class="btn-white-sm" style="margin-top:6px" onclick="showAddSpiritBook()">+ Add Book</button>
-    </div>`:'<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)"><button class="btn-white-sm" onclick="showAddSpiritBook()">&#128218; Track a book</button></div>'}
-  </div>`;
-}
-async function sendHomeEncouragement(){
-  const input=document.getElementById('home-enc-input');
-  const text=input?.value?.trim();if(!text)return;
-  // Save locally immediately — works without Supabase
-  const newEntry={user_id:S.profile?.id,action:'sent encouragement: '+text,section:'spirit',item_name:text,created_at:new Date().toISOString(),household_id:S.household?.id};
-  S.data.activity=[newEntry,...(S.data.activity||[])];
-  const localEncs=JSON.parse(lsGet('bos_encs')||'[]');localEncs.unshift(newEntry);lsSet('bos_encs',JSON.stringify(localEncs.slice(0,30)));
-  input.value='';renderHomeSpirit();showSuccess('Sent!');
-  // Background sync to Supabase (silent fail)
-  try{await logActivity('sent encouragement: '+text,'spirit',text);}catch(e){}
-}
-// SPIRITUAL
-function renderSpiritual(c){
-  const uid=S.profile?.id||'';
-  const myName=(S.profile?.name||'').split(' ')[0]||'You';
-  const partnerUser=(S.data.users||[]).find(u=>u.id!==uid&&u.role==='admin');
-  const partnerName=partnerUser?.name?.split(' ')[0]||'Spouse';
-
-  // Load per-user books and notes from syncPreference (stored in localStorage)
-  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
-  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
-
-  // Load encouragements from activity table (category='spirit')
-  const acts=S.data.activity||[];
-  const encouragements=acts.filter(a=>a.category==='spirit').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,10);
-
-  const bookHTML=books.length
-    ?books.map((b,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
-        <div class="chk ${b.read?'checked':''}" onclick="toggleSpiritBook(${i})" style="cursor:pointer;flex-shrink:0">${b.read?'<span style="color:var(--white);font-size:11px;font-weight:700">&#10003;</span>':''}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;color:var(--white);font-weight:${b.read?'400':'600'};${b.read?'opacity:0.5;text-decoration:line-through':''}">${b.title}</div>
-          ${b.author?`<div style="font-size:10px;color:var(--gold);opacity:0.7">${b.author}</div>`:''}
-          ${b.notes?`<div style="font-size:10px;color:var(--white);opacity:0.5;margin-top:2px;font-style:italic">"${b.notes}"</div>`:''}
-        </div>
-        <span class="del-x" onclick="deleteSpiritBook(${i})">&#215;</span>
-      </div>`).join('')
-    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No books tracked yet.</div>`;
-
-  const notesHTML=notes.length
-    ?notes.slice(0,5).map((n,i)=>`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:10px;color:var(--gold);font-weight:700">${n.date}</span>
-          <span class="del-x" onclick="deleteSpiritNote(${i})">&#215;</span>
-        </div>
-        <div style="font-size:12px;color:var(--white);opacity:0.85;margin-top:4px;line-height:1.5">${n.text}</div>
-      </div>`).join('')
-    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No notes yet.</div>`;
-
-  const encHTML=encouragements.length
-    ?encouragements.map(a=>{
-        const sender=(S.data.users||[]).find(u=>u.id===a.user_id)?.name?.split(' ')[0]||'Someone';
-        return`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)">
-          <div style="display:flex;justify-content:space-between">
-            <span style="font-size:10px;font-weight:700;color:var(--gold)">${sender}</span>
-            <span style="font-size:9px;color:var(--white);opacity:0.4">${fmt(a.created_at)}</span>
-          </div>
-          <div style="font-size:12px;color:var(--white);opacity:0.85;margin-top:3px;line-height:1.5">${(a.action||'').replace(/^sent encouragement: /,'')}</div>
-        </div>`;
-      }).join('')
-    :`<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px 0">No encouragements yet. Send the first one!</div>`;
-
-  c.innerHTML=`
-    <div class="jcard" onclick="openJarvisCtx('Give me a scripture or encouragement for today.')" style="cursor:pointer">
-      <div class="jlabel">Jarvis &mdash; Faith</div>
-      <div class="jtext">Tap for a scripture, prayer idea, or spiritual encouragement for today.</div>
-      <div class="jcta">Ask Jarvis &#8594;</div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-size:14px;font-weight:700;color:var(--white)">&#128218; Books</span>
-      <button class="btn-gold-sm" onclick="showAddSpiritBook()">+ Add Book</button>
-    </div>
-    <div class="card" style="margin-bottom:4px">${bookHTML}</div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;margin-top:4px">
-      <span style="font-size:14px;font-weight:700;color:var(--white)">&#128221; Notes &amp; Prayer</span>
-      <button class="btn-gold-sm" onclick="showAddSpiritNote()">+ Add Note</button>
-    </div>
-    <div class="card" style="margin-bottom:4px">${notesHTML}</div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;margin-top:4px">
-      <span style="font-size:14px;font-weight:700;color:var(--white)">&#9993; Encouragement</span>
-      <button class="btn-gold-sm" onclick="showSendEncouragement('${partnerName}')">Send to ${partnerName}</button>
-    </div>
-    <div class="card">${encHTML}</div>
-  `;
-}
-function showAddSpiritBook(){
-  showModal(`<div class="sheet-handle"></div>
-    <div class="sheet-title">Add Book</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div class="field-group"><div class="field-label">Book Title</div><input class="field-input" id="sb-title" placeholder="e.g. The Purpose Driven Life"></div>
-      <div class="field-group"><div class="field-label">Author (optional)</div><input class="field-input" id="sb-author" placeholder="e.g. Rick Warren"></div>
-      <div class="field-group"><div class="field-label">Notes (optional)</div><input class="field-input" id="sb-notes" placeholder="e.g. Currently reading, chapter 3..."></div>
-      <button class="btn-gold" onclick="saveSpiritBook()">Add Book</button>
-    </div>`);
-}
-function saveSpiritBook(){
-  const title=document.getElementById('sb-title')?.value?.trim();
-  if(!title){showError('BOS-DATA-001');return;}
-  const author=document.getElementById('sb-author')?.value?.trim()||'';
-  const notes=document.getElementById('sb-notes')?.value?.trim()||'';
-  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
-  books.unshift({title,author,notes,read:false,added:getLocalDateStr()});
-  lsSet('bos_spiritual_books',JSON.stringify(books));
-  syncPreference('spiritual_books',JSON.stringify(books));
-  closeModal();showSuccess('Book added!');renderHomeSpirit();
-}
-function toggleSpiritBook(i){
-  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
-  if(!books[i])return;
-  books[i].read=!books[i].read;
-  lsSet('bos_spiritual_books',JSON.stringify(books));
-  syncPreference('spiritual_books',JSON.stringify(books));
-  renderHomeSpirit();
-}
-function deleteSpiritBook(i){
-  const books=JSON.parse(lsGet('bos_spiritual_books')||'[]');
-  books.splice(i,1);
-  lsSet('bos_spiritual_books',JSON.stringify(books));
-  syncPreference('spiritual_books',JSON.stringify(books));
-  renderHomeSpirit();
-}
-function showAddSpiritNote(){
-  showModal(`<div class="sheet-handle"></div>
-    <div class="sheet-title">Add Note / Prayer</div>
-    <textarea class="field-input" id="sn-text" style="min-height:100px;resize:none;margin-bottom:12px" placeholder="Write a prayer, reflection, or note..."></textarea>
-    <button class="btn-gold" onclick="saveSpiritNote()">Save Note</button>`);
-}
-function saveSpiritNote(){
-  const text=document.getElementById('sn-text')?.value?.trim();
-  if(!text){showError('BOS-DATA-001');return;}
-  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
-  notes.unshift({date:getLocalDateStr(),text});
-  lsSet('bos_spiritual_notes',JSON.stringify(notes));
-  syncPreference('spiritual_notes',JSON.stringify(notes));
-  closeModal();showSuccess('Note saved!');renderHomeSpirit();
-}
-function deleteSpiritNote(i){
-  const notes=JSON.parse(lsGet('bos_spiritual_notes')||'[]');
-  notes.splice(i,1);
-  lsSet('bos_spiritual_notes',JSON.stringify(notes));
-  syncPreference('spiritual_notes',JSON.stringify(notes));
-  renderHomeSpirit();
-}
-function showSendEncouragement(partnerName){
-  if(!partnerName){const uid=S.profile?.id||'';const pu=(S.data.users||[]).find(u=>u.id!==uid&&u.role==='admin');partnerName=pu?.name?.split(' ')[0]||'Spouse';}
-  showModal(`<div class="sheet-handle"></div>
-    <div class="sheet-title">Send to ${partnerName}</div>
-    <textarea class="field-input" id="enc-text" style="min-height:90px;resize:none;margin-bottom:12px" placeholder="A scripture, prayer, or word of encouragement..."></textarea>
-    <button class="btn-gold" onclick="sendEncouragement()">Send &#9825;</button>`);
-}
-async function sendEncouragement(){
-  const text=document.getElementById('enc-text')?.value?.trim();
-  if(!text){showError('BOS-DATA-001');return;}
-  try{
-    await logActivity('sent encouragement: '+text,'spirit',text);
-    const newEntry={user_id:S.profile?.id,action:'sent encouragement: '+text,section:'spirit',item_name:text,created_at:new Date().toISOString(),household_id:S.household?.id};
-    S.data.activity=[newEntry,...(S.data.activity||[])];
-    closeModal();showSuccess('Encouragement sent!');
-    renderHomeSpirit();
-  }catch(e){showError(e.message);}
-}
+function renderHomeSpirit(){return;}
 // BUSINESS COMMAND CENTER
 // revenue, expenses, clients stored in localStorage (not Supabase schema columns)
 function getBizExt(b){
@@ -3463,7 +3301,7 @@ async function delBiz(id){if(!confirm('Delete this business? Cannot be undone.')
 function editBizModal(id){const b=(S.data.businesses||[]).find(x=>x.id===id);if(!b)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Business</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ebn" value="${b.name}"></div><div class="field-group"><div class="field-label">Type</div><input class="field-input" id="ebt" value="${b.type}"></div><div class="field-group"><div class="field-label">Stage</div><select class="field-input" id="ebs"><option value="idea" ${b.stage==='idea'?'selected':''}>Idea</option><option value="setup" ${b.stage==='setup'?'selected':''}>Setup</option><option value="active" ${b.stage==='active'?'selected':''}>Active</option><option value="scaling" ${b.stage==='scaling'?'selected':''}>Scaling</option></select></div><button class="btn-gold" onclick="updBiz('${id}')">Save</button><button class="btn-red-outline" style="margin-top:4px" onclick="delBiz('${id}')">Delete Business</button></div>`);}
 async function updBiz(id){const name=document.getElementById('ebn')?.value?.trim(),type=document.getElementById('ebt')?.value?.trim(),stage=document.getElementById('ebs')?.value;if(!name||!type){showError('BOS-DATA-001');return;}try{const upd={name,type,stage};await sb.from('businesses').update(upd).eq('id',id);S.data.businesses=S.data.businesses.map(b=>b.id===id?{...b,...upd}:b);closeModal();showSuccess('Saved!');renderBusiness();}catch(e){showError(e.message);}}
 // LIFE
-function renderLife(){if(S.currentLifeTab==='pets'||!S.currentLifeTab)S.currentLifeTab='recipes';switchLTab(S.currentLifeTab);}
+function renderLife(){if(!S.currentLifeTab)S.currentLifeTab='recipes';switchLTab(S.currentLifeTab);}
 function switchLifeTab(t){switchLTab(t);}
 function switchLTab(tab){
   S.currentLifeTab=tab;
@@ -3472,48 +3310,6 @@ function switchLTab(tab){
   if(tab==='vehicles')renderVehicles(c);
   else if(tab==='recipes')renderRecipes(c);
 }
-function renderPets(c){
-  const pets=S.data.pets||[];
-  const petEmoji=(type)=>type==='dogs'?'&#128021;':type==='chickens'?'&#128020;':type==='cats'?'&#128049;':'&#128048;';
-  c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext">Romeo and Nina may be overdue for grooming. Nina is ~10 — senior vet checkup every 6 months recommended. Chicken coop check is due.</div><div class="jcta" onclick="openJarvisCtx('pet care advice for 2 dogs and backyard chickens')">Ask Jarvis &#8594;</div></div>`+
-  (pets.length?pets.map(p=>{
-    const emoji=petEmoji(p.type);
-    const subtitle=[p.breed,p.age,p.diet].filter(Boolean).join(' · ');
-    const tasks=p.tasks||[];
-    const overdueCount=tasks.filter(t=>t.status==='overdue').length;
-    return`<div class="pet-card">
-      <div class="pet-hdr">
-        <div style="flex:1">
-          <div class="pet-name">${emoji} ${p.name}</div>
-          <div class="pet-sub">${subtitle||p.type}</div>
-          ${overdueCount>0?`<div style="font-size:9px;color:var(--red);font-weight:700;margin-top:3px">⚠ ${overdueCount} task${overdueCount>1?'s':''} overdue</div>`:''}
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn-white-sm" onclick="editPet('${p.id}')">Edit</button>
-          <span class="del-x" onclick="delPet('${p.id}')">&#215;</span>
-        </div>
-      </div>
-      <div style="background:var(--bg-dark);border-radius:8px;padding:8px 10px;margin:6px 0">
-        ${tasks.length?tasks.map(t=>`<div class="pet-task">
-          <div class="ptdot" style="background:${t.color==='red'?'var(--red)':t.color==='green'?'var(--green)':'var(--gold)'}"></div>
-          <span class="ptname">${t.name}</span>
-          <div class="ptsub" style="color:${t.color==='red'?'var(--red)':t.color==='green'?'var(--green)':'var(--gold)'}">${t.status==='overdue'?'Overdue':t.status==='due'?'Due this week':t.status==='ok'?'Done ✔':'Pending'}</div>
-          ${t.status!=='ok'?`<button class="check-btn" onclick="donePetTask('${p.id}','${t.name}')">Done</button>`:''}
-        </div>`).join(''):`<div style="font-size:11px;color:var(--white);opacity:0.4">No tasks yet.</div>`}
-        <div class="add-item-row" style="margin-top:6px" onclick="addPetTask('${p.id}')"><span class="add-item-plus">+</span><span class="add-item-text">Add task...</span></div>
-      </div>
-    </div>`;
-  }).join(''):`<div class="card"><div style="text-align:center;opacity:0.4;font-size:13px;padding:12px">No pets yet.</div></div>`)+
-  `<button class="btn-gold-outline" onclick="addPet()">+ Add Animal</button>`;
-}
-async function donePetTask(pid,tname){const p=(S.data.pets||[]).find(x=>x.id===pid);if(!p)return;const tasks=(p.tasks||[]).map(t=>t.name===tname?{...t,status:'ok',color:'green'}:t);try{await sb.from('pets').update({tasks}).eq('id',pid);S.data.pets=S.data.pets.map(x=>x.id===pid?{...x,tasks}:x);showSuccess('Done!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
-function addPetTask(pid){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Pet Task</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Task</div><input class="field-input" id="pt-n" placeholder="e.g. Vet visit..."></div><button class="btn-gold" onclick="savePetTask('${pid}')">Add</button></div>`);}
-async function savePetTask(pid){const name=document.getElementById('pt-n')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}const p=(S.data.pets||[]).find(x=>x.id===pid);if(!p)return;const tasks=[...(p.tasks||[]),{name,status:'not_started',color:'gray'}];try{await sb.from('pets').update({tasks}).eq('id',pid);S.data.pets=S.data.pets.map(x=>x.id===pid?{...x,tasks}:x);closeModal();renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
-function addPet(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Add Animal</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ap-n" placeholder="e.g. Max..."></div><div class="field-group"><div class="field-label">Type</div><select class="field-input" id="ap-t"><option value="dogs">Dog</option><option value="cats">Cat</option><option value="chickens">Chickens</option><option value="other">Other</option></select></div><div class="field-group"><div class="field-label">Breed</div><input class="field-input" id="ap-b" placeholder="e.g. Doberman..."></div><div class="field-group"><div class="field-label">Age</div><input class="field-input" id="ap-a" placeholder="e.g. 3 years..."></div><div class="field-group"><div class="field-label">Diet</div><input class="field-input" id="ap-d" placeholder="e.g. Raw food..."></div><button class="btn-gold" onclick="savePet()">Add</button></div>`);}
-async function savePet(){const name=document.getElementById('ap-n')?.value?.trim(),type=document.getElementById('ap-t')?.value,breed=document.getElementById('ap-b')?.value?.trim(),age=document.getElementById('ap-a')?.value?.trim(),diet=document.getElementById('ap-d')?.value?.trim();if(!name||!type){showError('BOS-DATA-001');return;}try{const r=await sb.from('pets').insert({household_id:S.household.id,name,type,breed,age,diet,tasks:[]});if(r?.[0])S.data.pets.push(r[0]);closeModal();showSuccess('Added!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
-async function delPet(id){if(!confirm('Remove?'))return;try{await sb.from('pets').delete().eq('id',id);S.data.pets=S.data.pets.filter(p=>p.id!==id);renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
-function editPet(id){const p=(S.data.pets||[]).find(x=>x.id===id);if(!p)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit ${p.name}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Name</div><input class="field-input" id="ep-n" value="${p.name}"></div><div class="field-group"><div class="field-label">Diet</div><input class="field-input" id="ep-d" value="${p.diet||''}"></div><button class="btn-gold" onclick="updPet('${id}')">Save</button></div>`);}
-async function updPet(id){const name=document.getElementById('ep-n')?.value?.trim(),diet=document.getElementById('ep-d')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{await sb.from('pets').update({name,diet}).eq('id',id);S.data.pets=S.data.pets.map(p=>p.id===id?{...p,name,diet}:p);closeModal();showSuccess('Saved!');renderPets(document.getElementById('life-content'));}catch(e){showError(e.message);}}
 function renderVehicles(c){
   const vs=S.data.vehicles||[];
   c.innerHTML=`<div class="jcard"><div class="jlabel">Jarvis</div><div class="jtext" id="vj-text">Checking vehicle status...</div><div class="jcta" onclick="openJarvisCtx('vehicle maintenance schedule')">Ask Jarvis &#8594;</div></div>`+vs.map(v=>{const nl=(v.last_oil_mileage||0)+(v.oil_change_interval||7000),ml=nl-(v.current_mileage||0),pct=Math.min(100,Math.round(((v.current_mileage-(v.last_oil_mileage||0))/(v.oil_change_interval||7000))*100));return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:var(--white)">${v.year} ${v.make} ${v.model} &#128663;</div><div style="font-size:10px;color:var(--gold);margin-top:1px">${(v.current_mileage||0).toLocaleString()} mi current</div></div><div style="display:flex;gap:6px"><button class="btn-white-sm" onclick="editVeh('${v.id}')">Edit</button><span class="del-x" onclick="delVeh('${v.id}')" style="font-size:16px;line-height:1">&#215;</span></div></div><div style="background:var(--bg-dark);border-radius:8px;padding:8px 10px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;color:var(--gold);font-weight:700">Next Oil Change</span><span style="font-size:10px;font-weight:700;color:var(--white)">~${nl.toLocaleString()} mi</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%;background:${ml<=0?'var(--red)':ml<=1000?'var(--gold)':'var(--gold)'}"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6">${ml>0?ml.toLocaleString()+' miles remaining':'Overdue \u2014 schedule now'}</div></div><div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">Service History</div>${(v.service_records||[]).map(r=>`<div class="sv-row"><div class="sdb"><div class="sdb-mo">${r.date?new Date(r.date).toLocaleDateString('en-US',{month:'short'}).toUpperCase():'N/A'}</div><div class="sdb-day">${r.date?new Date(r.date).getDate():''}</div></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${r.description}</div>${r.mileage?`<div style="font-size:10px;color:var(--gold)">${r.mileage.toLocaleString()} mi</div>`:''}</div></div>`).join('')}<button class="btn-gold-outline" style="margin-top:8px" onclick="addSvc('${v.id}')">+ Add Service Record</button></div>`;}).join('');
@@ -3533,9 +3329,54 @@ function addRec(){showModal(`<div class="sheet-handle"></div><div class="sheet-t
 async function saveRec(){const name=document.getElementById('ar-n')?.value?.trim(),cat=document.getElementById('ar-c')?.value,time=document.getElementById('ar-t')?.value?.trim(),serves=parseInt(document.getElementById('ar-s')?.value)||4,ing=document.getElementById('ar-i')?.value?.trim().split('\n').filter(Boolean),inst=document.getElementById('ar-in')?.value?.trim();if(!name){showError('BOS-DATA-001');return;}try{const r=await sb.from('recipes').insert({household_id:S.household.id,name,category:cat,prep_time:time,serves,ingredients:ing,instructions:inst});if(r?.[0])S.data.recipes.push(r[0]);closeModal();showSuccess('Recipe added!');renderRecipes(document.getElementById('life-content'));}catch(e){showError(e.message);}}
 async function delRec(id){if(!confirm('Delete?'))return;try{await sb.from('recipes').delete().eq('id',id);S.data.recipes=S.data.recipes.filter(r=>r.id!==id);renderRecipes(document.getElementById('life-content'));}catch(e){showError(e.message);}}
 function viewRec(id){const r=(S.data.recipes||[]).find(x=>x.id===id);if(!r)return;showModal(`<div class="sheet-handle"></div><div class="sheet-title">${r.name}</div><div style="font-size:11px;color:var(--gold);margin-bottom:12px">${r.category} \u00b7 ${r.prep_time||''} \u00b7 Serves ${r.serves||4}</div>${r.ingredients?.length?`<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">Ingredients</div><ul style="padding-left:16px;display:flex;flex-direction:column;gap:4px">${r.ingredients.map(i=>`<li style="font-size:12px;color:var(--white)">${i}</li>`).join('')}</ul>`:''}<div style="height:12px"></div>${r.instructions?`<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">Instructions</div><div style="font-size:12px;color:var(--white);line-height:1.6;white-space:pre-line">${r.instructions}</div>`:''}<button class="btn-gold" style="margin-top:16px" onclick="closeModal()">Done</button>`);}
-// MINUTES
-function renderMinutes(){const meetings=S.data.meetings||[];const filtered=S.meetingFilter==='all'?meetings:meetings.filter(m=>m.category===S.meetingFilter||(S.meetingFilter==='shared'&&m.shared));const openA=meetings.flatMap(m=>(m.action_items||[]).filter(a=>!a.done));document.getElementById('minutes-jarvis-text').textContent=openA.length?openA.length+' open action item'+(openA.length>1?'s':'')+' across your meetings.':'No open action items. All clear.';const filters=[['all','All'],['business','Business'],['ministry','Ministry'],['personal','Personal'],['family','Family'],['shared','Shared']];document.getElementById('meetings-filter').innerHTML=filters.map(([k,l])=>`<div style="padding:4px 10px;border-radius:12px;background:${S.meetingFilter===k?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${S.meetingFilter===k?'var(--gold)':'var(--border)'};cursor:pointer;font-size:10px;font-weight:700;color:${S.meetingFilter===k?'var(--gd)':'var(--white)'}" onclick="setMF('${k}')">${l}</div>`).join('');document.getElementById('meetings-list').innerHTML=filtered.length?filtered.map(m=>{const own=m.owner_id===S.profile.id||m.shared;return`<div class="meet-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div style="flex:1;padding-right:8px"><div class="meet-title">${m.title}</div><div class="meet-meta">${fmt(m.meeting_date)} \u00b7 ${m.attendees||''}</div></div><div style="display:flex;gap:4px"><span class="tag tag-gray" style="font-size:7px">${(m.category||'personal').toUpperCase()}</span>${m.shared?'<span style="font-size:8px;color:var(--green);font-weight:700">SHARED</span>':''}</div></div>${m.notes?`<div class="meet-notes">${m.notes}</div>`:''}<div class="meet-ah">Action Items</div>${(m.action_items||[]).map(a=>`<div class="ai"><div class="chk ${a.done?'checked':''}" onclick="${own?'togAI(\''+m.id+'\',\''+a.id+'\')':''}" style="cursor:${own?'pointer':'default'}">${a.done?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:11px;color:var(--white);${a.done?'text-decoration:line-through;opacity:0.5;':''}flex:1">${a.text}</span></div>`).join('')}<div class="meet-btns">${own?`<button class="btn-white-sm" onclick="editMtg('${m.id}')">Edit</button>`:''}<button class="btn-white-sm" onclick="openJarvisCtx('Summarize this meeting and extract key decisions: Title: ${m.title}. Notes: ${(m.notes||'').slice(0,200)}')">Jarvis</button>${own?`<span class="del-x" onclick="delMtg('${m.id}')">&#215;</span>`:''}</div></div>`;}).join(''):'<div class="card"><div class="card-main" style="opacity:0.4;text-align:center">No meetings in this category.</div></div>';}
+// WAR ROOM
+const WR_COUNSELORS=[
+  {name:'Solomon',trait:'Wisdom',role:'Discernment, judgment, the long view on what lasts.'},
+  {name:'Myron Golden',trait:'Faith \u2192 Business',role:'Biblical truth into wealth, offers, and business.'},
+  {name:'Tony Robbins',trait:'Patterns',role:'The thinking behind behavior, emotion, and results.'},
+  {name:'David Goggins',trait:'Grit',role:'Brutal honesty. Callusing the mind.'},
+  {name:'Huberman',trait:'Evidence',role:'What the body and brain actually say.'},
+  {name:'Jacob',trait:'Leadership',role:'Identity transformation. Won\u2019t let go until blessed.'},
+];
+function renderMinutes(){
+  const meetings=S.data.meetings||[];
+  const openA=meetings.flatMap(m=>(m.action_items||[]).filter(a=>!a.done));
+  const jt=document.getElementById('minutes-jarvis-text');
+  if(jt)jt.textContent=openA.length?openA.length+' open commitment'+(openA.length>1?'s':'')+' across your sessions.':'No open commitments. Clear.';
+  const cc=document.getElementById('war-room-counselors');
+  if(cc)cc.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">${WR_COUNSELORS.map(c=>`<div style="background:var(--bg-dark);border:0.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;active:opacity:0.7" onclick="callCounselor('${c.name}')"><div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:2px">${c.name}</div><div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${c.trait}</div><div style="font-size:10px;color:rgba(255,255,255,.45);line-height:1.4">${c.role}</div></div>`).join('')}</div><div style="font-size:9px;color:rgba(255,255,255,.3);text-align:center;margin-bottom:2px">Tap a seat to call on them directly</div>`;
+  const f=S.meetingFilter||'all';
+  const filters=[['all','All'],['life','Life'],['business','Business'],['faith','Faith'],['leadership','Leadership'],['personal','Personal']];
+  document.getElementById('meetings-filter').innerHTML=filters.map(([k,l])=>`<div style="padding:4px 10px;border-radius:12px;background:${f===k?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${f===k?'var(--gold)':'var(--border)'};cursor:pointer;font-size:10px;font-weight:700;color:${f===k?'var(--gd)':'var(--white)'}" onclick="setMF('${k}')">${l}</div>`).join('');
+  const filtered=f==='all'?meetings:meetings.filter(m=>m.category===f);
+  document.getElementById('meetings-list').innerHTML=filtered.length?filtered.map(m=>{const own=m.owner_id===S.profile.id||m.shared;return`<div class="meet-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="flex:1;padding-right:8px"><div class="meet-title">${m.title}</div><div class="meet-meta">${fmt(m.meeting_date)}</div></div><span class="tag tag-gray" style="font-size:7px">${(m.category||'personal').toUpperCase()}</span></div>${m.notes?`<div class="meet-notes">${m.notes}</div>`:''}<div class="meet-ah">Commitments</div>${(m.action_items||[]).map(a=>`<div class="ai"><div class="chk ${a.done?'checked':''}" onclick="${own?'togAI(\''+m.id+'\',\''+a.id+'\')':''}" style="cursor:${own?'pointer':'default'}">${a.done?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:11px;color:var(--white);${a.done?'text-decoration:line-through;opacity:0.5;':''}flex:1">${a.text}</span></div>`).join('')}<div class="meet-btns">${own?`<button class="btn-white-sm" onclick="editMtg('${m.id}')">Edit</button>`:''}<button class="btn-white-sm" onclick="openJarvisCtx('I brought this to The War Room: ${m.title}. Notes: ${(m.notes||'').slice(0,200)}. What do my counselors say now?')">Jarvis</button>${own?`<span class="del-x" onclick="delMtg('${m.id}')">&#215;</span>`:''}</div></div>`;}).join(''):`<div class="card"><div class="card-main" style="opacity:0.4;text-align:center;padding:12px">No sessions yet. Tap "Enter Room" to bring your first question.</div></div>`;
+}
 function setMF(f){S.meetingFilter=f;renderMinutes();}
+function callCounselor(name){openJarvisCtx('I am entering The War Room. I am calling on '+name+' specifically. Speak to me in your voice \u2014 in character, no disclaimers. Bring your full wisdom and honesty. Here is my situation: ');}
+function openWarRoomSession(){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Enter The War Room</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5">Bring your question. The council will speak. Jesus sits above the table.</div>
+    <div class="field-group"><div class="field-label">What are you bringing to the room?</div>
+    <textarea class="field-input" id="wr-question" rows="4" style="resize:none;min-height:90px" placeholder="A decision, a struggle, a question about life, business, leadership, or faith..."></textarea></div>
+    <div class="field-group" style="margin-top:12px"><div class="field-label">Category</div>
+    <select class="field-input" id="wr-cat"><option value="life">Life</option><option value="business">Business</option><option value="faith">Faith</option><option value="leadership">Leadership</option><option value="personal">Personal</option></select></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-gold" style="flex:2" onclick="openRoomWithQuestion()">Open the Room</button>
+      <button class="btn-white" style="flex:1" onclick="saveRoomSession()">Log Only</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('wr-question')?.focus(),80);
+}
+function openRoomWithQuestion(){
+  const q=document.getElementById('wr-question')?.value?.trim();if(!q){showError('BOS-DATA-001');return;}
+  const ctx='I am entering The War Room \u2014 my personal council of advisors modeled on Napoleon Hill\u2019s Think and Grow Rich. My counselors are: Solomon (wisdom and discernment), Myron Golden (relating biblical principles to business and wealth), Tony Robbins (thought patterns and behavior), David Goggins (raw grit and brutal honesty), Andrew Huberman (evidence-based science), and Jacob (leadership and unrelenting commitment). Jesus sits above the table \u2014 all counsel is weighed against Him. My question for the room: '+q;
+  closeModal();openJarvisCtx(ctx);
+}
+async function saveRoomSession(){
+  const q=document.getElementById('wr-question')?.value?.trim();if(!q){showError('BOS-DATA-001');return;}
+  const cat=document.getElementById('wr-cat')?.value||'personal';
+  try{const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile.id,shared:false,title:q,meeting_date:getLocalDateStr(),attendees:'The War Room',category:cat,notes:'',action_items:[]});if(r?.[0])S.data.meetings.unshift(r[0]);closeModal();showSuccess('Session logged!');renderMinutes();}catch(e){showError(e.message);}
+}
 async function togAI(mid,aid){const m=(S.data.meetings||[]).find(x=>x.id===mid);if(!m)return;const ai=(m.action_items||[]).map(a=>a.id===aid?{...a,done:!a.done}:a);try{await sb.from('meetings').update({action_items:ai}).eq('id',mid);S.data.meetings=S.data.meetings.map(x=>x.id===mid?{...x,action_items:ai}:x);renderMinutes();}catch(e){showError(e.message);}}
 function showAddMeeting(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">New Meeting</div><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px"><div id="own-mine" style="flex:1;background:var(--gold);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('mine')"><div style="font-size:13px;font-weight:700;color:var(--gd)">Mine</div></div><div id="own-shared" style="flex:1;background:var(--bg-dark);border:0.5px solid var(--blue);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="selOwner('shared')"><div style="font-size:13px;font-weight:700;color:var(--blue)">Both</div></div></div><input type="hidden" id="nm-own" value="mine"><div class="field-group"><div class="field-label">Title</div><input class="field-input" id="nm-title" placeholder="e.g. ParkNest sync..."></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="nm-date" type="date" value="${getLocalDateStr()}"></div><div class="field-group"><div class="field-label">Attendees</div><input class="field-input" id="nm-att" placeholder="e.g. AJ, Investor..."></div><div class="field-group"><div class="field-label">Category</div><select class="field-input" id="nm-cat"><option value="business">Business</option><option value="ministry">Ministry</option><option value="personal">Personal</option><option value="family">Family</option></select></div><div class="field-group"><div class="field-label">Notes</div><textarea class="field-input" id="nm-notes" rows="3" style="resize:none;min-height:60px" placeholder="Key points..."></textarea></div><button class="btn-gold" onclick="saveMtg()">Save Meeting</button></div>`);}
 function selOwner(v){document.getElementById('nm-own').value=v;document.getElementById('own-mine').style.background=v==='mine'?'var(--gold)':'var(--bg-dark)';document.getElementById('own-shared').style.background=v==='shared'?'transparent':'var(--bg-dark)';}
@@ -3591,7 +3432,7 @@ function renderUsers(){
         <span style="font-size:9px;font-weight:700;background:var(--gold);color:var(--gd);padding:2px 8px;border-radius:5px">ADMIN</span>
         <span style="font-size:12px;font-weight:700;color:var(--white)">Full Access</span>
       </div>
-      <div style="font-size:11px;color:var(--white);opacity:0.5;line-height:1.7">Home · Chores · Budget · Health · Business · Life · Minutes · Schedule · Grocery · Users · Jarvis</div>
+      <div style="font-size:11px;color:var(--white);opacity:0.5;line-height:1.7">Home · Chores · Budget · Health · Business · Life · War Room · Schedule · Users · Jarvis</div>
     </div>
     <div style="padding:10px 0 4px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
@@ -3616,7 +3457,7 @@ function showInviteUser(){showModal(`<div class="sheet-handle"></div>
 function manageU(id){
   const u=(S.data.users||[]).find(x=>x.id===id);
   if(!u)return;
-  const sees=u.role==='admin'?'Everything — Home, Chores, Budget, Health, Business, Life, Minutes, Schedule, Grocery, Users, Jarvis':u.role==='babysitter'?"Diana's schedule and assigned chores only":'Limited access';
+  const sees=u.role==='admin'?'Everything — Home, Chores, Budget, Health, Business, Life, War Room, Schedule, Users, Jarvis':u.role==='babysitter'?"Diana's schedule and assigned chores only":'Limited access';
   showModal(`<div class="sheet-handle"></div>
     <div class="sheet-title">${u.name}</div>
     <div style="font-size:11px;color:var(--white);opacity:0.5;margin-bottom:12px">@${u.username}</div>
