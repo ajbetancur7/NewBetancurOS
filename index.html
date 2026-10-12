@@ -1445,6 +1445,7 @@ async function loadAll(){
         // Income values are household-shared — sync from partner in case they updated it
         if(key==='aj_income')localStorage.setItem('aj_income',value);
         if(key==='jul_income')localStorage.setItem('jul_income',value);
+        if(key==='biz_budget_income')localStorage.setItem('bos_biz_budget_income',value);
         // Status — sync partner's at-home/at-work indicator
         if(key==='aj_status')localStorage.setItem('aj_status',value);
         if(key==='jul_status')localStorage.setItem('jul_status',value);
@@ -1506,6 +1507,7 @@ async function loadAll(){
       if(key==='prs')localStorage.setItem('bos_prs',value);
       if(key==='aj_income')localStorage.setItem('aj_income',value);
       if(key==='jul_income')localStorage.setItem('jul_income',value);
+      if(key==='biz_budget_income')localStorage.setItem('bos_biz_budget_income',value);
       if(key==='aj_status')localStorage.setItem('aj_status',value);
       if(key==='jul_status')localStorage.setItem('jul_status',value);
       if(key==='miami_data'){try{const m=JSON.parse(value);if(m.lastUpdated&&!S.data.miami?.lastUpdated){localStorage.setItem(MIAMI_KEY,value);S.data.miami=m;}}catch(e){}}
@@ -1551,6 +1553,8 @@ function migrateLocalToSupabase(){
   if(localAJInc&&!hasKey('aj_income'))syncPreference('aj_income',localAJInc);
   const localJulInc=localStorage.getItem('jul_income');
   if(localJulInc&&!hasKey('jul_income'))syncPreference('jul_income',localJulInc);
+  const localBizBudget=localStorage.getItem('bos_biz_budget_income');
+  if(localBizBudget&&!hasKey('biz_budget_income'))syncPreference('biz_budget_income',localBizBudget);
   // Daily checklist
   const localChecklist=lsGet('bos_daily_checklist')||localStorage.getItem(DCL_KEY);
   if(localChecklist&&!hasKey('daily_checklist'))syncPreference('daily_checklist',localChecklist);
@@ -1741,10 +1745,25 @@ function editIncomeModal(who){
 }
 function saveIncome(key){
   const val=parseInt(document.getElementById('inc-val')?.value);
-  if(!val||val<=0){showError('BOS-DATA-001');return;}
-  localStorage.setItem(key,val.toString());
-  syncPreference(key,val.toString());
+  if(isNaN(val)||val<0){showError('BOS-DATA-001');return;}
+  localStorage.setItem(key,String(val));
+  syncPreference(key,String(val));
   closeModal();showSuccess('Income updated!');renderBudget();
+}
+// ─── BUSINESS INCOME (Budget Overview) ───
+function getBizBudgetIncome(){try{return JSON.parse(localStorage.getItem('bos_biz_budget_income')||'{}');}catch(e){return{};}}
+function saveBizBudgetIncome(data){const j=JSON.stringify(data);localStorage.setItem('bos_biz_budget_income',j);syncPreference('biz_budget_income',j);}
+function getBizMTDRevenue(biz){const now=getTZ();const m=now.toISOString().slice(0,7);const bx=getBizExt(biz);return(bx.revenue||[]).filter(r=>r.date&&r.date.startsWith(m)).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);}
+function getBizIncomeTotal(){const cfg=getBizBudgetIncome();return(S.data.businesses||[]).reduce((sum,b)=>{const c=cfg[b.id]||{mode:'auto'};if(c.mode==='off')return sum;return sum+(c.mode==='manual'?(c.amount||0):getBizMTDRevenue(b));},0);}
+function editBizIncomeModal(bizId){
+  const b=(S.data.businesses||[]).find(x=>x.id===bizId);if(!b)return;
+  const cfg=getBizBudgetIncome();const c=cfg[bizId]||{mode:'auto'};const mtd=getBizMTDRevenue(b);
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${b.name} — Budget Income</div><div style="font-size:11px;color:var(--white);opacity:.6;margin-bottom:12px">This month's logged revenue: $${mtd.toLocaleString()}</div><div style="display:flex;flex-direction:column;gap:12px"><div class="field-group"><div class="field-label">Include in Budget As</div><select class="field-input" id="bim-mode" onchange="document.getElementById('bim-manual-row').style.display=this.value==='manual'?'block':'none'"><option value="auto"${c.mode==='auto'?' selected':''}>Auto — use this month's logged revenue</option><option value="manual"${c.mode==='manual'?' selected':''}>Manual — enter a fixed monthly amount</option><option value="off"${c.mode==='off'?' selected':''}>Exclude from budget total</option></select></div><div id="bim-manual-row" style="display:${c.mode==='manual'?'block':'none'}"><div class="field-group"><div class="field-label">Fixed Monthly Amount ($)</div><input class="field-input" id="bim-amt" type="number" min="0" value="${c.amount||0}"></div></div><button class="btn-gold" onclick="saveBizIncomeMode('${bizId}')">Save</button></div>`);
+}
+function saveBizIncomeMode(bizId){
+  const mode=document.getElementById('bim-mode')?.value||'auto';
+  const amount=parseInt(document.getElementById('bim-amt')?.value||'0')||0;
+  const cfg=getBizBudgetIncome();cfg[bizId]={mode,amount};saveBizBudgetIncome(cfg);closeModal();showSuccess('Updated!');renderBudget();
 }
 function checkMonthlyBillReset(){
   const now=getTZ();
@@ -1772,10 +1791,10 @@ function checkMonthlyBillReset(){
 function renderBudget(){
   checkMonthlyBillReset();
   const now=getTZ();document.getElementById('budget-month-label').textContent=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  // Dynamic income: AJ income (editable) + Juliette fixed $4550
   const ajIncome=parseInt(localStorage.getItem('aj_income')||'4550');
   const julietteIncome=parseInt(localStorage.getItem('jul_income')||'4550');
-  const income=ajIncome+julietteIncome;
+  const bizIncome=getBizIncomeTotal();
+  const income=ajIncome+julietteIncome+bizIncome;
   const bills=S.data.bills||[],total=bills.reduce((s,b)=>s+(b.amount||0),0);
   const todayDayNum=getTZ().getDate();
   // Count auto-pay bills past due date as effectively paid
@@ -1783,7 +1802,9 @@ function renderBudget(){
   const paidA=effectivePaidBills.reduce((s,b)=>s+(b.amount||0),0);
   const paidCount=effectivePaidBills.length;
   const rem=income-total,pct=Math.min(100,Math.round((paidA/total)*100));
-  document.getElementById('budget-summary').innerHTML=`<div class="mini-card" style="border-left-color:var(--gold);grid-column:1/-1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="slabel">Household Income</div><div class="sval">$${income.toLocaleString()}</div></div><div style="display:flex;gap:8px"><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('aj')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">AJ &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${ajIncome.toLocaleString()}</div></div><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('juliette')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">Juliette &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${julietteIncome.toLocaleString()}</div></div></div></div><div class="mini-card"><div class="slabel">Total Bills</div><div class="sval">$${total.toFixed(0)}</div><div class="ssub">${bills.length} bills</div></div><div class="mini-card" style="border-left-color:var(--green)"><div class="slabel" style="color:var(--green)">Remaining</div><div class="sval sval-g">$${rem.toFixed(0)}</div><div class="ssub">After bills</div></div><div class="mini-card"><div class="slabel">Paid</div><div class="sval">${paidCount}/${bills.length}</div><div class="ssub">This month</div></div>`;
+  const _bzCfg=getBizBudgetIncome();const _bizList=S.data.businesses||[];
+  const bizSectionHTML=_bizList.length?`<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:5px">BUSINESS INCOME${bizIncome>0?' · $'+bizIncome.toLocaleString():''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${_bizList.map(bz=>{const c=_bzCfg[bz.id]||{mode:'auto'};const amt=c.mode==='manual'?(c.amount||0):getBizMTDRevenue(bz);const tag=c.mode==='off'?'OFF':c.mode==='manual'?'MANUAL':'AUTO';const tc=c.mode==='off'?'rgba(255,255,255,.3)':c.mode==='manual'?'var(--gold)':'var(--green)';return`<div style="flex:1;min-width:120px;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editBizIncomeModal('${bz.id}')"><div style="font-size:9px;font-weight:700;margin-bottom:2px;color:var(--white)">${bz.name} <span style="color:${tc}">[${tag}]</span> <span style="color:var(--gold)">&#9998;</span></div><div style="font-size:14px;font-weight:700;color:${c.mode==='off'?'rgba(255,255,255,.3)':amt>0?'var(--green)':'var(--white)'}">$${amt.toLocaleString()}</div></div>`;}).join('')}</div></div>`:'';
+  document.getElementById('budget-summary').innerHTML=`<div class="mini-card" style="border-left-color:var(--gold);grid-column:1/-1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="slabel">Total Income</div><div class="sval">$${income.toLocaleString()}</div></div><div style="display:flex;gap:8px"><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('aj')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">AJ &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${ajIncome.toLocaleString()}</div></div><div style="flex:1;background:var(--bg-dark);border-radius:8px;padding:7px 10px;cursor:pointer;border:0.5px solid var(--border)" onclick="editIncomeModal('juliette')"><div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:2px">Juliette &#9998;</div><div style="font-size:14px;font-weight:700;color:var(--white)">$${julietteIncome.toLocaleString()}</div></div></div>${bizSectionHTML}</div><div class="mini-card"><div class="slabel">Total Bills</div><div class="sval">$${total.toFixed(0)}</div><div class="ssub">${bills.length} bills</div></div><div class="mini-card" style="border-left-color:var(--green)"><div class="slabel" style="color:var(--green)">Remaining</div><div class="sval sval-g">$${rem.toFixed(0)}</div><div class="ssub">After bills</div></div><div class="mini-card"><div class="slabel">Paid</div><div class="sval">${paidCount}/${bills.length}</div><div class="ssub">This month</div></div>`;
   document.getElementById('budget-progress').innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-weight:700;color:var(--gold)">Bills Progress</span><span style="font-size:11px;font-weight:700;color:var(--white)">$${paidA.toFixed(0)} / $${total.toFixed(0)}</span></div><div class="pb-bg"><div class="pb" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--white);opacity:0.6;margin-top:3px">${pct}% of bills paid</div></div>`;
   document.getElementById('budget-categories').innerHTML='';
   const sundays=getSundays(now.getFullYear(),now.getMonth());const titheRecs=S.data.tithe||[];
