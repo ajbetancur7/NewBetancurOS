@@ -2160,12 +2160,91 @@ function logDietProtein(){const val=parseFloat(document.getElementById('diet-pro
 function viewDietDay(date){const dl=JSON.parse(lsGet('bos_diet_log')||'{}');const e=dl[date]||{};const dc={clean:'var(--green)',partial:'var(--gold)',off:'var(--red)'};const dl2=['clean','partial','off'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">${date}</div><div style="display:flex;flex-direction:column;gap:14px"><div><div class="field-label">Discipline</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">${dl2.map(k=>`<div onclick="setDietDiscDate('${date}','${k}')" class="disc-btn" style="border-color:${e.discipline===k?dc[k]:'rgba(255,255,255,.1)'};background:${e.discipline===k?dc[k]+'22':'var(--bg-dark)'}"><div style="font-size:11px;font-weight:700;color:${e.discipline===k?dc[k]:'rgba(255,255,255,.5)'}">${{clean:'\u2713 Clean',partial:'\u007e Almost',off:'\u2717 Off Plan'}[k]}</div></div>`).join('')}</div></div><div><div class="field-label">Protein (g)</div><div style="display:flex;gap:7px;margin-top:6px"><input class="field-input" id="ddp" type="number" value="${e.protein||''}" placeholder="grams" style="flex:1"><button class="btn-gold-sm" onclick="saveDietDayP('${date}')">Save</button></div></div></div>`);}
 function setDietDiscDate(date,s){const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),discipline:s};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderTraining(document.getElementById('health-content'));}
 function saveDietDayP(date){const v=parseFloat(document.getElementById('ddp')?.value)||0;const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),protein:v};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderTraining(document.getElementById('health-content'));}
-function showLogTraining(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Session</div><div style="display:flex;flex-direction:column;gap:14px"><div class="field-group"><div class="field-label">Type</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:6px">${['Marine Run','Gym','Open Water','HIIT','Walk','Other'].map(t=>`<div class="train-type" onclick="selTrainType(this,'${t}')">${t}</div>`).join('')}</div><input type="hidden" id="lt-type" value=""></div><div class="field-group"><div class="field-label">Duration (optional)</div><input class="field-input" id="lt-dur" placeholder="e.g. 45 min, 3 miles"></div><div class="field-group"><div class="field-label">Energy Level</div><div style="display:flex;gap:6px;margin-top:6px">${[1,2,3,4,5].map(n=>`<div class="energy-btn" id="le-${n}" onclick="selEnergy(${n})">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n]}</div>`).join('')}<input type="hidden" id="lt-energy" value="3"></div></div><div class="field-group"><div class="field-label">Notes (optional)</div><textarea class="field-input" id="lt-notes" rows="3" style="resize:none" placeholder="What did you do? PRs? How did it feel?"></textarea></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="lt-date" type="date" value="${getLocalDateStr()}"></div><button class="btn-gold" onclick="saveTrainingSession()">Log Session</button></div>`);setTimeout(()=>selEnergy(3),80);}
-function selTrainType(el,type){document.querySelectorAll('.train-type').forEach(b=>{b.classList.remove('selected');});el.classList.add('selected');document.getElementById('lt-type').value=type;}
-function selEnergy(n){document.getElementById('lt-energy').value=n;for(let i=1;i<=5;i++){const el=document.getElementById('le-'+i);if(el)el.classList.toggle('selected',i===n);}}
-async function saveTrainingSession(){const type=document.getElementById('lt-type')?.value||'Training';const dur=document.getElementById('lt-dur')?.value?.trim()||'';const energy=parseInt(document.getElementById('lt-energy')?.value||'3');const notes=document.getElementById('lt-notes')?.value?.trim()||'';const date=document.getElementById('lt-date')?.value||getLocalDateStr();const tl=JSON.parse(lsGet('bos_training_log')||'[]');const idx=tl.findIndex(l=>l.date===date&&l.type===type);const entry={date,type,duration:dur,energy,notes,logged:new Date().toISOString()};if(idx>=0)tl[idx]=entry;else tl.unshift(entry);lsSet('bos_training_log',JSON.stringify(tl.slice(0,90)));if(!(S.data.workout_logs||[]).some(l=>l.logged_date===date)){try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:date});if(r?.[0])S.data.workout_logs=[...(S.data.workout_logs||[]),...r];}catch(e){}}closeModal();showSuccess('Session logged!');renderHealth();if((type==='Marine Run'||type==='Open Water')&&date===getLocalDateStr()){const d=getNonNeg();const marine=d.goals.find(g=>g.id==='marine');if(marine&&!marine.done)toggleNonNeg('marine');}}
+function showLogTraining(prefillDate){
+  const date=prefillDate||getLocalDateStr();
+  const tz=getTZ();
+  const dayLabel=tz.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  showModal(`<div class="sheet-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Log Session</div>
+      <input id="lt-date" type="date" value="${date}" style="background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 8px;color:var(--white);font-size:11px;font-weight:600">
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:14px">${dayLabel}</div>
+    <div style="position:relative;margin-bottom:14px">
+      <textarea id="lt-freeform" rows="7" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;color:var(--white);font-size:14px;line-height:1.6;resize:none;font-family:inherit;box-sizing:border-box" placeholder="Write what you did today — Jarvis will figure out the rest.
+
+e.g. &quot;Marine run 3.1 miles, strong pace. 50 pull-ups after. Hit a new PR on mile time — 7:42. Felt like a 9/10.&quot;"></textarea>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px">How was your energy?</div>
+      <div style="display:flex;gap:7px">
+        ${[1,2,3,4,5].map(n=>`<div class="energy-btn" id="le-${n}" onclick="selEnergy(${n})" style="flex:1;padding:10px 0;border-radius:10px;text-align:center;font-size:20px;cursor:pointer;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n]}</div>`).join('')}
+        <input type="hidden" id="lt-energy" value="3">
+      </div>
+    </div>
+    <button id="lt-analyze-btn" onclick="analyzeAndSaveSession()" style="width:100%;padding:16px;background:var(--gold);color:var(--gd);font-size:15px;font-weight:700;border:none;border-radius:13px;cursor:pointer;letter-spacing:.02em">
+      ✦ Log with Jarvis
+    </button>
+    <div style="text-align:center;margin-top:10px">
+      <span onclick="quickSaveSession()" style="font-size:11px;color:rgba(255,255,255,.3);cursor:pointer;text-decoration:underline">Skip AI — quick save</span>
+    </div>`);
+  setTimeout(()=>{selEnergy(3);document.getElementById('lt-freeform')?.focus();},80);
+}
+function selEnergy(n){document.getElementById('lt-energy').value=n;for(let i=1;i<=5;i++){const el=document.getElementById('le-'+i);if(el){el.classList.toggle('selected',i===n);el.style.borderColor=i===n?'var(--gold)':'rgba(255,255,255,.1)';el.style.background=i===n?'rgba(232,188,80,.15)':'rgba(255,255,255,.04)';}}}
+async function doSaveTrainingSession(date,type,duration,energy,notes,isMarine){
+  const tl=JSON.parse(lsGet('bos_training_log')||'[]');
+  const entry={date,type,duration,energy,notes,logged:new Date().toISOString()};
+  const idx=tl.findIndex(l=>l.date===date&&l.type===type);
+  if(idx>=0)tl[idx]=entry;else tl.unshift(entry);
+  lsSet('bos_training_log',JSON.stringify(tl.slice(0,90)));
+  if(!(S.data.workout_logs||[]).some(l=>l.logged_date===date)){
+    try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:date});if(r?.[0])S.data.workout_logs=[...(S.data.workout_logs||[]),...r];}catch(e){}
+  }
+  if(isMarine&&date===getLocalDateStr()){const d=getNonNeg();const marine=d.goals.find(g=>g.id==='marine');if(marine&&!marine.done)toggleNonNeg('marine');}
+}
+async function analyzeAndSaveSession(){
+  const text=(document.getElementById('lt-freeform')?.value||'').trim();
+  const energy=parseInt(document.getElementById('lt-energy')?.value||'3');
+  const date=document.getElementById('lt-date')?.value||getLocalDateStr();
+  if(!text){showError('BOS-DATA-001');return;}
+  const btn=document.getElementById('lt-analyze-btn');
+  if(btn){btn.disabled=true;btn.textContent='Jarvis is reading your session\u2026';}
+  const jmem=lsGet('bos_jarvis_memory')||'';
+  const extractPrompt=`You extract structured training data from session notes. Return ONLY valid JSON — no explanation, no markdown, just the JSON object.
+${jmem?'Jarvis memory about this athlete: '+jmem:''}
+Return this exact shape:
+{"type":"Marine Run"|"Gym"|"Open Water"|"HIIT"|"Walk"|"Other","duration":"<distance or time string, empty if not mentioned>","energy":<1-5>,"notes":"<full cleaned notes from what they wrote, keep all details>","is_marine":<true if Marine Run or Open Water>}
+Rules: run/miles/running=Marine Run; swimming/water=Open Water; gym/weights/lift=Gym; energy 1=dead 2=rough 3=ok 4=strong 5=fire. If they describe energy in text, use that instead of their button. Keep all PR info and workout details in notes.`;
+  try{
+    const r=await fetch(JARVIS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:text}],context:{_system_override:extractPrompt}})});
+    const d=await r.json();
+    let parsed={};
+    try{const m=(d.content?.[0]?.text||'').match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);}catch(e){}
+    const type=parsed.type||'Other';
+    const dur=parsed.duration||'';
+    const eng=parsed.energy||energy;
+    const notes=parsed.notes||text;
+    const isMarine=parsed.is_marine||false;
+    await doSaveTrainingSession(date,type,dur,eng,notes,isMarine);
+    closeModal();
+    showSuccess(type+' logged \u2714');
+    renderHealth();
+  }catch(e){
+    // Fallback: save raw notes with user's energy
+    await doSaveTrainingSession(date,'Other','',energy,text,false);
+    closeModal();showSuccess('Session logged \u2714');renderHealth();
+  }
+}
+async function quickSaveSession(){
+  const text=(document.getElementById('lt-freeform')?.value||'').trim();
+  const energy=parseInt(document.getElementById('lt-energy')?.value||'3');
+  const date=document.getElementById('lt-date')?.value||getLocalDateStr();
+  await doSaveTrainingSession(date,'Other','',energy,text||'Quick session',false);
+  closeModal();showSuccess('Session logged \u2714');renderHealth();
+}
+function saveTrainingSession(){analyzeAndSaveSession();}
 function showTrainingHistory(){const logs=S.data.workout_logs||[];const tl=JSON.parse(lsGet('bos_training_log')||'[]');const today=new Date(getTZ());const days=Array.from({length:30},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()-(29-i));const ds=getLocalDateStr(d);return{date:ds,isLogged:logs.some(l=>l.logged_date===ds),detail:tl.find(l=>l.date===ds),dayNum:d.getDate(),dow:d.getDay()};});const firstDow=days[0].dow;const spacers=Array(firstDow).fill('<div></div>').join('');const calHTML=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">${['S','M','T','W','T','F','S'].map(d=>`<div style="text-align:center;font-size:8px;color:rgba(255,255,255,.3);font-weight:700;padding-bottom:2px">${d}</div>`).join('')}${spacers}${days.map(d=>`<div onclick="viewTrainingDay('${d.date}')" class="tr-cal-day" style="background:${d.isLogged?'rgba(76,175,130,.25)':d.date===getLocalDateStr()?'rgba(232,188,80,.08)':'rgba(255,255,255,.04)'};border:0.5px solid ${d.isLogged?'var(--green)':d.date===getLocalDateStr()?'rgba(232,188,80,.3)':'transparent'}"><span style="font-size:10px;font-weight:700;color:${d.isLogged?'var(--green)':'rgba(255,255,255,.4)'}">${d.dayNum}</span>${d.detail?`<span style="font-size:6px;color:var(--green)">${d.detail.type?.slice(0,3)||''}</span>`:''}</div>`).join('')}</div><div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:12px">Tap any day to view or log a session</div>`;showModal(`<div class="sheet-handle"></div><div class="sheet-title">Training History — ${days.filter(d=>d.isLogged).length} sessions / 30 days</div>${calHTML}<div class="card">${tl.length?tl.slice(0,15).map(l=>`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext" style="flex:1">${l.type||'Training'}${l.duration?' \u00b7 '+l.duration:''}${l.energy?' '+['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][l.energy]:''}</span><span class="rtime">${fmt(l.date)}</span></div>`).join(''):'<div style="font-size:12px;opacity:.4;padding:8px">No detailed logs yet.</div>'}</div>`,true);}
-function viewTrainingDay(date){const tl=JSON.parse(lsGet('bos_training_log')||'[]');const e=tl.find(l=>l.date===date)||{};showModal(`<div class="sheet-handle"></div><div class="sheet-title">${date}</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px">${e.type||'No session logged yet'}</div>${e.type?`<div class="card"><div style="display:flex;gap:12px;flex-wrap:wrap"><span style="font-size:12px;color:var(--gold)">${e.type}</span>${e.duration?`<span style="font-size:11px;color:rgba(255,255,255,.5)">${e.duration}</span>`:''}${e.energy?`<span style="font-size:14px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][e.energy]}</span>`:''}</div>${e.notes?`<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;line-height:1.5">${e.notes}</div>`:''}</div>`:''}<button class="btn-gold" style="width:100%;margin-top:10px" onclick="closeModal();document.getElementById('lt-date')?.setAttribute('value','${date}');showLogTraining()">Log Session for This Day</button>`);}
+function viewTrainingDay(date){const tl=JSON.parse(lsGet('bos_training_log')||'[]');const e=tl.find(l=>l.date===date)||{};showModal(`<div class="sheet-handle"></div><div class="sheet-title">${date}</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px">${e.type||'No session logged yet'}</div>${e.type?`<div class="card"><div style="display:flex;gap:12px;flex-wrap:wrap"><span style="font-size:12px;color:var(--gold)">${e.type}</span>${e.duration?`<span style="font-size:11px;color:rgba(255,255,255,.5)">${e.duration}</span>`:''}${e.energy?`<span style="font-size:14px">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][e.energy]}</span>`:''}</div>${e.notes?`<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;line-height:1.5">${e.notes}</div>`:''}</div>`:''}<button class="btn-gold" style="width:100%;margin-top:10px" onclick="closeModal();showLogTraining('${date}')">Log Session for This Day</button>`);}
 function showTrainingSettings(){const goal=lsGet('bos_main_goal')||'';const rules=lsGet('bos_nutrition_rules')||'';const fasting=lsGet('bos_fasting')||'';const jmem=lsGet('bos_jarvis_memory')||'';const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');showModal(`<div class="sheet-handle"></div><div class="sheet-title">Goals &amp; Jarvis Memory</div><div style="display:flex;flex-direction:column;gap:14px"><div class="field-group"><div class="field-label">My Main Goal</div><textarea class="field-input" id="ts-goal" rows="3" style="resize:none" placeholder="e.g. Cut to 195 lbs while maintaining strength...">${esc(goal)}</textarea><button class="btn-gold-sm" style="margin-top:6px" onclick="saveTSField('goal','bos_main_goal','main_goal','ts-goal')">Save Goal</button></div><div class="field-group"><div class="field-label">Jarvis Memory</div><textarea class="field-input" id="ts-mem" rows="4" style="resize:none" placeholder="Tell Jarvis what he should always know about your training...">${esc(jmem)}</textarea><button class="btn-gold-sm" style="margin-top:6px" onclick="saveTSField('Jarvis Memory','bos_jarvis_memory','jarvis_memory','ts-mem')">Save Memory</button></div><div class="field-group"><div class="field-label">Nutrition Rules</div><textarea class="field-input" id="ts-rules" rows="3" style="resize:none" placeholder="No processed sugar, 180g protein...">${esc(rules)}</textarea><button class="btn-gold-sm" style="margin-top:6px" onclick="saveTSField('Rules','bos_nutrition_rules','nutrition_rules','ts-rules')">Save Rules</button></div><div class="field-group"><div class="field-label">Fasting Schedule</div><textarea class="field-input" id="ts-fast" rows="2" style="resize:none" placeholder="16:8 \u2014 eat 12pm\u20138pm...">${esc(fasting)}</textarea><button class="btn-gold-sm" style="margin-top:6px" onclick="saveTSField('Schedule','bos_fasting','fasting','ts-fast')">Save Schedule</button></div></div>`,true);}
 function saveTSField(label,lsKey2,prefKey,inputId){const v=document.getElementById(inputId)?.value?.trim()||'';lsSet(lsKey2,v);syncPreference(prefKey,v);showSuccess(label+' saved!');}
 // NN history
