@@ -1,5 +1,3 @@
-const https = require('https');
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,7 +10,6 @@ module.exports = async (req, res) => {
 
   const ctx = context || {};
 
-  // Build workout history section
   const workoutNotes = ctx.workout_notes_by_day && typeof ctx.workout_notes_by_day === 'object'
     ? Object.entries(ctx.workout_notes_by_day).map(([day, notes]) => `  ${day}: ${notes}`).join('\n')
     : (ctx.workout_notes_by_day || 'No workout notes logged yet');
@@ -119,37 +116,40 @@ RULES:
 - The action block will be hidden from the user — they will see an "Execute" button to confirm it`;
 
   const finalSystem = ctx._system_override || system;
-  const payload = JSON.stringify({
-    model: 'claude-opus-4-6',
-    max_tokens: 2048,
-    system: finalSystem,
-    messages
-  });
 
-  return new Promise(resolve => {
-    const r = https.request({
-      hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    }, apiRes => {
-      let d = '';
-      apiRes.on('data', c => d += c);
-      apiRes.on('end', () => {
-        try {
-          const p = JSON.parse(d);
-          if (p.error) res.status(500).json({ error: 'BOS-AI-001', message: 'Jarvis error. Tap to retry.' });
-          else res.status(200).json(p);
-        } catch { res.status(500).json({ error: 'BOS-AI-001', message: 'Parse error' }); }
-        resolve();
-      });
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 2048,
+        system: finalSystem,
+        messages,
+      }),
+      signal: controller.signal,
     });
-    r.on('error', () => { res.status(503).json({ error: 'BOS-AI-002', message: 'Jarvis unavailable.' }); resolve(); });
-    r.setTimeout(30000, () => { r.destroy(); res.status(504).json({ error: 'BOS-AI-001', message: 'Timeout.' }); resolve(); });
-    r.write(payload);
-    r.end();
-  });
+
+    clearTimeout(timeout);
+    const data = await apiRes.json();
+
+    if (!apiRes.ok) {
+      const errMsg = data?.error?.message || `HTTP ${apiRes.status}`;
+      return res.status(500).json({ error: 'BOS-AI-001', message: errMsg });
+    }
+
+    return res.status(200).json(data);
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      return res.status(504).json({ error: 'BOS-AI-001', message: 'Request timed out. Try again.' });
+    }
+    return res.status(503).json({ error: 'BOS-AI-002', message: e.message || 'Network error' });
+  }
 };
