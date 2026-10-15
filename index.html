@@ -673,7 +673,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div class="top-tabs" id="health-tabs">
         <div class="ttab on" onclick="switchHealthTab('training')">Training</div>
         <div class="ttab" onclick="switchHealthTab('prs')">PRs</div>
-        <div class="ttab" onclick="switchHealthTab('diet')">Diet</div>
         <div class="ttab" onclick="switchHealthTab('pregnancy')">Juliette</div>
       </div>
       <div id="health-content" style="flex:1;min-height:0;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
@@ -2000,51 +1999,101 @@ async function updSav(id){const name=document.getElementById('eg-nm')?.value?.tr
 // HEALTH
 function renderHealth(){switchHTab(S.currentHealthTab||'training');}
 function switchHealthTab(t){switchHTab(t);}
-function switchHTab(tab){S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['training','prs','diet','pregnancy'][i]===tab));const c=document.getElementById('health-content');if(tab==='training')renderTraining(c);else if(tab==='prs')renderPRs(c);else if(tab==='diet')renderDiet(c);else if(tab==='pregnancy')renderPregnancy(c);}
+function switchHTab(tab){if(tab==='diet')tab='training';S.currentHealthTab=tab;document.querySelectorAll('#health-tabs .ttab').forEach((t,i)=>t.classList.toggle('on',['training','prs','pregnancy'][i]===tab));const c=document.getElementById('health-content');if(tab==='training')renderTraining(c);else if(tab==='prs')renderPRs(c);else if(tab==='pregnancy')renderPregnancy(c);}
 function renderWorkouts(c){renderTraining(c);}
 function renderTraining(c){
   const logs=S.data.workout_logs||[],today=getLocalDateStr();
   const wof=getWeekOf(new Date());
   const wofP=wof.split('-');const wofBase=new Date(parseInt(wofP[0]),parseInt(wofP[1])-1,parseInt(wofP[2]));
-  const dayNames=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const w=S.data.workouts||[],todayDay=dayNames[getTZ().getDay()],wSorted=[...w].sort((a,b)=>['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].indexOf(a.day_of_week)-['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].indexOf(b.day_of_week));
-
+  const thisWeekLogged=logs.filter(l=>l.logged_date>=wof).length;
+  const todayLogged=logs.some(l=>l.logged_date===today);
+  const trainingLog=JSON.parse(lsGet('bos_training_log')||'[]');
+  const user=S.profile?.name?.split(' ')[0]||'AJ';
+  const mainGoal=lsGet('bos_main_goal')||'';
+  // Diet data
+  const dietLog=JSON.parse(lsGet('bos_diet_log')||'{}');
+  const todayDiet=dietLog[today]||{discipline:null,protein:0};
+  const discColors={clean:'var(--green)',partial:'var(--gold)',off:'var(--red)'};
+  const discLabels={clean:'Clean',partial:'Almost',off:'Off Plan'};
+  const discIcons={clean:'&#10003;',partial:'&#126;',off:'&#215;'};
+  const rules=lsGet('bos_nutrition_rules')||'';
   // Week dots
   const dots=['M','T','W','T','F','S','S'].map((d,i)=>{
     const dt=new Date(wofBase.getFullYear(),wofBase.getMonth(),wofBase.getDate()+i);
     const ds=getLocalDateStr(dt);
     const logged=logs.some(l=>l.logged_date===ds);
     const isT=ds===today;
-    return`<div class="sday"><span class="slbl">${d}</span><div class="sdotc ${logged?'s-hit':isT?'s-today':'s-miss'}"></div></div>`;
-  }).join('');
-  const thisWeekLogged=logs.filter(l=>l.logged_date>=wof).length;
-  const todayLogged=logs.some(l=>l.logged_date===today);
-  const trainingLog=JSON.parse(lsGet('bos_training_log')||'[]');
-  const user=S.profile?.name?.split(' ')[0]||'AJ';
-  const mainGoal=lsGet('bos_main_goal')||'';
-  c.innerHTML=`
-    <div class="jcard" onclick="openJarvisCtx('${user} needs training coaching. ${thisWeekLogged} sessions this week. ${todayLogged?'Today is already logged.':'Today is not logged yet.'} ${mainGoal?'Goal: '+mainGoal.slice(0,80)+'.':''} What should I focus on for training today? Give me a smart plan or ask me questions.')" style="cursor:pointer">
-      <div class="jlabel">Jarvis \u2014 Training Intelligence &#129302;</div>
-      <div class="jtext">${thisWeekLogged} session${thisWeekLogged!==1?'s':''} this week. ${todayLogged?'Today is logged \u2714 Keep it up.':'Tap to ask Jarvis what to train today or get a program.'}</div>
-      <div class="jcta">Ask Jarvis about my training &#8594;</div>
-    </div>
-    <button class="btn-gold" style="width:100%;padding:18px;font-size:16px;font-weight:700;border-radius:14px;letter-spacing:.02em" onclick="showLogTraining()">
-      ${todayLogged?'\u2713 Logged Today \u2014 Log Another':'\u002B Log Today\u2019s Session'}
-    </button>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:var(--white)">This Week</span>
-        <span style="font-size:10px;color:var(--gold);font-weight:700">${thisWeekLogged} sessions &middot; ${logs.length} total ever</span>
+    const col=logged?'var(--green)':isT?'rgba(232,188,80,.5)':'rgba(255,255,255,.12)';
+    return`<div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <span style="font-size:9px;font-weight:700;color:${isT?'var(--gold)':'rgba(255,255,255,.35)'}">${d}</span>
+      <div style="width:28px;height:28px;border-radius:50%;background:${logged?'rgba(76,175,130,.2)':isT?'rgba(232,188,80,.08)':'rgba(255,255,255,.04)'};border:1.5px solid ${col};display:flex;align-items:center;justify-content:center">
+        ${logged?'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="'+col+'" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':isT?'<div style="width:5px;height:5px;border-radius:50%;background:rgba(232,188,80,.6)"></div>':''}
       </div>
-      <div class="streak-row">${dots}</div>
+    </div>`;
+  }).join('');
+  // Recent sessions (last 5)
+  const recentSessions=trainingLog.length
+    ?trainingLog.slice(0,5)
+    :([...logs].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,5).map(l=>({date:l.logged_date,type:'Session',energy:null,duration:''})));
+  const energyEmoji=['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'];
+  const typeColors={'Marine Run':'var(--gold)','Open Water':'#4FC3F7','Gym':'var(--green)','HIIT':'#EF5350','Walk':'rgba(255,255,255,.5)','Other':'rgba(255,255,255,.4)'};
+  c.innerHTML=`
+    <button onclick="showLogTraining()" style="width:100%;padding:17px;font-size:15px;font-weight:700;border-radius:14px;letter-spacing:.03em;border:none;cursor:pointer;background:${todayLogged?'rgba(76,175,130,.15)':'var(--gold)'};color:${todayLogged?'var(--green)':'var(--gd)'}">
+      ${todayLogged?'<span style="margin-right:6px">&#10003;</span>Logged Today &mdash; Add Another':'+ Log Today\u2019s Session'}
+    </button>
+    <div style="background:var(--bg-dark);border-radius:14px;padding:14px 16px;border:0.5px solid rgba(255,255,255,.07)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em">This Week</span>
+        <span style="font-size:10px;color:var(--gold);font-weight:700">${thisWeekLogged} session${thisWeekLogged!==1?'s':''} &middot; ${logs.length} total</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">${dots}</div>
     </div>
+    <div style="background:var(--bg-dark);border-radius:14px;padding:14px 16px;border:0.5px solid rgba(255,255,255,.07)">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Today\u2019s Fuel</div>
+      <div style="display:flex;gap:7px;margin-bottom:14px">
+        ${['clean','partial','off'].map(k=>{const active=todayDiet.discipline===k;return`<div onclick="setDietDisc('${k}')" style="flex:1;padding:10px 4px;border-radius:10px;text-align:center;cursor:pointer;border:1.5px solid ${active?discColors[k]:'rgba(255,255,255,.08)'};background:${active?discColors[k]+'18':'rgba(255,255,255,.02)'};transition:.15s">
+          <div style="font-size:16px;margin-bottom:3px;color:${active?discColors[k]:'rgba(255,255,255,.25)'}">${discIcons[k]}</div>
+          <div style="font-size:10px;font-weight:700;color:${active?discColors[k]:'rgba(255,255,255,.35)'}">${discLabels[k]}</div>
+        </div>`;}).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Protein</div>
+          <div style="font-size:22px;font-weight:700;color:${(todayDiet.protein||0)>=150?'var(--green)':'var(--white)'}">${todayDiet.protein||0}<span style="font-size:12px;font-weight:400;color:rgba(255,255,255,.3);margin-left:2px">g</span></div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="diet-protein" type="number" placeholder="Add g..." style="width:80px;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 10px;color:var(--white);font-size:13px;text-align:center">
+          <button onclick="logDietProtein()" style="background:rgba(232,188,80,.15);border:0.5px solid rgba(232,188,80,.3);border-radius:8px;padding:8px 12px;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer">+Add</button>
+        </div>
+      </div>
+      ${rules?`<div style="margin-top:12px;padding-top:10px;border-top:0.5px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.3);line-height:1.6">${rules.slice(0,110)}${rules.length>110?'\u2026':''}</div>`:''}
+    </div>
+    <div onclick="openJarvisCtx('${user} needs coaching. ${thisWeekLogged} sessions this week. ${todayLogged?'Today is logged.':'Today not logged yet.'} Diet today: ${todayDiet.discipline||'not logged'}. Protein: ${todayDiet.protein||0}g. ${mainGoal?'Goal: '+mainGoal.slice(0,60)+'.':''} Give me a smart action plan for today.')" style="background:rgba(232,188,80,.07);border:0.5px solid rgba(232,188,80,.2);border-radius:14px;padding:13px 15px;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">Jarvis</span>
+        <span style="font-size:16px">&#129302;</span>
+      </div>
+      <div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.5">${thisWeekLogged} session${thisWeekLogged!==1?'s':''} this week${todayDiet.discipline?' &middot; Today: '+discLabels[todayDiet.discipline]:''}. Tap for your daily action plan.</div>
+    </div>
+    ${recentSessions.length?`<div>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px">Recent Sessions</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${recentSessions.map(l=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,.05)">
+          <div style="width:32px;height:32px;border-radius:9px;background:${typeColors[l.type]||'rgba(255,255,255,.07)'}18;border:0.5px solid ${typeColors[l.type]||'rgba(255,255,255,.1)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="font-size:13px">${l.energy?energyEmoji[l.energy]:'&#9679;'}</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--white)">${l.type||'Session'}</div>
+            ${l.duration?`<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:1px">${l.duration}</div>`:''}
+          </div>
+          <span style="font-size:10px;color:rgba(255,255,255,.3);white-space:nowrap">${fmt(l.date)}</span>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
     <div style="display:flex;gap:8px">
-      <button class="btn-white" style="flex:1;padding:12px;font-size:13px;font-weight:600" onclick="showTrainingHistory()">History &amp; Calendar</button>
-      <button class="btn-white" style="flex:1;padding:12px;font-size:13px;font-weight:600" onclick="showTrainingSettings()">Goals &amp; Memory</button>
-    </div>
-    <div style="font-size:13px;font-weight:700;color:var(--white)">Recent Sessions</div>
-    <div class="card">
-      ${trainingLog.length?trainingLog.slice(0,10).map(l=>`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext" style="flex:1">${l.type||'Training'}${l.duration?' \u00b7 '+l.duration:''}${l.energy?' \u00b7 '+['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][l.energy]||'':''}</span><span class="rtime">${fmt(l.date)}</span></div>`).join(''):logs.length?[...logs].sort((a,b)=>b.logged_date.localeCompare(a.logged_date)).slice(0,10).map(l=>`<div class="ri"><span class="rdot rdot-g"></span><span class="rtext">Session</span><span class="rtime">${fmt(l.logged_date)}</span></div>`).join(''):'<div style="font-size:12px;color:var(--white);opacity:0.4;padding:8px">No sessions logged yet. Tap the button above after each workout.</div>'}
+      <button onclick="showTrainingHistory()" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">History</button>
+      <button onclick="viewDietDay('${today}')" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">Edit Today\u2019s Diet</button>
+      <button onclick="showTrainingSettings()" style="flex:1;padding:12px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:11px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer">Settings</button>
     </div>`;
 }
 function renderGoals(c){if(c)renderTraining(c);}
@@ -2106,11 +2155,11 @@ function renderDiet(c){
     <button class="btn-gold-outline" style="padding:12px;font-size:13px;width:100%" onclick="showTrainingSettings()">Edit Goals &amp; Nutrition Rules</button>
   `;
 }
-function setDietDisc(status){const today=getLocalDateStr();const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[today]={...(dl[today]||{}),discipline:status};lsSet('bos_diet_log',JSON.stringify(dl));showSuccess(status==='clean'?'Discipline logged \u2713':status==='partial'?'Noted \u2014 almost counts.':'Logged. Tomorrow is a new day.');renderDiet(document.getElementById('health-content'));}
-function logDietProtein(){const val=parseFloat(document.getElementById('diet-protein')?.value);if(!val||val<=0)return;const today=getLocalDateStr();const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[today]={...(dl[today]||{}),protein:(dl[today]?.protein||0)+val};lsSet('bos_diet_log',JSON.stringify(dl));document.getElementById('diet-protein').value='';renderDiet(document.getElementById('health-content'));}
+function setDietDisc(status){const today=getLocalDateStr();const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[today]={...(dl[today]||{}),discipline:status};lsSet('bos_diet_log',JSON.stringify(dl));showSuccess(status==='clean'?'Discipline logged \u2713':status==='partial'?'Noted \u2014 almost counts.':'Logged. Tomorrow is a new day.');renderTraining(document.getElementById('health-content'));}
+function logDietProtein(){const val=parseFloat(document.getElementById('diet-protein')?.value);if(!val||val<=0)return;const today=getLocalDateStr();const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[today]={...(dl[today]||{}),protein:(dl[today]?.protein||0)+val};lsSet('bos_diet_log',JSON.stringify(dl));document.getElementById('diet-protein').value='';renderTraining(document.getElementById('health-content'));}
 function viewDietDay(date){const dl=JSON.parse(lsGet('bos_diet_log')||'{}');const e=dl[date]||{};const dc={clean:'var(--green)',partial:'var(--gold)',off:'var(--red)'};const dl2=['clean','partial','off'];showModal(`<div class="sheet-handle"></div><div class="sheet-title">${date}</div><div style="display:flex;flex-direction:column;gap:14px"><div><div class="field-label">Discipline</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">${dl2.map(k=>`<div onclick="setDietDiscDate('${date}','${k}')" class="disc-btn" style="border-color:${e.discipline===k?dc[k]:'rgba(255,255,255,.1)'};background:${e.discipline===k?dc[k]+'22':'var(--bg-dark)'}"><div style="font-size:11px;font-weight:700;color:${e.discipline===k?dc[k]:'rgba(255,255,255,.5)'}">${{clean:'\u2713 Clean',partial:'\u007e Almost',off:'\u2717 Off Plan'}[k]}</div></div>`).join('')}</div></div><div><div class="field-label">Protein (g)</div><div style="display:flex;gap:7px;margin-top:6px"><input class="field-input" id="ddp" type="number" value="${e.protein||''}" placeholder="grams" style="flex:1"><button class="btn-gold-sm" onclick="saveDietDayP('${date}')">Save</button></div></div></div>`);}
-function setDietDiscDate(date,s){const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),discipline:s};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderDiet(document.getElementById('health-content'));}
-function saveDietDayP(date){const v=parseFloat(document.getElementById('ddp')?.value)||0;const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),protein:v};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderDiet(document.getElementById('health-content'));}
+function setDietDiscDate(date,s){const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),discipline:s};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderTraining(document.getElementById('health-content'));}
+function saveDietDayP(date){const v=parseFloat(document.getElementById('ddp')?.value)||0;const dl=JSON.parse(lsGet('bos_diet_log')||'{}');dl[date]={...(dl[date]||{}),protein:v};lsSet('bos_diet_log',JSON.stringify(dl));closeModal();renderTraining(document.getElementById('health-content'));}
 function showLogTraining(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Session</div><div style="display:flex;flex-direction:column;gap:14px"><div class="field-group"><div class="field-label">Type</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:6px">${['Marine Run','Gym','Open Water','HIIT','Walk','Other'].map(t=>`<div class="train-type" onclick="selTrainType(this,'${t}')">${t}</div>`).join('')}</div><input type="hidden" id="lt-type" value=""></div><div class="field-group"><div class="field-label">Duration (optional)</div><input class="field-input" id="lt-dur" placeholder="e.g. 45 min, 3 miles"></div><div class="field-group"><div class="field-label">Energy Level</div><div style="display:flex;gap:6px;margin-top:6px">${[1,2,3,4,5].map(n=>`<div class="energy-btn" id="le-${n}" onclick="selEnergy(${n})">${['','&#128128;','&#128549;','&#128528;','&#128170;','&#128293;'][n]}</div>`).join('')}<input type="hidden" id="lt-energy" value="3"></div></div><div class="field-group"><div class="field-label">Notes (optional)</div><textarea class="field-input" id="lt-notes" rows="3" style="resize:none" placeholder="What did you do? PRs? How did it feel?"></textarea></div><div class="field-group"><div class="field-label">Date</div><input class="field-input" id="lt-date" type="date" value="${getLocalDateStr()}"></div><button class="btn-gold" onclick="saveTrainingSession()">Log Session</button></div>`);setTimeout(()=>selEnergy(3),80);}
 function selTrainType(el,type){document.querySelectorAll('.train-type').forEach(b=>{b.classList.remove('selected');});el.classList.add('selected');document.getElementById('lt-type').value=type;}
 function selEnergy(n){document.getElementById('lt-energy').value=n;for(let i=1;i<=5;i++){const el=document.getElementById('le-'+i);if(el)el.classList.toggle('selected',i===n);}}
