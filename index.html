@@ -98,6 +98,15 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 #page-container{flex:1;-webkit-overflow-scrolling:touch}
 .section{padding:14px;display:none;flex-direction:column;gap:10px}
 .section.active{display:flex;flex-direction:column}
+/* War Room Immersive */
+body.wr-mode #section-minutes{position:fixed;inset:0;z-index:200;display:flex!important;flex-direction:column!important;padding:0!important;gap:0!important;overflow:hidden}
+body.wr-mode .top-bar{display:none!important}
+body.wr-mode #page-container{overflow:hidden!important}
+body.wr-mode #section-minutes #wr-messages{flex:1!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+.wr-pill{display:inline-flex;flex-direction:column;align-items:center;padding:5px 11px;border-radius:20px;border:0.5px solid rgba(232,188,80,.2);background:rgba(232,188,80,.04);cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}
+.wr-pill:active,.wr-pill.active{background:rgba(232,188,80,.15);border-color:var(--gold)}
+.wr-pill-name{font-size:10px;font-weight:700;color:var(--white)}
+.wr-pill-trait{font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;opacity:.7}
 .sec-label{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.09em;margin-top:6px}
 .card{border:0.5px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:10px 13px;background:var(--bg-dark)}
 .card-title{font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px}
@@ -623,6 +632,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div style="padding:2px 0 6px">
         <div style="font-size:22px;font-weight:700;color:var(--white)" id="home-greeting">Good morning</div>
         <div style="font-size:12px;color:var(--gold);margin-top:2px" id="home-date"></div>
+        <div id="home-goal-strip" style="display:none"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
       <div class="card" id="non-negotiables-card" style="padding:12px 14px"></div>
@@ -694,39 +704,35 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
       <div id="life-content" style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:9px"></div>
     </div>
     <div class="section" id="section-minutes" style="padding:0;gap:0">
-      <!-- Chamber Header -->
-      <div style="padding:14px 14px 10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <!-- War Room Top Bar -->
+      <div style="padding:max(env(safe-area-inset-top,0px),48px) 16px 10px;flex-shrink:0;border-bottom:0.5px solid rgba(232,188,80,.1)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
           <div>
-            <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.12em">The War Room</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:2px">Napoleon Hill · Think &amp; Grow Rich Ch. 14</div>
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.15em">&#9876; The War Room</div>
+            <div style="font-size:9px;color:rgba(232,188,80,.45);font-style:italic;margin-top:3px;line-height:1.4">Jesus sits above the table. All counsel is weighed against Him.</div>
           </div>
-          <button class="btn-gold-sm" onclick="logWRSession()">Log Session</button>
+          <button onclick="exitWarRoom()" style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 13px;font-size:10px;font-weight:600;color:rgba(255,255,255,.35);cursor:pointer;flex-shrink:0;margin-left:12px">Exit</button>
         </div>
-        <div style="background:rgba(232,188,80,.07);border:0.5px solid rgba(232,188,80,.25);border-radius:9px;padding:9px 12px;font-size:10.5px;color:rgba(255,255,255,.5);font-style:italic;line-height:1.55">
-          Jesus sits above the table. Every piece of counsel is weighed against Him.
-        </div>
+        <div id="war-room-counselors" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 4px;display:flex;gap:6px"></div>
       </div>
-      <!-- Counselors Grid -->
-      <div id="war-room-counselors" style="padding:0 14px 8px"></div>
-      <!-- Embedded Chat Chamber -->
-      <div style="border-top:0.5px solid rgba(232,188,80,.12);border-bottom:0.5px solid rgba(232,188,80,.12)">
-        <div id="wr-messages"></div>
-        <div class="jm-chips" id="wr-chips"></div>
-        <div class="jm-input-row">
-          <textarea class="jm-input" id="wr-chat-input" placeholder="Bring your question to the room..." rows="1"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendWRMsg();}"
-            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px'"></textarea>
-          <button class="jm-send" onclick="sendWRMsg()">&#10148;</button>
-        </div>
+      <!-- Messages: fills all remaining height -->
+      <div id="wr-messages" style="flex:1;overflow-y:auto;padding:12px 16px 8px;-webkit-overflow-scrolling:touch;min-height:200px"></div>
+      <!-- Quick prompts -->
+      <div class="jm-chips" id="wr-chips" style="padding:0 14px;flex-shrink:0"></div>
+      <!-- Input row -->
+      <div class="jm-input-row" style="flex-shrink:0;padding:8px 14px;padding-bottom:max(env(safe-area-inset-bottom,8px),8px);border-top:0.5px solid rgba(232,188,80,.12)">
+        <textarea class="jm-input" id="wr-chat-input" placeholder="Bring your question to the room..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendWRMsg();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px'"></textarea>
+        <button class="jm-send" onclick="sendWRMsg()">&#10148;</button>
       </div>
-      <!-- Past Sessions (collapsible) -->
-      <div style="padding:10px 14px 14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 0 8px" onclick="toggleWRHistory()">
+      <!-- Past Sessions collapsible -->
+      <div style="flex-shrink:0;border-top:0.5px solid rgba(255,255,255,.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 14px 6px" onclick="toggleWRHistory()">
           <span class="sec-label" style="margin:0">Past Sessions</span>
           <span id="wr-hist-arrow" style="font-size:10px;color:rgba(255,255,255,.3)">&#9660;</span>
         </div>
-        <div id="wr-history-content" style="display:none">
+        <div id="wr-history-content" style="display:none;max-height:35vh;overflow-y:auto;padding:0 14px 14px">
           <div id="meetings-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
           <div id="meetings-list"></div>
         </div>
@@ -785,7 +791,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.3)}
 const JARVIS_API=(window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1')?'https://new-betancur-os.vercel.app/api/jarvis':'/api/jarvis';
 const SUPABASE_URL='https://ppeyzgzejqmooebqucnx.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXl6Z3planFtb29lYnF1Y254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MTk5MzksImV4cCI6MjA5NDI5NTkzOX0.IqCXuzB_rNb94a1Incsy-eFlIJaHNW1rW1SYfOfMx48';
-let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'training',currentLifeTab:'recipes',jarvisMessages:[],warRoomMessages:[],wrActiveCounselor:null,offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',budgetTab:'overview',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',choresDay:'',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
+let S={user:null,profile:null,household:null,currentSection:'home',currentHealthTab:'training',currentLifeTab:'recipes',jarvisMessages:[],warRoomMessages:[],wrActiveCounselor:null,currentWRSessionId:null,offlineQueue:[],isOnline:navigator.onLine,setupStep:1,authMode:'signin',selectedRole:'admin',meetingFilter:'all',scheduleView:'mine',budgetTab:'overview',workoutStartTime:null,workoutTimer:null,selectedEnergy:3,goalsSubTab:'goal',choresDay:'',data:{chores:[],bills:[],tithe:[],savings:[],workouts:[],workout_logs:[],supplements:[],supplement_logs:[],pregnancy:null,diana:null,schedules:{mine:null},meetings:[],pets:[],vehicles:[],businesses:[],recipes:[],grocery:[],reminders:[],activity:[],users:[]}};
 const ERRORS={'BOS-AUTH-001':'Incorrect username or password.','BOS-AUTH-002':'Account locked.','BOS-AUTH-003':'Session ended. Please sign in again.','BOS-AUTH-010':"You don't have access to this.",'BOS-SYNC-001':'Could not save. Tap to retry.','BOS-SYNC-002':"You're offline. Changes will sync when reconnected.",'BOS-AI-001':'Jarvis is having trouble.','BOS-AI-002':'Jarvis is busy.','BOS-DATA-001':'Please fill in all required fields.','BOS-USER-001':'Username already taken.','BOS-USER-002':'Passwords do not match.','BOS-USER-003':'Invalid role.'};
 function showError(c){const m=ERRORS[c]||c;const t=document.getElementById('error-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',4000);}
 function showSuccess(m){const t=document.getElementById('success-toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
@@ -1374,12 +1380,12 @@ function logNNDay(){
 function renderNonNeg(){
   const el=document.getElementById('non-negotiables-card');if(!el)return;
   const d=resetNonNegIfNewDay();
-  const goalRows=d.goals.map(g=>`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07)" onclick="toggleNonNeg('${g.id}')">
+  const goalRows=d.goals.map(g=>{const _fn=g.id==='marine'&&!g.done?'showLogTrainingFromMarineNN()':"toggleNonNeg('"+g.id+"')";return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07)" onclick="${_fn}">
     <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid ${g.done?'var(--green)':'rgba(255,255,255,.2)'};background:${g.done?'var(--green)':'transparent'};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center">
       ${g.done?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
     </div>
     <span style="font-size:14px;font-weight:600;color:${g.done?'rgba(255,255,255,.35)':'var(--white)'};${g.done?'text-decoration:line-through':''}flex:1;cursor:pointer">${g.label}</span>
-  </div>`).join('');
+  </div>`}).join('');
   const creatRow=(slot,label)=>`<div style="display:flex;align-items:center;gap:12px;padding:7px 0${slot==='am'?';border-bottom:0.5px solid rgba(255,255,255,.07)':''}" onclick="toggleCreatine('${slot}')">
     <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid ${d.creatine[slot]?'var(--blue)':'rgba(255,255,255,.15)'};background:${d.creatine[slot]?'var(--blue)':'transparent'};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center">
       ${d.creatine[slot]?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
@@ -1481,6 +1487,7 @@ function go(sec){
   S.currentSection=sec;document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const nel=document.getElementById('nav-'+sec);if(nel)nel.classList.add('active');
   document.getElementById('page-container').scrollTop=0;
+  if(sec==='minutes')document.body.classList.add('wr-mode');else document.body.classList.remove('wr-mode');
   ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,users:renderUsers})[sec]?.();
 }
 async function loadAll(){
@@ -1788,6 +1795,9 @@ function renderHome(){
   const jAlerts=[];if(day==='thursday')jAlerts.push('Trash goes out Thursday AM');if(ov>0)jAlerts.push(ov+' manual bill'+(ov>1?'s':'')+' overdue');
   document.getElementById('jarvis-home-text').textContent=jAlerts.length?jAlerts.join('. ')+'.':'Everything looks good today. Ask me anything.';
   const jc=document.getElementById('jarvis-alert-count');if(jc){jc.textContent=jAlerts.length?jAlerts.length+' alerts':'';jc.style.display=jAlerts.length?'':'none';}
+  const goal=lsGet('bos_main_goal')||'';
+  const goalEl=document.getElementById('home-goal-strip');
+  if(goalEl){if(goal){goalEl.style.display='block';goalEl.innerHTML='<div style="font-size:11.5px;color:var(--gold);opacity:.75;line-height:1.45;padding:3px 0 1px;letter-spacing:.01em">◆ '+goal+'</div>';}else goalEl.style.display='none';}
 }
 // CHORES
 const CHORE_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -2200,7 +2210,7 @@ async function doSaveTrainingSession(date,type,duration,energy,notes,isMarine){
   if(!(S.data.workout_logs||[]).some(l=>l.logged_date===date)){
     try{const r=await sb.from('workout_logs').insert({user_id:S.profile.id,logged_date:date});if(r?.[0])S.data.workout_logs=[...(S.data.workout_logs||[]),...r];}catch(e){}
   }
-  if(isMarine&&date===getLocalDateStr()){const d=getNonNeg();const marine=d.goals.find(g=>g.id==='marine');if(marine&&!marine.done)toggleNonNeg('marine');}
+  if((isMarine||_logFromMarineNN)&&date===getLocalDateStr()){_logFromMarineNN=false;const d=getNonNeg();const marine=d.goals.find(g=>g.id==='marine');if(marine&&!marine.done)toggleNonNeg('marine');}
 }
 async function analyzeAndSaveSession(){
   const text=(document.getElementById('lt-freeform')?.value||'').trim();
@@ -3485,9 +3495,11 @@ const WR_COUNSELORS=[
   {name:'Jacob',trait:'Leadership',role:'Identity transformation. Won\u2019t let go until blessed.'},
 ];
 function renderMinutes(){
-  // Counselors grid
+  // Counselors horizontal pill strip
   const cc=document.getElementById('war-room-counselors');
-  if(cc)cc.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${WR_COUNSELORS.map(c=>`<div class="wr-seat${S.wrActiveCounselor===c.name?' wr-seat-active':''}" onclick="callWRCounselor('${c.name}')"><div style="font-size:11px;font-weight:700;color:var(--white);margin-bottom:1px">${c.name}</div><div style="font-size:8.5px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em">${c.trait}</div></div>`).join('')}</div><div style="font-size:9px;color:rgba(255,255,255,.25);text-align:center;margin-top:6px">Tap a seat to call them directly</div>`;
+  if(cc)cc.innerHTML=WR_COUNSELORS.map(c=>`<div class="wr-pill${S.wrActiveCounselor===c.name?' active':''}" onclick="callWRCounselor('${c.name}')"><span class="wr-pill-name">${c.name}</span><span class="wr-pill-trait">${c.trait}</span></div>`).join('');
+  // Reset session ID if starting fresh
+  if(!S.warRoomMessages||!S.warRoomMessages.length)S.currentWRSessionId=null;
   // Initialize chat if empty
   if(!S.warRoomMessages||!S.warRoomMessages.length){
     if(!S.warRoomMessages)S.warRoomMessages=[];
@@ -3500,10 +3512,29 @@ function setMF(f){S.meetingFilter=f;renderWRSessions();}
 function toggleWRHistory(){const hc=document.getElementById('wr-history-content');const arrow=document.getElementById('wr-hist-arrow');if(!hc)return;const isOpen=hc.style.display!=='none';hc.style.display=isOpen?'none':'block';if(arrow)arrow.textContent=isOpen?'\u25bc':'\u25b2';if(!isOpen)renderWRSessions();}
 function renderWRSessions(){const meetings=S.data.meetings||[];const f=S.meetingFilter||'all';const filters=[['all','All'],['life','Life'],['business','Business'],['faith','Faith'],['leadership','Leadership'],['personal','Personal']];const fe=document.getElementById('meetings-filter');if(fe)fe.innerHTML=filters.map(([k,l])=>`<div style="padding:4px 10px;border-radius:12px;background:${f===k?'var(--gold)':'var(--bg-dark)'};border:0.5px solid ${f===k?'var(--gold)':'var(--border)'};cursor:pointer;font-size:10px;font-weight:700;color:${f===k?'var(--gd)':'var(--white)'}" onclick="setMF('${k}')">${l}</div>`).join('');const filtered=f==='all'?meetings:meetings.filter(m=>m.category===f);const le=document.getElementById('meetings-list');if(le)le.innerHTML=filtered.length?filtered.map(m=>{const own=m.owner_id===S.profile?.id||m.shared;return`<div class="meet-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="flex:1;padding-right:8px"><div class="meet-title">${m.title}</div><div class="meet-meta">${fmt(m.meeting_date)}</div></div><span class="tag tag-gray" style="font-size:7px">${(m.category||'personal').toUpperCase()}</span></div>${m.notes?`<div class="meet-notes">${m.notes}</div>`:''}<div class="meet-ah">Commitments</div>${(m.action_items||[]).map(a=>`<div class="ai"><div class="chk ${a.done?'checked':''}" onclick="${own?'togAI(\''+m.id+'\',\''+a.id+'\')':''}" style="cursor:${own?'pointer':'default'}">${a.done?'<span style="color:var(--white);font-size:9px;font-weight:700">&#10003;</span>':''}</div><span style="font-size:11px;color:var(--white);${a.done?'text-decoration:line-through;opacity:0.5;':''}flex:1">${a.text}</span></div>`).join('')}<div class="meet-btns">${own?`<button class="btn-white-sm" onclick="editMtg('${m.id}')">Edit</button>`:''}<button class="btn-white-sm" onclick="sendWRFromSession('${m.title.replace(/'/g,'')}','${(m.notes||'').slice(0,200).replace(/'/g,'')}')">Ask Room</button>${own?`<span class="del-x" onclick="delMtg('${m.id}')">&#215;</span>`:''}</div></div>`;}).join(''):`<div class="card"><div style="opacity:.4;text-align:center;padding:12px;font-size:12px">No past sessions.</div></div>`;}
 function addWRMsg(role,text){if(role==='user')S.warRoomMessages.push({role:'user',text});const msgs=document.getElementById('wr-messages');if(!msgs)return;if(role==='user'){const el=document.createElement('div');el.className='jm-user';el.textContent=text;msgs.appendChild(el);}else{const wrap=document.createElement('div');wrap.className='jm-ai-wrap';const lbl=document.createElement('div');lbl.className='jm-ai-label';lbl.innerHTML='&#9812; The War Room';const bubble=document.createElement('div');bubble.className='jm-ai wr-response';bubble.innerHTML=typeof fmtJarvisText==='function'?fmtJarvisText(text):text.replace(/\n/g,'<br>');wrap.appendChild(lbl);wrap.appendChild(bubble);msgs.appendChild(wrap);}msgs.scrollTop=msgs.scrollHeight;}
-async function sendWRMsg(msgOverride){if(!S.warRoomMessages)S.warRoomMessages=[];const input=document.getElementById('wr-chat-input');const text=msgOverride||input?.value?.trim();if(!text)return;if(input&&!msgOverride){input.value='';input.style.height='auto';}const chips=document.getElementById('wr-chips');if(chips)chips.innerHTML='';addWRMsg('user',text);const msgs=document.getElementById('wr-messages');const ld=document.createElement('div');ld.className='jm-thinking';ld.id='wr-ld';ld.innerHTML='<div class="jm-dots"><span></span><span></span><span></span></div><span>The room is convening\u2026</span>';msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;const histMsgs=S.warRoomMessages.filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text})).slice(-12);const messages=[...histMsgs,{role:'user',content:text}];const user=S.profile?.name?.split(' ')[0]||'AJ';const today=getLocalDateStr();const todayDay=getTZ().toLocaleDateString('en-US',{weekday:'long'});const wrSystem=`You are Jarvis, facilitating The War Room \u2014 ${user}'s personal council of advisors, modeled on Napoleon Hill's Think and Grow Rich, Chapter 14.\n\nToday: ${today} (${todayDay})\n\nJESUS SITS ABOVE THE TABLE. He is The Cornerstone. All counsel is weighed against Him. If any counsel conflicts with scripture or Jesus\u2019 character, say so.\n\nTHE SIX SEATS:\n1. Solomon \u2014 Wisdom, discernment, the long view. What lasts. Proverbs, Ecclesiastes.\n2. Myron Golden \u2014 Biblical principles into wealth, offers, business. Faith-based prosperity.\n3. Tony Robbins \u2014 Patterns behind behavior, emotion, results. State management. Identity.\n4. David Goggins \u2014 Raw grit. Brutal honesty. Callusing the mind. No excuses. Hard truth.\n5. Andrew Huberman \u2014 Evidence-based science. What the body and brain actually say. Protocols.\n6. Jacob \u2014 Identity transformation. Won\u2019t let go until blessed. Leadership through perseverance.\n\nHOW YOU OPERATE:\n- Decide which counselor(s) are most relevant to what ${user} brings\n- Speak IN THEIR VOICE \u2014 first person, in full character. No disclaimers. No \u201Cas an AI\u2026\u201D\n- Label each voice clearly: **[Solomon:]** or **[Goggins:]** etc.\n- Multiple counselors may weigh in \u2014 each in their own voice\n- End with a question or challenge that moves ${user} forward\n- If ${user} calls a specific counselor by name, speak as ONLY that counselor\n- Keep it direct, powerful, personal. No generic advice. Speak to ${user} as if you know him.\n\n${user} is a husband, father (baby Diana, wife Juliette is pregnant), entrepreneur (ParkNest and Poof apps), currently in Tallahassee FL. He is building toward freedom and legacy.`;try{const r=await fetch(JARVIS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:{current_user:user,today_date:today,_system_override:wrSystem}})});const data=await r.json();document.getElementById('wr-ld')?.remove();if(data.error){addWRMsg('ai','The room couldn\u2019t connect: '+(data.message||data.error)+'\n\nTap to retry.');return;}const reply=data.content?.[0]?.text||'The counsel is unclear. Please rephrase your question.';S.warRoomMessages.push({role:'assistant',text:reply});const wrap=document.createElement('div');wrap.className='jm-ai-wrap';const lbl=document.createElement('div');lbl.className='jm-ai-label';lbl.innerHTML='&#9812; The War Room';const bubble=document.createElement('div');bubble.className='jm-ai wr-response';bubble.innerHTML=typeof fmtJarvisText==='function'?fmtJarvisText(reply):reply.replace(/\n/g,'<br>');wrap.appendChild(lbl);wrap.appendChild(bubble);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}catch(e){document.getElementById('wr-ld')?.remove();addWRMsg('ai','Network error: '+e.message+'\n\nCheck your connection and tap to retry.');}}
-function callWRCounselor(name){S.wrActiveCounselor=name;document.querySelectorAll('.wr-seat').forEach(el=>{const nm=el.querySelector('div')?.textContent?.trim();el.classList.toggle('wr-seat-active',nm===name);});const input=document.getElementById('wr-chat-input');if(input){input.value='[Calling '+name+'] ';input.focus();input.setSelectionRange(input.value.length,input.value.length);}}
+async function sendWRMsg(msgOverride){if(!S.warRoomMessages)S.warRoomMessages=[];const input=document.getElementById('wr-chat-input');const text=msgOverride||input?.value?.trim();if(!text)return;if(input&&!msgOverride){input.value='';input.style.height='auto';}const chips=document.getElementById('wr-chips');if(chips)chips.innerHTML='';addWRMsg('user',text);const msgs=document.getElementById('wr-messages');const ld=document.createElement('div');ld.className='jm-thinking';ld.id='wr-ld';ld.innerHTML='<div class="jm-dots"><span></span><span></span><span></span></div><span>The room is convening\u2026</span>';msgs.appendChild(ld);msgs.scrollTop=msgs.scrollHeight;const histMsgs=S.warRoomMessages.filter(m=>m.role==='user'||m.role==='assistant').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text})).slice(-12);const messages=[...histMsgs,{role:'user',content:text}];const user=S.profile?.name?.split(' ')[0]||'AJ';const today=getLocalDateStr();const todayDay=getTZ().toLocaleDateString('en-US',{weekday:'long'});const wrSystem=`You are Jarvis, facilitating The War Room \u2014 ${user}'s personal council of advisors, modeled on Napoleon Hill's Think and Grow Rich, Chapter 14.\n\nToday: ${today} (${todayDay})\n\nJESUS SITS ABOVE THE TABLE. He is The Cornerstone. All counsel is weighed against Him. If any counsel conflicts with scripture or Jesus\u2019 character, say so.\n\nTHE SIX SEATS:\n1. Solomon \u2014 Wisdom, discernment, the long view. What lasts. Proverbs, Ecclesiastes.\n2. Myron Golden \u2014 Biblical principles into wealth, offers, business. Faith-based prosperity.\n3. Tony Robbins \u2014 Patterns behind behavior, emotion, results. State management. Identity.\n4. David Goggins \u2014 Raw grit. Brutal honesty. Callusing the mind. No excuses. Hard truth.\n5. Andrew Huberman \u2014 Evidence-based science. What the body and brain actually say. Protocols.\n6. Jacob \u2014 Identity transformation. Won\u2019t let go until blessed. Leadership through perseverance.\n\nHOW YOU OPERATE:\n- Decide which counselor(s) are most relevant to what ${user} brings\n- Speak IN THEIR VOICE \u2014 first person, in full character. No disclaimers. No \u201Cas an AI\u2026\u201D\n- Label each voice clearly: **[Solomon:]** or **[Goggins:]** etc.\n- Multiple counselors may weigh in \u2014 each in their own voice\n- End with a question or challenge that moves ${user} forward\n- If ${user} calls a specific counselor by name, speak as ONLY that counselor\n- Keep it direct, powerful, personal. No generic advice. Speak to ${user} as if you know him.\n\n${user} is a husband, father (baby Diana, wife Juliette is pregnant), entrepreneur (ParkNest and Poof apps), currently in Tallahassee FL. He is building toward freedom and legacy.`;try{const r=await fetch(JARVIS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,context:{current_user:user,today_date:today,_system_override:wrSystem}})});const data=await r.json();document.getElementById('wr-ld')?.remove();if(data.error){addWRMsg('ai','The room couldn\u2019t connect: '+(data.message||data.error)+'\n\nTap to retry.');return;}const reply=data.content?.[0]?.text||'The counsel is unclear. Please rephrase your question.';S.warRoomMessages.push({role:'assistant',text:reply});const wrap=document.createElement('div');wrap.className='jm-ai-wrap';const lbl=document.createElement('div');lbl.className='jm-ai-label';lbl.innerHTML='&#9812; The War Room';const bubble=document.createElement('div');bubble.className='jm-ai wr-response';bubble.innerHTML=typeof fmtJarvisText==='function'?fmtJarvisText(reply):reply.replace(/\n/g,'<br>');wrap.appendChild(lbl);wrap.appendChild(bubble);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;autoSaveWRSession();}catch(e){document.getElementById('wr-ld')?.remove();addWRMsg('ai','Network error: '+e.message+'\n\nCheck your connection and tap to retry.');}}
+function callWRCounselor(name){S.wrActiveCounselor=name;document.querySelectorAll('.wr-pill').forEach(el=>{const nm=el.querySelector('.wr-pill-name')?.textContent?.trim();el.classList.toggle('active',nm===name);});const input=document.getElementById('wr-chat-input');if(input){input.value='[Calling '+name+'] ';input.focus();input.setSelectionRange(input.value.length,input.value.length);}}
 function callCounselor(name){callWRCounselor(name);}
 function sendWRFromSession(title,notes){const msg='Revisiting a past War Room session: "'+title+'". '+(notes?'Notes: '+notes+'.':'')+' What do my counselors say now?';const hc=document.getElementById('wr-history-content');const arrow=document.getElementById('wr-hist-arrow');if(hc){hc.style.display='none';}if(arrow)arrow.textContent='\u25bc';sendWRMsg(msg);document.getElementById('wr-messages')?.scrollIntoView({behavior:'smooth'});}
+function exitWarRoom(){document.body.classList.remove('wr-mode');go('home');}
+let _logFromMarineNN=false;
+function showLogTrainingFromMarineNN(){_logFromMarineNN=true;showLogTraining();}
+async function autoSaveWRSession(){
+  if(!S.warRoomMessages?.length)return;
+  if(!S.household?.id||!S.profile?.id)return;
+  const firstUser=S.warRoomMessages.find(m=>m.role==='user');
+  if(!firstUser)return;
+  const title=firstUser.text.slice(0,100);
+  const notes=S.warRoomMessages.slice(-30).map(m=>(m.role==='user'?'AJ: ':'Room: ')+m.text).join('\n\n---\n\n');
+  try{
+    if(S.currentWRSessionId){
+      await sb.from('meetings').update({notes}).eq('id',S.currentWRSessionId);
+    }else{
+      const r=await sb.from('meetings').insert({household_id:S.household.id,owner_id:S.profile.id,shared:false,title,meeting_date:getLocalDateStr(),attendees:'The War Room',category:'personal',notes,action_items:[]});
+      if(r?.[0]){S.currentWRSessionId=r[0].id;S.data.meetings=[r[0],...(S.data.meetings||[])];}
+    }
+  }catch(e){}
+}
 function logWRSession(){showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log War Room Session</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5">Record a question, decision, or breakthrough for your records.</div><div class="field-group"><div class="field-label">What did you bring to the room?</div><textarea class="field-input" id="wr-question" rows="3" style="resize:none;min-height:80px" placeholder="A decision, a struggle, a question..."></textarea></div><div class="field-group" style="margin-top:12px"><div class="field-label">Notes / What was decided</div><textarea class="field-input" id="wr-log-notes" rows="3" style="resize:none;min-height:60px" placeholder="What did the counsel say? What will you do?"></textarea></div><div class="field-group" style="margin-top:12px"><div class="field-label">Category</div><select class="field-input" id="wr-cat"><option value="life">Life</option><option value="business">Business</option><option value="faith">Faith</option><option value="leadership">Leadership</option><option value="personal">Personal</option></select></div><button class="btn-gold" style="margin-top:14px;width:100%" onclick="saveRoomSession()">Save Session</button>`);setTimeout(()=>document.getElementById('wr-question')?.focus(),80);}
 function openWarRoomSession(){logWRSession();}
 function openRoomWithQuestion(){const q=document.getElementById('wr-question')?.value?.trim();if(!q){showError('BOS-DATA-001');return;}closeModal();sendWRMsg(q);}
