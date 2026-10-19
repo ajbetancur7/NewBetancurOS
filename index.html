@@ -1345,10 +1345,44 @@ function logNNDay(){
   const today=getLocalDateStr();const d=getNonNeg();if(d.date!==today)return;
   try{const log=JSON.parse(localStorage.getItem(NN_KEY+'_log')||'{}');log[today]={};d.goals.forEach(g=>{log[today][g.id]=g.done;});localStorage.setItem(NN_KEY+'_log',JSON.stringify(log));}catch(e){}
 }
+function showEditNonNeg(){
+  const d=getNonNeg();
+  const rows=d.goals.map((g,i)=>`<div id="nn-row-${i}" style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input class="field-input" id="nn-lbl-${i}" value="${g.label.replace(/"/g,'&quot;')}" style="flex:1;font-size:13px" placeholder="Goal name" data-id="${g.id}"><button onclick="removeNNRow(${i})" style="background:rgba(255,60,60,.12);border:0.5px solid rgba(255,60,60,.25);border-radius:7px;padding:4px 9px;font-size:13px;color:#ff6060;cursor:pointer;flex-shrink:0">&#215;</button></div>`).join('');
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Edit Non-Negotiables</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:14px">Rename, remove, or add goals. Your check-in history is preserved.</div><div id="nn-edit-rows">${rows}</div><button onclick="addNNRow()" style="width:100%;padding:10px;background:rgba(255,255,255,.05);border:1.5px dashed rgba(255,255,255,.15);border-radius:9px;color:rgba(255,255,255,.4);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:14px">+ Add Goal</button><button class="btn-gold" style="width:100%" onclick="saveEditNonNeg()">Save</button>`);
+}
+function removeNNRow(i){const row=document.getElementById('nn-row-'+i);if(row)row.remove();}
+function addNNRow(){
+  const container=document.getElementById('nn-edit-rows');if(!container)return;
+  const idx=container.querySelectorAll('[id^="nn-row-"]').length;
+  const div=document.createElement('div');div.id='nn-row-'+idx;div.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+  div.innerHTML=`<input class="field-input" id="nn-lbl-${idx}" value="" style="flex:1;font-size:13px" placeholder="Goal name" data-id=""><button onclick="removeNNRow(${idx})" style="background:rgba(255,60,60,.12);border:0.5px solid rgba(255,60,60,.25);border-radius:7px;padding:4px 9px;font-size:13px;color:#ff6060;cursor:pointer;flex-shrink:0">&#215;</button>`;
+  container.appendChild(div);
+  div.querySelector('input')?.focus();
+}
+function saveEditNonNeg(){
+  const container=document.getElementById('nn-edit-rows');if(!container)return;
+  const inputs=container.querySelectorAll('input[id^="nn-lbl-"]');
+  const d=getNonNeg();
+  const newGoals=[];
+  inputs.forEach(inp=>{
+    const label=inp.value.trim();if(!label)return;
+    const existingId=inp.dataset.id;
+    // Preserve existing id and done state if goal already existed
+    const existing=existingId?d.goals.find(g=>g.id===existingId):null;
+    const id=existingId||label.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20)||('goal_'+Date.now());
+    newGoals.push({id,label,done:existing?.done||false});
+  });
+  if(!newGoals.length){showError('BOS-DATA-001');return;}
+  d.goals=newGoals;
+  saveNonNeg(d);
+  closeModal();
+  renderNonNeg();
+  showSuccess('Non-Negotiables updated');
+}
 function renderNonNeg(){
   const el=document.getElementById('non-negotiables-card');if(!el)return;
   const d=resetNonNegIfNewDay();
-  const goalRows=d.goals.map(g=>{const _fn=g.id==='marine'&&!g.done?'showLogTrainingFromMarineNN()':"toggleNonNeg('"+g.id+"')";return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07)" onclick="${_fn}">
+  const goalRows=d.goals.map(g=>{const _isMarine=(g.id==='marine'||g.label?.toLowerCase().includes('marine'))&&!g.done;const _fn=_isMarine?'showLogTrainingFromMarineNN()':"toggleNonNeg('"+g.id+"')";return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,.07)" onclick="${_fn}">
     <div style="width:22px;height:22px;border-radius:7px;border:1.5px solid ${g.done?'var(--green)':'rgba(255,255,255,.2)'};background:${g.done?'var(--green)':'transparent'};flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center">
       ${g.done?'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
     </div>
@@ -1365,9 +1399,10 @@ function renderNonNeg(){
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <span style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Non-Negotiables</span>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:10px;color:rgba(255,255,255,.4)">${doneGoals}/${totalGoals} done</span>
         <button onclick="event.stopPropagation();showNNHistory()" style="background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:6px;padding:3px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,.5);cursor:pointer">History</button>
+        <button onclick="event.stopPropagation();showEditNonNeg()" style="background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:6px;padding:3px 8px;font-size:9px;font-weight:700;color:rgba(255,255,255,.5);cursor:pointer">Edit</button>
       </div>
     </div>
     ${goalRows}
