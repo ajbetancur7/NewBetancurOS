@@ -1732,7 +1732,7 @@ function getWeekOf(d){
   const dd=String(mon.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+dd;
 }
-function fmt(d){try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch{return d||'';}}
+function fmt(d){try{if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d)){const[y,m,dy]=d.split('-');return new Date(+y,+m-1,+dy).toLocaleDateString('en-US',{month:'short',day:'numeric'});}return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch{return d||'';}}
 function getPregWeek(lmp){return Math.floor((getTZ()-new Date(lmp))/(7*24*60*60*1000));}
 function getDianaAge(){const dob=new Date('2025-01-07'),now=getTZ();return(now.getFullYear()-dob.getFullYear())*12+(now.getMonth()-dob.getMonth());}
 function getSundays(yr,mo){const s=[],d=new Date(yr,mo,1);while(d.getMonth()===mo){if(d.getDay()===0)s.push(new Date(d).toISOString().split('T')[0]);d.setDate(d.getDate()+1);}return s;}
@@ -2171,13 +2171,31 @@ e.g. &quot;Marine run 3.1 miles, strong pace. 50 pull-ups after. Hit a new PR on
 function selEnergy(n){document.getElementById('lt-energy').value=n;for(let i=1;i<=5;i++){const el=document.getElementById('le-'+i);if(el){el.classList.toggle('selected',i===n);el.style.borderColor=i===n?'var(--gold)':'rgba(255,255,255,.1)';el.style.background=i===n?'rgba(232,188,80,.15)':'rgba(255,255,255,.04)';}}}
 async function autoExtractPRs(text,date){
   if(!text)return;
-  const prPrompt=`Extract any PERSONAL RECORDS (new bests, firsts) from these training notes. Return ONLY a JSON array — no explanation, no markdown.
-Empty array [] if no PRs found.
-Each PR must be one of:
-- Strength: {"type":"strength","lift":"Bench Press","weight":225,"reps":1}
-- Running: {"type":"running","event":"1 Mile","time":"7:42"}
-- Calisthenics: {"type":"calisthenics","exercise":"Pull-ups","reps":25}
-Only extract EXPLICIT records — words like "PR", "new PR", "personal best", "new record", "first time", "new max", or specific best times. NOT regular sets.`;
+  const existing=getPRs();
+  const prText=existing.length?existing.map(p=>{if(p.type==='running')return(p.event||'Run')+': '+p.time;if(p.type==='calisthenics')return(p.exercise||'Exercise')+': '+p.reps+' reps';return(p.lift||'Lift')+': '+p.weight+'lbs x'+(p.reps||1);}).join('\n'):'No existing records yet';
+  const prPrompt=`You compare training session results against existing records and identify genuine improvements — even when NOT labeled as PRs.
+
+EXISTING RECORDS:
+${prText}
+
+TRAINING NOTES:
+${text}
+
+Return ONLY a JSON array of records that are GENUINELY BETTER than existing, OR new exercises/events not yet tracked.
+Return [] if nothing beats the records above.
+
+Rules:
+- Strength: heavier weight OR more reps at same/heavier weight = PR
+- Running: faster time for same distance = PR
+- Calisthenics: more reps = PR
+- If the lift/event is not in existing records at all, include it
+
+Format each as one of:
+{"type":"strength","lift":"Bench Press","weight":225,"reps":5}
+{"type":"running","event":"1 Mile","time":"7:30"}
+{"type":"calisthenics","exercise":"Pull-ups","reps":32}
+
+Return ONLY the JSON array. No explanation.`;
   try{
     const r=await fetch(JARVIS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:text}],context:{_system_override:prPrompt}})});
     const d=await r.json();
