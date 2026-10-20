@@ -74,6 +74,9 @@ ${ctx.businesses_snapshot || 'No businesses set up yet'}
 - Open business tasks: ${ctx.open_biz_tasks || 0}
 - This week sessions: ${ctx.this_week_sessions || 0} | Total ever: ${ctx.total_sessions_logged || 0}
 
+=== HF0 RESIDENCY — SEASON 1 ===
+${ctx.residency_context||'Not loaded yet — Residency section may not have been opened.'}
+
 === BETANCUR MIAMI CHAPTER — FINANCIAL OS ===
 Phase: ${ctx.miami_is_live || 'Plan Mode (not yet activated)'}
 Combined income: ${ctx.miami_income || 'not set'}

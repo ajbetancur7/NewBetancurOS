@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Betancur OS">
 <title>Betancur OS</title>
-<meta name="bos-version" content="2026-10-14-v11">
+<meta name="bos-version" content="2026-10-19-v12-residency">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -731,6 +731,16 @@ body.wr-mode #section-minutes #wr-messages{flex:1!important;overflow-y:auto!impo
       <div class="sec-label">Other Users</div><div class="card" id="other-users-list"></div>
       <div class="sec-label">Role Permissions</div><div class="card" id="role-permissions"></div>
     </div>
+    <div class="section" id="section-residency" style="padding:0;gap:0">
+      <div class="top-tabs" id="residency-tabs">
+        <div class="ttab on" onclick="switchResTab('today')">Today</div>
+        <div class="ttab" onclick="switchResTab('week')">Week</div>
+        <div class="ttab" onclick="switchResTab('targets')">Targets</div>
+        <div class="ttab" onclick="switchResTab('history')">History</div>
+        <div class="ttab" onclick="switchResTab('more')">More</div>
+      </div>
+      <div id="residency-content" style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+    </div>
   </div>
 </div>
   <div id="jarvis-modal">
@@ -1070,7 +1080,7 @@ async function launchApp(){
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
   await loadAll();migrateLocalToSupabase();checkMonthlyBillReset();renderHome();
   if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();
-  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();({home:renderHome,budget:renderBudget,chores:renderChores,health:renderHealth,schedule:renderSchedule,minutes:()=>{},miami:typeof renderMiami==='function'?renderMiami:null,millionaire:typeof renderMillionaire==='function'?renderMillionaire:null})[S.currentSection]?.();});},30000);
+  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();({home:renderHome,budget:renderBudget,chores:renderChores,health:renderHealth,schedule:renderSchedule,minutes:()=>{},residency:renderResidency,miami:typeof renderMiami==='function'?renderMiami:null,millionaire:typeof renderMillionaire==='function'?renderMillionaire:null})[S.currentSection]?.();});},30000);
 }
 function openActivityDetail(){
   const acts=S.data.activity||[];
@@ -1427,9 +1437,10 @@ function setupNav(){
     life:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12m0 0C12 7 7 5 3 7c4 0 9 2 9 5zm0 0c0-3 5-5 9-5-4 2-9 2-9 5"/></svg>`,
     minutes:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
     schedule:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    users:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+    users:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    residency:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
   };
-  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','War Room'],['schedule','Schedule'],['users','Users']];
+  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','War Room'],['schedule','Schedule'],['users','Users'],['residency','Residency']];
   const savedOrder=JSON.parse(localStorage.getItem('bos_nav_order')||'[]');
   let navs=savedOrder.length?savedOrder.map(id=>DEFAULT_NAVS.find(([nid])=>nid===id)).filter(Boolean):DEFAULT_NAVS.slice();
   DEFAULT_NAVS.forEach(n=>{if(!navs.find(([id])=>id===n[0]))navs.push(n);});
@@ -1491,7 +1502,7 @@ function go(sec){
   const nel=document.getElementById('nav-'+sec);if(nel)nel.classList.add('active');
   document.getElementById('page-container').scrollTop=0;
   const ov=document.getElementById('wr-overlay');if(sec==='minutes'){document.body.classList.add('wr-mode');if(ov)ov.style.display='flex';}else{document.body.classList.remove('wr-mode');if(ov)ov.style.display='none';}
-  ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,users:renderUsers})[sec]?.();
+  ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,users:renderUsers,residency:renderResidency})[sec]?.();
 }
 async function loadAll(){
   if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
@@ -3922,6 +3933,7 @@ async function sendJMsg(text){
     fasting:lsGet('bos_fasting')||'Not set',
     current_weight:latestBody.weight?latestBody.weight+' lbs ('+latestBody.date+')':'Not logged',
     current_bf:latestBody.bf?latestBody.bf+'% ('+latestBody.date+')':'Not logged',
+    residency_context:(()=>{try{return typeof resGetJarvisContext==='function'?resGetJarvisContext():'';}catch(e){return'';}})(),
     ...(()=>{try{const md=getMiamiData();const mAssets=md.assets.reduce((s,a)=>s+(a.value||0),0);const mLiab=md.debts.filter(d=>!d.paid).reduce((s,d)=>s+(d.balance||0),0);const mNW=mAssets-mLiab;const mInc=(md.income?.aj||0)+(md.income?.juliette||0);const mExp=md.expenses.reduce((s,e)=>s+(e.amount||0),0);const mSurplus=mInc-mExp;const activeVaults=md.vaults.filter(v=>!v.locked);const vaultStr=activeVaults.map(v=>v.name+': '+v.pct+'% ($'+Math.round(v.monthlyAmt||0)+'/mo) balance '+fmt$(v.balance||0)+(v.target?' / target '+fmt$(v.target):'')).join('; ');const debtStr=md.debts.filter(d=>!d.paid).sort((a,b)=>(b.apr||0)-(a.apr||0)).map(d=>d.name+': '+fmt$(d.balance||0)+' @ '+(d.apr||0)+'% APR').join('; ');return{miami_is_live:md.phase==='live'?'YES — Go Live activated':'NO — Plan Mode (jobs not yet secured)',miami_income:fmt$(mInc)+'/mo combined',miami_surplus:fmt$(mSurplus)+'/mo after expenses',miami_net_worth:fmt$(mNW)+' (assets '+fmt$(mAssets)+' minus debts '+fmt$(mLiab)+')',miami_vaults:vaultStr||'none configured',miami_debts:debtStr||'none'};}catch(e){return{};}})(),
   };
   try{
@@ -4285,5 +4297,756 @@ window.addEventListener('load',async()=>{
       </div>
     </div>
   </div>
+<script>
+// ═══════════════════════════════════════════
+// RESIDENCY — HF0 Season 1
+// ═══════════════════════════════════════════
+const RES_KEY='bos_residency';
+const RES_SEASON={season:1,startDate:'2026-10-19',endDate:'2027-01-03',weeks:11};
+
+// Week-group ratio targets
+function resGetRatioTarget(weekNum){
+  if(weekNum<=3)return 50;
+  if(weekNum<=7)return 65;
+  return 80;
+}
+
+// Which week of the season are we in (1-based)
+function resGetCurrentWeek(){
+  const start=new Date(2026,9,19); // Oct 19, 2026 local
+  const now=getTZ();
+  const diff=Math.floor((now-start)/(7*24*60*60*1000));
+  return Math.min(Math.max(diff+1,1),11);
+}
+
+function getResidency(){
+  try{
+    const raw=lsGet(RES_KEY);
+    if(raw)return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+
+function saveResidency(d){
+  const j=JSON.stringify(d);
+  lsSet(RES_KEY,j);
+  syncPreference('residency',j);
+}
+
+function initResidency(){
+  const existing=getResidency();
+  if(existing&&existing.seeded)return existing;
+  const d={
+    seeded:true,
+    season:1,
+    startDate:'2026-10-19',
+    endDate:'2027-01-03',
+    resTab:'today',
+    targets:[
+      // Bridge — job / Marines
+      {id:'B1',track:'bridge',label:'Receive a job offer (civilian or military)',done:false,note:''},
+      {id:'B2',track:'bridge',label:'Complete 10 PT sessions',done:false,progress:0,goal:10,note:''},
+      {id:'B3',track:'bridge',label:'Attend 3 networking events',done:false,progress:0,goal:3,note:''},
+      {id:'B4',track:'bridge',label:'Finalize resume & LinkedIn',done:false,note:''},
+      {id:'B5',track:'bridge',label:'Submit 10 job applications',done:false,progress:0,goal:10,note:''},
+      {id:'B6',track:'bridge',label:'Complete 3 informational interviews',done:false,progress:0,goal:3,note:''},
+      {id:'B7',track:'bridge',label:'Weekly mentor contact maintained',done:false,note:''},
+      // Bet — corporate housing / MTR
+      {id:'A1',track:'bet',label:'Secure first MTR or corporate housing unit',done:false,note:''},
+      {id:'A2',track:'bet',label:'Close first MTR booking',done:false,note:''},
+      {id:'A3',track:'bet',label:'Set up LLC / business entity',done:false,note:''},
+      {id:'A4',track:'bet',label:'Hit $2,000 MTR revenue',done:false,progress:0,goal:2000,note:''},
+      {id:'A5',track:'bet',label:'Live on 2 listing platforms',done:false,progress:0,goal:2,note:''},
+      {id:'A6',track:'bet',label:'Create standard operating procedures doc',done:false,note:''},
+      // Foundation — faith / health / family
+      {id:'C1',track:'foundation',label:'Daily prayer / faith practice maintained',done:false,note:''},
+      {id:'C2',track:'foundation',label:'Health protocol consistent (7+ days/wk)',done:false,note:''},
+      {id:'C3',track:'foundation',label:'Weekly call with Juliette every week',done:false,progress:0,goal:11,note:''},
+      {id:'C4',track:'foundation',label:'Diana bonding time documented',done:false,note:''},
+      {id:'C5',track:'foundation',label:'Complete 8-week Marine PT block',done:false,note:''},
+      {id:'C6',track:'foundation',label:'Tithe maintained every month',done:false,note:''}
+    ],
+    rules:[
+      'No phone first 30 min of morning',
+      'One Focus Sprint per day minimum',
+      'Every day needs at least 25 min Floor time',
+      'Ship something every day — even if small',
+      'Track signal vs noise daily',
+      'Review board meeting agenda every Sunday',
+      'Update targets at least weekly',
+      'No social media during Sprint blocks',
+      'Nighttime shutdown before midnight',
+      'Morning Foundation before 9am',
+      'Share weekly ratio with Juliette',
+      'No days off — modify, never skip'
+    ],
+    morningSteps:[
+      {id:'ms1',label:'Prayer / gratitude (5 min)'},
+      {id:'ms2',label:'Review today\'s targets'},
+      {id:'ms3',label:'Write one priority for the day'},
+      {id:'ms4',label:'Hydrate — water + supplements'},
+      {id:'ms5',label:'Set your Sprint timer'}
+    ],
+    sprintTemplates:[
+      {id:'st1',track:'bridge',label:'Bridge Sprint',desc:'Job apps, networking, Marines prep'},
+      {id:'st2',track:'bet',label:'Bet Sprint',desc:'MTR listing work, bookings, SOPs'},
+      {id:'st3',track:'foundation',label:'Foundation Sprint',desc:'Health, family, faith, recovery'}
+    ],
+    boardAgenda:[
+      'Signal-to-noise ratio review',
+      'Week score vs target',
+      'Bridge track progress (B1–B7)',
+      'Bet track progress (A1–A6)',
+      'Foundation track progress (C1–C6)',
+      'Blockers & noise audit',
+      'Next week priorities',
+      'Finance check (Miami OS)',
+      'Jarvis review — how AI helped',
+      'Commit 3 goals for next week'
+    ],
+    dailyLogs:{},
+    sprintLogs:[]
+  };
+  saveResidency(d);
+  return d;
+}
+
+function resToday(){return getLocalDateStr();}
+
+function resGetLog(date){
+  const d=getResidency()||initResidency();
+  return d.dailyLogs[date]||{date,morning:{},sprint:null,floorMin:0,shutdown:{},signalItems:[],noiseItems:[]};
+}
+
+function resSaveLog(date,log){
+  const d=getResidency()||initResidency();
+  if(!d.dailyLogs)d.dailyLogs={};
+  d.dailyLogs[date]=log;
+  saveResidency(d);
+}
+
+function resCalcRatio(log){
+  const s=(log.signalItems||[]).length;
+  const n=(log.noiseItems||[]).length;
+  if(s+n===0)return null;
+  return Math.round(s/(s+n)*100);
+}
+
+// Get all days with logs for a given week (Mon-Sun)
+function resGetWeekLogs(mondayStr){
+  const d=getResidency();
+  if(!d)return[];
+  const days=[];
+  const base=new Date(mondayStr+'T00:00:00');
+  for(let i=0;i<7;i++){
+    const dt=new Date(base);dt.setDate(base.getDate()+i);
+    const ds=getLocalDateStr(dt);
+    days.push({date:ds,log:d.dailyLogs[ds]||null});
+  }
+  return days;
+}
+
+let _resTab='today';
+
+function switchResTab(tab){
+  _resTab=tab;
+  document.querySelectorAll('#residency-tabs .ttab').forEach((el,i)=>{
+    const tabs=['today','week','targets','history','more'];
+    el.classList.toggle('on',tabs[i]===tab);
+  });
+  renderResidencyContent();
+}
+
+function renderResidency(){
+  initResidency();
+  const tabs=document.getElementById('residency-tabs');
+  if(tabs){
+    const tabList=['today','week','targets','history','more'];
+    tabs.querySelectorAll('.ttab').forEach((el,i)=>{
+      el.classList.toggle('on',tabList[i]===_resTab);
+    });
+  }
+  renderResidencyContent();
+}
+
+function renderResidencyContent(){
+  const el=document.getElementById('residency-content');
+  if(!el)return;
+  if(_resTab==='today')renderResToday(el);
+  else if(_resTab==='week')renderResWeek(el);
+  else if(_resTab==='targets')renderResTargets(el);
+  else if(_resTab==='history')renderResHistory(el);
+  else if(_resTab==='more')renderResMore(el);
+}
+
+// ── TODAY TAB ──
+function renderResToday(el){
+  const wk=resGetCurrentWeek();
+  const target=resGetRatioTarget(wk);
+  const today=resToday();
+  const log=resGetLog(today);
+  const ratio=resCalcRatio(log);
+  const ratioColor=ratio===null?'rgba(255,255,255,.3)':ratio>=target?'var(--green)':ratio>=target-15?'var(--gold)':'var(--red)';
+
+  el.innerHTML=`
+  <!-- Season banner -->
+  <div style="background:linear-gradient(135deg,rgba(123,158,232,.1) 0%,rgba(76,175,130,.07) 100%);border:0.5px solid rgba(123,158,232,.25);border-radius:12px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.12em">HF0 Residency · Season 1</div>
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-top:3px">Week ${wk} of ${RES_SEASON.weeks}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Oct 19 — Jan 3, 2027</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px;font-weight:800;color:${ratioColor}">${ratio!==null?ratio+'%':'—'}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.35);margin-top:1px">signal ratio · target ${target}%</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:rgba(0,0,0,.2);border-radius:6px;height:5px;overflow:hidden">
+      <div style="height:100%;border-radius:6px;background:${ratioColor};width:${ratio!==null?Math.min(ratio,100):0}%;transition:width .4s"></div>
+    </div>
+  </div>
+
+  <!-- Signal / Noise logger -->
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--white)">Today's Signal & Noise</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-gold-sm" onclick="resAddItem('signal')">+ Signal</button>
+        <button style="background:rgba(226,75,74,.15);border:0.5px solid var(--red);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--red)" onclick="resAddItem('noise')">+ Noise</button>
+      </div>
+    </div>
+    <div id="res-signal-list" style="display:flex;flex-direction:column;gap:4px">${renderResItemList(log.signalItems||[],'signal')}</div>
+    ${(log.noiseItems||[]).length?`<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(255,255,255,.07)"><div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Noise</div><div id="res-noise-list">${renderResItemList(log.noiseItems||[],'noise')}</div></div>`:`<div id="res-noise-list" style="display:none"></div>`}
+    ${!(log.signalItems||[]).length&&!(log.noiseItems||[]).length?`<div style="font-size:12px;color:rgba(255,255,255,.3);padding:4px 0">Log what you did today — signal moves the needle, noise doesn't.</div>`:''}
+  </div>
+
+  <!-- Morning Foundation -->
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--white)">Morning Foundation</div>
+      <div style="font-size:11px;font-weight:700;color:${resMorningComplete(log)?'var(--green)':'rgba(255,255,255,.3)'}">${resMorningComplete(log)?'✓ Done':resMorningCount(log)+'/5'}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${(getResidency()||initResidency()).morningSteps.map(s=>{
+        const done=!!(log.morning||{})[s.id];
+        return`<div onclick="resToggleMorning('${s.id}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">
+          <div style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${done?'var(--green)':'rgba(255,255,255,.2)'};background:${done?'var(--green)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            ${done?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}
+          </div>
+          <span style="font-size:12px;color:${done?'rgba(255,255,255,.4)':'var(--white)'};${done?'text-decoration:line-through':''}">${s.label}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <!-- Focus Sprint -->
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--white)">Focus Sprint</div>
+      ${log.sprint?`<span style="font-size:10px;font-weight:700;color:var(--green)">✓ Logged</span>`:''}
+    </div>
+    ${log.sprint?`
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px">
+        <div style="font-size:12px;font-weight:600;color:var(--white)">${log.sprint.label}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">${log.sprint.notes||''}</div>
+        <div style="font-size:10px;color:var(--gold);margin-top:4px">${log.sprint.duration?log.sprint.duration+' min':''}${log.sprint.track?' · '+log.sprint.track.charAt(0).toUpperCase()+log.sprint.track.slice(1):''}</div>
+      </div>
+      <button class="btn-gold-sm" style="margin-top:8px;width:100%" onclick="resLogSprint()">Edit Sprint</button>
+    `:`
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${(getResidency()||initResidency()).sprintTemplates.map(t=>{
+          const tc=t.track==='bridge'?'var(--blue)':t.track==='bet'?'var(--gold)':'var(--green)';
+          return`<div onclick="resLogSprintTemplate('${t.id}')" style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.1);border-left:3px solid ${tc};border-radius:8px;padding:10px 12px;cursor:pointer">
+            <div style="font-size:12px;font-weight:700;color:var(--white)">${t.label}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">${t.desc}</div>
+          </div>`;
+        }).join('')}
+        <button class="btn-gold-sm" style="width:100%;margin-top:2px" onclick="resLogSprint()">Custom Sprint...</button>
+      </div>
+    `}
+  </div>
+
+  <!-- Floor -->
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--white)">Floor Time</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">25 min minimum per day</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800;color:${(log.floorMin||0)>=25?'var(--green)':'var(--gold)'}">${log.floorMin||0}<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4)">m</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button onclick="resAddFloor(15)" style="flex:1;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font-size:12px;font-weight:700;color:var(--white)">+15m</button>
+      <button onclick="resAddFloor(25)" style="flex:1;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font-size:12px;font-weight:700;color:var(--white)">+25m</button>
+      <button onclick="resAddFloor(60)" style="flex:1;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font-size:12px;font-weight:700;color:var(--white)">+1hr</button>
+      <button onclick="resSetFloor()" style="flex:1;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font-size:12px;font-weight:700;color:var(--gold)">Set</button>
+    </div>
+  </div>
+
+  <!-- Night Shutdown -->
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:13px;font-weight:700;color:var(--white)">Night Shutdown</div>
+      <div style="font-size:11px;font-weight:700;color:${resShutdownComplete(log)?'var(--green)':'rgba(255,255,255,.3)'}">${resShutdownComplete(log)?'✓ Done':resShutdownCount(log)+'/8'}</div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px">Before midnight — close out the day clean</div>
+    <button onclick="resOpenShutdown()" style="width:100%;background:${resShutdownComplete(log)?'rgba(76,175,130,.15)':'rgba(232,188,80,.08)'};border:0.5px solid ${resShutdownComplete(log)?'var(--green)':'rgba(232,188,80,.3)'};border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:${resShutdownComplete(log)?'var(--green)':'var(--gold)'}">${resShutdownComplete(log)?'Review Shutdown':'Start Shutdown Wizard'}</button>
+  </div>
+
+  <!-- Ask Jarvis -->
+  <div class="jcard" style="cursor:pointer" onclick="resAskJarvis()">
+    <div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">⚡ Jarvis · Residency</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6)">Ask Jarvis about your Season 1 progress, targets, or ratio...</div>
+    <div style="font-size:10px;color:var(--gold);margin-top:6px">Ask now →</div>
+  </div>`;
+}
+
+function renderResItemList(items,type){
+  if(!items.length)return'';
+  const color=type==='signal'?'var(--green)':'var(--red)';
+  return items.map((item,i)=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.05)">
+    <span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;padding-top:2px;flex-shrink:0">${type==='signal'?'S':'N'}</span>
+    <span style="flex:1;font-size:12px;color:var(--white);line-height:1.4">${item.text}</span>
+    <span onclick="resRemoveItem('${type}',${i})" style="font-size:16px;color:rgba(255,255,255,.2);cursor:pointer;padding:0 2px;flex-shrink:0">×</span>
+  </div>`).join('');
+}
+
+function resMorningCount(log){return Object.values(log.morning||{}).filter(Boolean).length;}
+function resMorningComplete(log){return resMorningCount(log)===5;}
+function resShutdownCount(log){return Object.values(log.shutdown||{}).filter(Boolean).length;}
+function resShutdownComplete(log){return resShutdownCount(log)===8;}
+
+function resToggleMorning(stepId){
+  const today=resToday();
+  const log=resGetLog(today);
+  if(!log.morning)log.morning={};
+  log.morning[stepId]=!log.morning[stepId];
+  resSaveLog(today,log);
+  renderResidencyContent();
+}
+
+function resAddFloor(min){
+  const today=resToday();
+  const log=resGetLog(today);
+  log.floorMin=(log.floorMin||0)+min;
+  resSaveLog(today,log);
+  renderResidencyContent();
+  if(log.floorMin>=25)showSuccess('Floor: '+log.floorMin+' min logged ✓');
+}
+
+function resSetFloor(){
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Set Floor Time</div>
+    <div class="field-group" style="margin-top:8px"><label class="field-label">Minutes</label><input class="field-input" id="res-floor-inp" type="number" min="0" max="480" placeholder="e.g. 45"></div>
+    <button class="btn-primary" style="margin-top:14px" onclick="resSaveFloor()">Save</button>`);
+  setTimeout(()=>document.getElementById('res-floor-inp')?.focus(),80);
+}
+function resSaveFloor(){
+  const v=parseInt(document.getElementById('res-floor-inp')?.value||'0',10);
+  if(isNaN(v)||v<0)return;
+  const today=resToday();
+  const log=resGetLog(today);
+  log.floorMin=v;
+  resSaveLog(today,log);
+  closeModal();renderResidencyContent();
+  showSuccess('Floor time saved');
+}
+
+function resAddItem(type){
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">${type==='signal'?'Add Signal':'Add Noise'}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px">${type==='signal'?'What moved the needle today?':'What wasted your time or energy?'}</div>
+    <textarea class="field-input" id="res-item-inp" rows="3" placeholder="${type==='signal'?'e.g. Applied to 3 jobs, hit PR on bench...':'e.g. 2 hrs scrolling, missed morning routine...'}"></textarea>
+    <button class="btn-primary" style="margin-top:14px" onclick="resSaveItem('${type}')">Add ${type.charAt(0).toUpperCase()+type.slice(1)}</button>`);
+  setTimeout(()=>document.getElementById('res-item-inp')?.focus(),80);
+}
+function resSaveItem(type){
+  const text=(document.getElementById('res-item-inp')?.value||'').trim();
+  if(!text)return;
+  const today=resToday();
+  const log=resGetLog(today);
+  const key=type==='signal'?'signalItems':'noiseItems';
+  if(!log[key])log[key]=[];
+  log[key].push({text,ts:Date.now()});
+  resSaveLog(today,log);
+  closeModal();renderResidencyContent();
+}
+function resRemoveItem(type,idx){
+  const today=resToday();
+  const log=resGetLog(today);
+  const key=type==='signal'?'signalItems':'noiseItems';
+  if(log[key])log[key].splice(idx,1);
+  resSaveLog(today,log);renderResidencyContent();
+}
+
+function resLogSprint(){
+  const today=resToday();
+  const log=resGetLog(today);
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Log Focus Sprint</div>
+    <div class="field-group"><label class="field-label">Sprint Label</label><input class="field-input" id="res-sp-label" value="${log.sprint?.label||''}" placeholder="e.g. Bridge Sprint — Job Applications"></div>
+    <div class="field-group" style="margin-top:10px"><label class="field-label">Track</label>
+      <select class="field-input" id="res-sp-track">
+        <option value="bridge" ${log.sprint?.track==='bridge'?'selected':''}>Bridge (Job / Marines)</option>
+        <option value="bet" ${log.sprint?.track==='bet'?'selected':''}>Bet (MTR / Housing)</option>
+        <option value="foundation" ${log.sprint?.track==='foundation'?'selected':''}>Foundation (Health / Family / Faith)</option>
+      </select>
+    </div>
+    <div class="field-group" style="margin-top:10px"><label class="field-label">Duration (min)</label><input class="field-input" id="res-sp-dur" type="number" min="5" max="480" value="${log.sprint?.duration||''}"></div>
+    <div class="field-group" style="margin-top:10px"><label class="field-label">Notes</label><textarea class="field-input" id="res-sp-notes" rows="3" placeholder="What did you actually do?">${log.sprint?.notes||''}</textarea></div>
+    <button class="btn-primary" style="margin-top:14px" onclick="resSaveSprint()">Save Sprint</button>`);
+}
+function resLogSprintTemplate(templateId){
+  const d=getResidency()||initResidency();
+  const t=d.sprintTemplates.find(x=>x.id===templateId);
+  if(!t)return;
+  const today=resToday();
+  const log=resGetLog(today);
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">${t.label}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:12px">${t.desc}</div>
+    <div class="field-group"><label class="field-label">Duration (min)</label><input class="field-input" id="res-sp-dur" type="number" min="5" max="480" placeholder="e.g. 90"></div>
+    <div class="field-group" style="margin-top:10px"><label class="field-label">Notes</label><textarea class="field-input" id="res-sp-notes" rows="3" placeholder="What did you work on?"></textarea></div>
+    <input type="hidden" id="res-sp-label" value="${t.label}"><input type="hidden" id="res-sp-track" value="${t.track}">
+    <button class="btn-primary" style="margin-top:14px" onclick="resSaveSprint()">Save Sprint</button>`);
+}
+function resSaveSprint(){
+  const label=(document.getElementById('res-sp-label')?.value||'').trim();
+  const track=document.getElementById('res-sp-track')?.value||'bridge';
+  const dur=parseInt(document.getElementById('res-sp-dur')?.value||'0',10);
+  const notes=(document.getElementById('res-sp-notes')?.value||'').trim();
+  const today=resToday();
+  const log=resGetLog(today);
+  log.sprint={label,track,duration:dur||null,notes,ts:Date.now()};
+  // auto-add sprint as signal if notes exist
+  if(notes&&!(log.signalItems||[]).find(i=>i.text===notes)){
+    if(!log.signalItems)log.signalItems=[];
+    log.signalItems.push({text:(label?label+': ':'')+notes,ts:Date.now()});
+  }
+  resSaveLog(today,log);closeModal();renderResidencyContent();
+  showSuccess('Sprint logged');
+}
+
+// Night Shutdown wizard (8 steps)
+const SHUTDOWN_STEPS=[
+  {id:'sd1',label:'Review signal/noise ratio for today'},
+  {id:'sd2',label:'Log any remaining signal or noise items'},
+  {id:'sd3',label:'Update at least one target'},
+  {id:'sd4',label:'Set tomorrow\'s one priority'},
+  {id:'sd5',label:'Inbox zero or flag emails'},
+  {id:'sd6',label:'Phone charged & across room'},
+  {id:'sd7',label:'Tomorrow\'s clothes / gear ready'},
+  {id:'sd8',label:'Gratitude — one thing that went right'}
+];
+function resOpenShutdown(){
+  const today=resToday();
+  const log=resGetLog(today);
+  const sd=log.shutdown||{};
+  showModal(`<div class="sheet-handle"></div><div class="sheet-title">Night Shutdown</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:12px">Close out the day. Check each step to complete.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${SHUTDOWN_STEPS.map(s=>`
+        <div onclick="resToggleShutdown('${s.id}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:0.5px solid ${sd[s.id]?'var(--green)':'rgba(255,255,255,.1)'}">
+          <div style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${sd[s.id]?'var(--green)':'rgba(255,255,255,.2)'};background:${sd[s.id]?'var(--green)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            ${sd[s.id]?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}
+          </div>
+          <span style="font-size:12px;color:${sd[s.id]?'rgba(255,255,255,.4)':'var(--white)'};${sd[s.id]?'text-decoration:line-through':''}">${s.label}</span>
+        </div>`).join('')}
+    </div>
+    <button class="btn-primary" style="margin-top:14px" onclick="closeModal();renderResidencyContent()">Done</button>`);
+}
+function resToggleShutdown(stepId){
+  const today=resToday();
+  const log=resGetLog(today);
+  if(!log.shutdown)log.shutdown={};
+  log.shutdown[stepId]=!log.shutdown[stepId];
+  resSaveLog(today,log);
+  // re-render the shutdown modal in place
+  resOpenShutdown();
+}
+
+// ── WEEK TAB ──
+function renderResWeek(el){
+  const wk=resGetCurrentWeek();
+  const target=resGetRatioTarget(wk);
+  const mon=getWeekOf(getTZ());
+  const days=resGetWeekLogs(mon);
+  const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  el.innerHTML=`
+  <div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;margin-bottom:2px">
+    <div style="font-size:11px;font-weight:700;color:var(--white)">Week ${wk} · Target: ${target}%</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Signal-to-noise — signal is everything that moves the needle.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+    ${days.map((d,i)=>{
+      const ratio=d.log?resCalcRatio(d.log):null;
+      const isToday=d.date===resToday();
+      const color=ratio===null?'rgba(255,255,255,.12)':ratio>=target?'var(--green)':ratio>=target-15?'var(--gold)':'var(--red)';
+      return`<div onclick="resOpenDayDetail('${d.date}')" style="cursor:pointer;background:rgba(255,255,255,.04);border:0.5px solid ${isToday?'var(--gold)':'rgba(255,255,255,.08)'};border-radius:10px;padding:8px 4px;text-align:center">
+        <div style="font-size:9px;font-weight:700;color:${isToday?'var(--gold)':'rgba(255,255,255,.4)'}">${dayNames[i]}</div>
+        <div style="font-size:16px;font-weight:800;color:${color};margin-top:4px">${ratio!==null?ratio:'—'}</div>
+        <div style="font-size:8px;color:rgba(255,255,255,.25);margin-top:2px">${ratio!==null?'%':''}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:2px">
+    ${days.filter(d=>d.log).map(d=>{
+      const ratio=resCalcRatio(d.log);
+      const s=(d.log.signalItems||[]).length,n=(d.log.noiseItems||[]).length;
+      const color=ratio===null?'rgba(255,255,255,.3)':ratio>=target?'var(--green)':ratio>=target-15?'var(--gold)':'var(--red)';
+      return`<div class="card" style="padding:11px 13px;cursor:pointer" onclick="resOpenDayDetail('${d.date}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;font-weight:700;color:var(--white)">${fmt(d.date)}</div>
+          <div style="font-size:18px;font-weight:800;color:${color}">${ratio!==null?ratio+'%':'—'}</div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:3px">${s} signal · ${n} noise${d.log.sprint?` · Sprint: ${d.log.sprint.label}`:''}${d.log.floorMin?' · Floor: '+d.log.floorMin+'m':''}</div>
+      </div>`;
+    }).join('')}
+    ${!days.filter(d=>d.log).length?`<div style="font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:20px 0">No logs yet this week</div>`:''}
+  </div>`;
+}
+
+function resOpenDayDetail(date){
+  const log=resGetLog(date);
+  const ratio=resCalcRatio(log);
+  const wk=resGetCurrentWeek();const target=resGetRatioTarget(wk);
+  const s=(log.signalItems||[]).length,n=(log.noiseItems||[]).length;
+  const color=ratio===null?'rgba(255,255,255,.3)':ratio>=target?'var(--green)':ratio>=target-15?'var(--gold)':'var(--red)';
+  showModal(`<div class="sheet-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div class="sheet-title" style="margin:0">${fmt(date)}</div>
+      <div style="font-size:24px;font-weight:800;color:${color}">${ratio!==null?ratio+'%':'No data'}</div>
+    </div>
+    ${s?`<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Signal (${s})</div>${(log.signalItems||[]).map(i=>`<div style="font-size:12px;color:var(--white);padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">${i.text}</div>`).join('')}`:''}
+    ${n?`<div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.1em;margin:10px 0 6px">Noise (${n})</div>${(log.noiseItems||[]).map(i=>`<div style="font-size:12px;color:var(--white);padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">${i.text}</div>`).join('')}`:''}
+    ${log.sprint?`<div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,.04);border-radius:8px"><div style="font-size:11px;font-weight:700;color:var(--gold)">Sprint</div><div style="font-size:12px;color:var(--white);margin-top:3px">${log.sprint.label}</div>${log.sprint.notes?`<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">${log.sprint.notes}</div>`:''}</div>`:''}
+    <button class="btn-primary" style="margin-top:14px" onclick="closeModal()">Close</button>`);
+}
+
+// ── TARGETS TAB ──
+function renderResTargets(el){
+  const d=getResidency()||initResidency();
+  const tracks=[
+    {id:'bridge',label:'Bridge',color:'var(--blue)',emoji:'🌉'},
+    {id:'bet',label:'Bet',color:'var(--gold)',emoji:'🏠'},
+    {id:'foundation',label:'Foundation',color:'var(--green)',emoji:'⚓'}
+  ];
+  el.innerHTML=tracks.map(track=>{
+    const targets=d.targets.filter(t=>t.track===track.id);
+    const done=targets.filter(t=>t.done).length;
+    return`<div style="background:rgba(255,255,255,.04);border:0.5px solid rgba(255,255,255,.08);border-left:3px solid ${track.color};border-radius:12px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:${track.color}">${track.emoji} ${track.label}</div>
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4)">${done}/${targets.length}</div>
+      </div>
+      ${targets.map(t=>`
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,.06);cursor:pointer" onclick="resOpenTarget('${t.id}')">
+          <div onclick="event.stopPropagation();resToggleTarget('${t.id}')" style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${t.done?track.color:'rgba(255,255,255,.2)'};background:${t.done?track.color:'transparent'};flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">
+            ${t.done?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);margin-bottom:2px">${t.id}</div>
+            <div style="font-size:12px;color:${t.done?'rgba(255,255,255,.4)':'var(--white)'};${t.done?'text-decoration:line-through':''}line-height:1.4">${t.label}</div>
+            ${t.progress!==undefined?`<div style="margin-top:6px;background:rgba(0,0,0,.2);border-radius:4px;height:3px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${track.color};width:${Math.min(Math.round((t.progress/t.goal)*100),100)}%;transition:width .3s"></div></div><div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:3px">${t.progress}/${t.goal}</div>`:''}
+            ${t.note?`<div style="font-size:10px;color:var(--gold);margin-top:4px">${t.note}</div>`:''}
+          </div>
+          <span style="font-size:16px;color:rgba(255,255,255,.2);flex-shrink:0">›</span>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function resToggleTarget(id){
+  const d=getResidency()||initResidency();
+  const t=d.targets.find(x=>x.id===id);
+  if(!t)return;
+  t.done=!t.done;
+  saveResidency(d);
+  renderResidencyContent();
+  if(t.done)showSuccess('Target '+id+' completed ✓');
+}
+
+function resOpenTarget(id){
+  const d=getResidency()||initResidency();
+  const t=d.targets.find(x=>x.id===id);
+  if(!t)return;
+  const trackColor=t.track==='bridge'?'var(--blue)':t.track==='bet'?'var(--gold)':'var(--green)';
+  showModal(`<div class="sheet-handle"></div>
+    <div style="font-size:9px;font-weight:700;color:${trackColor};text-transform:uppercase;letter-spacing:.1em">${id} · ${t.track.charAt(0).toUpperCase()+t.track.slice(1)}</div>
+    <div class="sheet-title" style="margin-top:4px">${t.label}</div>
+    ${t.progress!==undefined?`
+    <div class="field-group" style="margin-top:12px"><label class="field-label">Progress (of ${t.goal})</label>
+      <input class="field-input" id="res-tgt-prog" type="number" min="0" max="${t.goal*2}" value="${t.progress||0}"></div>`:''}
+    <div class="field-group" style="margin-top:10px"><label class="field-label">Notes</label>
+      <textarea class="field-input" id="res-tgt-note" rows="3" placeholder="Updates, blockers, wins...">${t.note||''}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-primary" style="flex:1" onclick="resSaveTarget('${id}')">Save</button>
+      <button onclick="resToggleTarget('${id}');closeModal()" style="flex:1;background:${t.done?'rgba(76,175,130,.15)':'rgba(255,255,255,.06)'};border:0.5px solid ${t.done?'var(--green)':'rgba(255,255,255,.12)'};border-radius:12px;padding:14px;font-size:14px;font-weight:700;color:${t.done?'var(--green)':'var(--white)'}">${t.done?'Unmark':'Mark Done'}</button>
+    </div>`);
+}
+function resSaveTarget(id){
+  const d=getResidency()||initResidency();
+  const t=d.targets.find(x=>x.id===id);
+  if(!t)return;
+  const prog=document.getElementById('res-tgt-prog');
+  if(prog)t.progress=parseInt(prog.value||'0',10);
+  const note=document.getElementById('res-tgt-note');
+  if(note)t.note=note.value.trim();
+  saveResidency(d);closeModal();renderResidencyContent();
+  showSuccess('Target updated');
+}
+
+// ── HISTORY TAB ──
+function renderResHistory(el){
+  const d=getResidency();
+  if(!d||!Object.keys(d.dailyLogs||{}).length){
+    el.innerHTML=`<div style="font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:40px 0">No history yet — start logging today.</div>`;
+    return;
+  }
+  const wk=resGetCurrentWeek();const target=resGetRatioTarget(wk);
+  const entries=Object.entries(d.dailyLogs).sort((a,b)=>b[0].localeCompare(a[0]));
+  el.innerHTML=entries.map(([date,log])=>{
+    const ratio=resCalcRatio(log);
+    const s=(log.signalItems||[]).length,n=(log.noiseItems||[]).length;
+    const color=ratio===null?'rgba(255,255,255,.3)':ratio>=target?'var(--green)':ratio>=target-15?'var(--gold)':'var(--red)';
+    const morning=Object.values(log.morning||{}).filter(Boolean).length;
+    const shutdown=Object.values(log.shutdown||{}).filter(Boolean).length;
+    return`<div class="card" style="padding:11px 13px;cursor:pointer" onclick="resOpenDayDetail('${date}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:700;color:var(--white)">${fmt(date)}</div>
+        <div style="font-size:20px;font-weight:800;color:${color}">${ratio!==null?ratio+'%':'—'}</div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+        <span>${s}S · ${n}N</span>
+        ${log.sprint?`<span>Sprint ✓</span>`:''}
+        ${morning?`<span>AM ${morning}/5</span>`:''}
+        ${shutdown?`<span>Shutdown ${shutdown}/8</span>`:''}
+        ${log.floorMin?`<span>Floor ${log.floorMin}m</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MORE TAB ──
+function renderResMore(el){
+  const d=getResidency()||initResidency();
+  const wk=resGetCurrentWeek();const target=resGetRatioTarget(wk);
+  el.innerHTML=`
+  <!-- Season info -->
+  <div class="card" style="padding:12px 14px">
+    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:8px">Season 1 Overview</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.5);display:flex;flex-direction:column;gap:4px">
+      <div>📅 Oct 19, 2026 — Jan 3, 2027</div>
+      <div>📊 Week ${wk} of 11 · Target ${target}%</div>
+      <div>🎯 ${d.targets.filter(t=>t.done).length}/${d.targets.length} targets complete</div>
+    </div>
+  </div>
+
+  <!-- Rules -->
+  <div class="card" style="padding:12px 14px">
+    <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:10px">Season Rules</div>
+    ${d.rules.map((r,i)=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">
+      <span style="font-size:10px;font-weight:700;color:var(--gold);min-width:16px">${i+1}.</span>
+      <span style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.4">${r}</span>
+    </div>`).join('')}
+  </div>
+
+  <!-- Board Meeting -->
+  <div class="card" style="padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--white)">Sunday Board Meeting</div>
+      <button class="btn-gold-sm" onclick="resOpenBoardMeeting()">Run Now</button>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4)">Weekly review · Every Sunday</div>
+    <div style="display:flex;flex-direction:column;gap:3px;margin-top:8px">
+      ${d.boardAgenda.map((item,i)=>`<div style="font-size:11px;color:rgba(255,255,255,.7);padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,.05)"><span style="color:var(--gold);font-weight:700">${i+1}.</span> ${item}</div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Ask Jarvis -->
+  <div class="jcard" style="cursor:pointer" onclick="resAskJarvis()">
+    <div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">⚡ Jarvis · Residency</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6)">Get a full Season 1 debrief from Jarvis — ratio, targets, wins, blockers.</div>
+    <div style="font-size:10px;color:var(--gold);margin-top:6px">Ask Jarvis →</div>
+  </div>`;
+}
+
+function resOpenBoardMeeting(){
+  const d=getResidency()||initResidency();
+  const wk=resGetCurrentWeek();const target=resGetRatioTarget(wk);
+  const mon=getWeekOf(getTZ());
+  const days=resGetWeekLogs(mon);
+  const ratios=days.map(d=>resCalcRatio(d.log)).filter(r=>r!==null);
+  const avgRatio=ratios.length?Math.round(ratios.reduce((a,b)=>a+b,0)/ratios.length):null;
+  showModal(`<div class="sheet-handle"></div>
+    <div class="sheet-title">Sunday Board Meeting</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:12px">Week ${wk} · Avg ratio: ${avgRatio!==null?avgRatio+'%':'no data'} · Target: ${target}%</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${d.boardAgenda.map((item,i)=>`
+        <div style="display:flex;gap:10px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px">
+          <span style="font-size:11px;font-weight:700;color:var(--gold);min-width:18px">${i+1}.</span>
+          <span style="font-size:12px;color:var(--white);line-height:1.4">${item}</span>
+        </div>`).join('')}
+    </div>
+    <button class="btn-primary" style="margin-top:14px" onclick="resAskJarvisBoard();closeModal()">Ask Jarvis for Review</button>
+    <button onclick="closeModal()" style="width:100%;margin-top:8px;background:transparent;border:0.5px solid rgba(255,255,255,.15);border-radius:12px;padding:13px;font-size:13px;font-weight:700;color:rgba(255,255,255,.6)">Close</button>`);
+}
+
+// ── JARVIS INTEGRATION ──
+function resGetJarvisContext(){
+  const d=getResidency()||initResidency();
+  const wk=resGetCurrentWeek();
+  const target=resGetRatioTarget(wk);
+  const today=resToday();
+  const todayLog=resGetLog(today);
+  const todayRatio=resCalcRatio(todayLog);
+  const mon=getWeekOf(getTZ());
+  const days=resGetWeekLogs(mon);
+  const ratios=days.map(d=>resCalcRatio(d.log)).filter(r=>r!==null);
+  const avgRatio=ratios.length?Math.round(ratios.reduce((a,b)=>a+b,0)/ratios.length):null;
+  const doneTargets=d.targets.filter(t=>t.done).map(t=>t.id+': '+t.label);
+  const pendingTargets=d.targets.filter(t=>!t.done).map(t=>t.id+': '+t.label);
+  const todaySignal=(todayLog.signalItems||[]).map(i=>i.text).join('; ');
+  const todayNoise=(todayLog.noiseItems||[]).map(i=>i.text).join('; ');
+  return `
+=== HF0 RESIDENCY — SEASON 1 ===
+Season: Oct 19 2026 – Jan 3 2027 (11 weeks)
+Current week: ${wk} of 11
+Ratio target this phase: ${target}%
+Today's ratio: ${todayRatio!==null?todayRatio+'%':'not logged yet'}
+This week avg ratio: ${avgRatio!==null?avgRatio+'%':'no data'}
+
+TODAY'S SIGNAL: ${todaySignal||'none logged yet'}
+TODAY'S NOISE: ${todayNoise||'none logged yet'}
+Morning Foundation: ${resMorningCount(todayLog)}/5 complete
+Focus Sprint: ${todayLog.sprint?todayLog.sprint.label+' ('+todayLog.sprint.track+')'  :'not logged'}
+Floor time: ${todayLog.floorMin||0} min (target 25+)
+Night Shutdown: ${resShutdownCount(todayLog)}/8
+
+COMPLETED TARGETS (${doneTargets.length}):
+${doneTargets.join('\n') || 'None yet'}
+
+PENDING TARGETS (${pendingTargets.length}):
+${pendingTargets.join('\n')}`;
+}
+
+function resAskJarvis(){
+  // Open Jarvis modal with residency context injected
+  openJarvis();
+  // Prefill a residency prompt
+  setTimeout(()=>{
+    const inp=document.getElementById('jarvis-input');
+    if(inp){inp.value='Give me a quick read on my Season 1 Residency — ratio, targets, what to focus on today.';inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,130)+'px';}
+  },300);
+}
+
+function resAskJarvisBoard(){
+  openJarvis();
+  setTimeout(()=>{
+    const inp=document.getElementById('jarvis-input');
+    if(inp){inp.value='Run my Sunday Board Meeting. Review Week '+resGetCurrentWeek()+' ratio, all 3 tracks, wins, blockers, and give me 3 priorities for next week.';inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,130)+'px';}
+  },300);
+}
+</script>
 </body>
 </html>
