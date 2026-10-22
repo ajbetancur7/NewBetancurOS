@@ -5209,9 +5209,11 @@ function routineDoneStep(){
   routineRenderStep(_rtType,_rtStep);
 }
 function routineSkipStep(){
-  _rtStep++;
   const d=getRoutines()||initRoutines();
   const steps=d[_rtType].steps;
+  if(_rtStep<steps.length)_rtLog[steps[_rtStep].id]='skip';
+  _rtSaveProgress();
+  _rtStep++;
   if(_rtStep>=steps.length){routineShowComplete(_rtType);return;}
   routineRenderStep(_rtType,_rtStep);
 }
