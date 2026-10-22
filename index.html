@@ -5128,20 +5128,24 @@ function renderRoutineWidget(){
   const today=getLocalDateStr();
   const ml=getRoutineLog('morning',today),nl=getRoutineLog('night',today);
   const mp=calcRoutinePct(ml,d.morning.steps),np=calcRoutinePct(nl,d.night.steps);
-  const mc=mp===100?'var(--green)':mp>0?'var(--gold)':'rgba(255,255,255,.3)';
-  const nc=np===100?'var(--green)':np>0?'var(--gold)':'rgba(255,255,255,.3)';
-  const ms=mp===100?'Complete \u2713':mp>0?'In progress \u00b7 '+mp+'%':'Not started';
-  const ns=np===100?'Complete \u2713':np>0?'In progress \u00b7 '+np+'%':'Not started';
-  const base='display:flex;flex-direction:column;gap:4px;background:var(--bg-dark);border-radius:12px;padding:12px 14px;cursor:pointer;flex:1';
+  function rtCard(type,pct,log,steps){
+    const icon=type==='morning'?'\u2600\ufe0f':'\ud83c\udf19';
+    const lbl=type==='morning'?'Morning':'Night';
+    const done=steps.filter(function(s){return log.steps&&log.steps[s.id]===true;}).length;
+    const c=pct===100?'var(--green)':pct>0?'var(--gold)':'rgba(255,255,255,.35)';
+    const status=pct===100?'Complete \u2713':pct>0?done+' / '+steps.length+' done':'Tap to start \u2192';
+    const bar=pct===100?'var(--green)':pct>0?'var(--gold)':'transparent';
+    return '<div onclick="showRoutineWalkthrough(\''+type+'\')" style="flex:1;background:var(--bg-dark);border-radius:13px;padding:13px 14px 11px;cursor:pointer;overflow:hidden">'
+      +'<div style="font-size:8.5px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.13em;margin-bottom:5px">'+icon+' '+lbl+'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:'+c+';margin-bottom:10px">'+status+'</div>'
+      +'<div style="height:2px;background:rgba(255,255,255,.07);border-radius:2px">'
+      +'<div style="height:2px;background:'+bar+';border-radius:2px;width:'+pct+'%"></div>'
+      +'</div></div>';
+  }
   return '<div style="display:flex;gap:8px;margin:8px 0 2px">'
-    +'<div onclick="showRoutineWalkthrough(\'morning\')" style="'+base+'">'
-    +'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">Morning Routine</div>'
-    +'<div style="font-size:12px;font-weight:600;color:'+mc+'">'+ms+'</div>'
-    +'</div>'
-    +'<div onclick="showRoutineWalkthrough(\'night\')" style="'+base+'">'
-    +'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">Night Routine</div>'
-    +'<div style="font-size:12px;font-weight:600;color:'+nc+'">'+ns+'</div>'
-    +'</div></div>';
+    +rtCard('morning',mp,ml,d.morning.steps)
+    +rtCard('night',np,nl,d.night.steps)
+    +'</div>';
 }
 function showRoutineWalkthrough(type){
   const d=getRoutines()||initRoutines();
@@ -5161,44 +5165,60 @@ function routineRenderStep(type,idx){
   const step=steps[idx];
   if(!step){routineShowComplete(type);return;}
   const total=steps.length;
-  const pct=Math.round((idx/total)*100);
-  const label=type==='morning'?'Morning Routine':'Night Routine';
-  const prev=idx>0?'<button onclick="routineBackStep()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:0">\u2190 Back</button>':'<span></span>';
+  const label=type==='morning'?'MORNING RITUAL':'NIGHT RITUAL';
+  // Pill progress track
+  const dots=steps.map(function(s,i){
+    const done=_rtLog[s.id]===true||_rtLog[s.id]===false;
+    const skipped=_rtLog[s.id]==='skip';
+    const isCur=i===idx;
+    if(isCur)return '<div style="height:3px;border-radius:3px;background:var(--gold);flex:2"></div>';
+    if(done)return '<div style="height:3px;border-radius:3px;background:rgba(76,175,130,.55);flex:1"></div>';
+    if(skipped)return '<div style="height:3px;border-radius:3px;background:rgba(255,255,255,.15);flex:1"></div>';
+    return '<div style="height:3px;border-radius:3px;background:rgba(255,255,255,.09);flex:1"></div>';
+  }).join('');
+  const backBtn=idx>0
+    ?'<button onclick="routineBackStep()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:13px;font-weight:600;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px">\u2190 Back</button>'
+    :'<span></span>';
   let actionHTML='';
   if(step.type==='check'){
     const isDone=_rtLog[step.id]===true;
     const isNo=_rtLog[step.id]===false;
-    actionHTML='<div style="display:flex;gap:10px;margin-top:4px">'
-      +'<button onclick="routineSetCheck(\''+step.id+'\',true)" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:'+(isDone?'var(--green)':'rgba(255,255,255,.08)')+';color:white">\u2713 Yes</button>'
-      +'<button onclick="routineSetCheck(\''+step.id+'\',false)" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:'+(isNo?'rgba(220,80,80,.7)':'rgba(255,255,255,.08)')+';color:white">\u00d7 No</button>'
+    actionHTML='<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">Did you do it?</div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="routineSetCheck(\''+step.id+'\',true)" style="flex:1;padding:22px 0;border-radius:16px;border:2px solid '+(isDone?'rgba(76,175,130,.8)':'rgba(255,255,255,.1)')+';font-size:16px;font-weight:700;cursor:pointer;background:'+(isDone?'rgba(76,175,130,.13)':'transparent')+';color:'+(isDone?'var(--green)':'rgba(255,255,255,.4)')+'">\u2713  Yes</button>'
+      +'<button onclick="routineSetCheck(\''+step.id+'\',false)" style="flex:1;padding:22px 0;border-radius:16px;border:2px solid '+(isNo?'rgba(220,80,80,.7)':'rgba(255,255,255,.1)')+';font-size:16px;font-weight:700;cursor:pointer;background:'+(isNo?'rgba(220,80,80,.1)':'transparent')+';color:'+(isNo?'rgba(220,100,100,.9)':'rgba(255,255,255,.4)')+'">\u00d7  No</button>'
       +'</div>';
   } else if(step.type==='jarvis'){
     const advice=_rtJarvis[step.id];
-    actionHTML='<div style="margin-top:4px">'
-      +(advice?'<div style="background:rgba(232,188,80,.08);border:0.5px solid rgba(232,188,80,.25);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:12px">'+advice+'</div>':'')
-      +'<button onclick="routineAskJarvisStep(\''+step.id+'\',\''+type+'\')" style="width:100%;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:var(--black);margin-bottom:10px">'+(advice?'\u21bb Ask Again':'Ask Jarvis')+'</button>'
+    actionHTML=(advice?'<div style="background:rgba(232,188,80,.06);border:0.5px solid rgba(232,188,80,.18);border-radius:14px;padding:16px;font-size:13px;color:rgba(255,255,255,.78);line-height:1.7;margin-bottom:14px">'+advice+'</div>':'')
+      +'<button onclick="routineAskJarvisStep(\''+step.id+'\',\''+type+'\')" style="width:100%;padding:18px;border-radius:16px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:#1a1c22;margin-bottom:10px;letter-spacing:.01em">'+(advice?'\u21ba Ask Again':'\u26a1  Ask Jarvis')+'</button>'
       +'<div style="display:flex;gap:10px">'
-      +'<button onclick="routineSkipStep()" style="flex:1;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)">Skip</button>'
-      +'<button onclick="routineDoneStep()" style="flex:2;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:white">Done</button>'
-      +'</div></div>';
-  } else {
-    actionHTML='<div style="display:flex;gap:10px;margin-top:4px">'
-      +'<button onclick="routineSkipStep()" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)">Skip</button>'
-      +'<button onclick="routineDoneStep()" style="flex:2;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:white">Done</button>'
+      +'<button onclick="routineSkipStep()" style="flex:1;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.07);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.25)">Skip</button>'
+      +'<button onclick="routineDoneStep()" style="flex:2;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.1);font-size:14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)">Done</button>'
       +'</div>';
+  } else {
+    actionHTML='<button onclick="routineDoneStep()" style="width:100%;padding:20px;border-radius:16px;border:none;font-size:16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:#1a1c22;letter-spacing:.02em">Done</button>'
+      +'<button onclick="routineSkipStep()" style="width:100%;padding:13px;border-radius:16px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.2);margin-top:4px">skip</button>';
   }
-  const durStr=step.duration>0?step.duration+' min':'';
-  showModal('<div class="sheet-handle"></div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+prev
-    +'<span style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">'+label+'</span>'
-    +'<span style="font-size:9px;color:rgba(255,255,255,.3)">'+(idx+1)+' / '+total+'</span></div>'
-    +'<div style="height:3px;background:rgba(255,255,255,.08);border-radius:3px;margin-bottom:16px"><div style="height:3px;background:var(--gold);border-radius:3px;width:'+pct+'%"></div></div>'
-    +'<div style="font-size:17px;font-weight:700;color:var(--white);line-height:1.35;margin-bottom:6px">'+step.label+'</div>'
-    +(durStr?'<div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:12px">\u23f1 '+durStr+'</div>':'<div style="margin-bottom:12px"></div>')
+  const durStr=step.duration>0?'<div style="font-size:11px;color:rgba(255,255,255,.25);font-weight:600;margin-bottom:28px">\u23f1 '+step.duration+' min</div>':'';
+  showModal(
+    '<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 64px)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">'+backBtn
+    +'<span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.22)">'+(idx+1)+'<span style="color:rgba(255,255,255,.12)"> / '+total+'</span></span></div>'
+    +'<div style="display:flex;gap:4px;margin-bottom:36px">'+dots+'</div>'
+    +'<div style="flex:1">'
+    +'<div style="font-size:9px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin-bottom:16px">'+label+'</div>'
+    +'<div style="font-size:24px;font-weight:700;color:var(--white);line-height:1.28;margin-bottom:'+(step.duration>0?'8px':'30px')+'">'+step.label+'</div>'
+    +durStr
     +actionHTML
-    +'<div style="margin-top:14px;display:flex;justify-content:space-between">'
-    +'<button onclick="showRoutineEdit(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">Edit routine</button>'
-    +'<button onclick="showRoutineHistory(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">History</button></div>');
+    +'</div>'
+    +'<div style="display:flex;justify-content:center;gap:24px;padding-top:20px">'
+    +'<button onclick="showRoutineEdit(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.18);font-size:10.5px;cursor:pointer;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Edit Routine</button>'
+    +'<span style="color:rgba(255,255,255,.1);align-self:center;font-size:11px">\u00b7</span>'
+    +'<button onclick="showRoutineHistory(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.18);font-size:10.5px;cursor:pointer;font-weight:700;letter-spacing:.05em;text-transform:uppercase">History</button>'
+    +'</div>'
+    +'</div>'
+    ,'fullscreen');
 }
 function routineDoneStep(){
   const d=getRoutines()||initRoutines();
@@ -5240,21 +5260,43 @@ function _rtSaveProgress(){
   if(rw)rw.innerHTML=renderRoutineWidget();
 }
 function routineShowComplete(type){
-  const label=type==='morning'?'Morning':'Night';
+  const icon=type==='morning'?'\u2600\ufe0f':'\ud83c\udf19';
+  const label=type==='morning'?'MORNING RITUAL':'NIGHT RITUAL';
   const d=getRoutines()||initRoutines();
   const today=getLocalDateStr();
   const log=getRoutineLog(type,today);
   const pct=log.pct||calcRoutinePct(log,d[type].steps);
   const streak=calcRoutineStreak(type);
-  showModal('<div class="sheet-handle"></div>'
-    +'<div style="text-align:center;padding:20px 0">'
-    +'<div style="font-size:40px;margin-bottom:8px">'+(pct===100?'\u2713':'\ud83d\udccd')+'</div>'
-    +'<div style="font-size:20px;font-weight:700;color:var(--white);margin-bottom:4px">'+label+' Routine '+(pct===100?'Complete!':'Done')+'</div>'
-    +'<div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:16px">'+pct+'% completed'+(streak>1?' \u00b7 '+streak+' day streak':'')+'</div>'
-    +'<button onclick="closeModal();var rw=document.getElementById(\'routine-widget\');if(rw)rw.innerHTML=renderRoutineWidget();" style="width:100%;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:var(--black)">Done</button>'
-    +'<div style="margin-top:14px;display:flex;justify-content:center;gap:16px">'
-    +'<button onclick="showRoutineHistory(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">View History</button>'
-    +'</div></div>');
+  const steps=d[type].steps;
+  const doneSteps=steps.filter(function(s){return log.steps&&log.steps[s.id]===true;});
+  const ringC=pct===100?'rgba(76,175,130,.35)':'rgba(232,188,80,.25)';
+  const ringB=pct===100?'rgba(76,175,130,.7)':'rgba(232,188,80,.5)';
+  const valC=pct===100?'var(--green)':'var(--gold)';
+  const stepList=doneSteps.length?'<div style="margin:24px 0 8px">'
+    +doneSteps.map(function(s){return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,.05)">'
+      +'<span style="color:var(--green);font-size:12px;font-weight:700;flex-shrink:0">\u2713</span>'
+      +'<span style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.35">'+s.label+'</span>'
+      +'</div>';}).join('')
+    +'</div>':'';
+  showModal(
+    '<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 64px)">'
+    +'<div style="flex:1">'
+    +'<div style="text-align:center;padding-top:16px;margin-bottom:8px">'
+    +'<div style="width:76px;height:76px;border-radius:50%;background:'+ringC+';border:2px solid '+ringB+';display:flex;align-items:center;justify-content:center;margin:0 auto 18px">'
+    +'<span style="font-size:26px;font-weight:800;color:'+valC+'">'+(pct===100?'\u2713':pct+'%')+'</span>'
+    +'</div>'
+    +'<div style="font-size:9px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin-bottom:10px">'+icon+' '+label+'</div>'
+    +'<div style="font-size:26px;font-weight:700;color:var(--white);margin-bottom:6px">'+(pct===100?'Complete \u2713':'Done for today')+'</div>'
+    +(streak>1?'<div style="font-size:13px;color:rgba(255,255,255,.35);font-weight:600">'+streak+' day streak \ud83d\udd25</div>':'')
+    +'</div>'
+    +stepList
+    +'</div>'
+    +'<div>'
+    +'<button onclick="closeModal();var rw=document.getElementById(\'routine-widget\');if(rw)rw.innerHTML=renderRoutineWidget();" style="width:100%;padding:19px;border-radius:16px;border:none;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:#1a1c22;margin-bottom:10px;letter-spacing:.01em">Close</button>'
+    +'<button onclick="showRoutineHistory(\''+type+'\')" style="width:100%;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.4)">View History</button>'
+    +'</div>'
+    +'</div>'
+    ,'fullscreen');
 }
 async function routineAskJarvisStep(id,type){
   const d=getRoutines()||initRoutines();
