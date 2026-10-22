@@ -635,6 +635,7 @@ body.wr-mode #section-minutes #wr-messages{flex:1!important;overflow-y:auto!impo
         <div id="home-goal-strip" style="display:none"></div>
         <div class="pulse-strip" id="pulse-strip"></div>
       </div>
+      <div id="routine-widget"></div>
       <div class="card" id="non-negotiables-card" style="padding:12px 14px"></div>
       <div class="card" id="signal-noise-card" style="padding:12px 14px"></div>
       <div class="jcard" id="home-jarvis" style="cursor:pointer" onclick="openJarvis()">
@@ -731,15 +732,7 @@ body.wr-mode #section-minutes #wr-messages{flex:1!important;overflow-y:auto!impo
       <div class="sec-label">Other Users</div><div class="card" id="other-users-list"></div>
       <div class="sec-label">Role Permissions</div><div class="card" id="role-permissions"></div>
     </div>
-    <div class="section" id="section-residency" style="padding:0;gap:0">
-      <div class="top-tabs" id="residency-tabs">
-        <div class="ttab on" onclick="switchResTab('today')">Today</div>
-        <div class="ttab" onclick="switchResTab('week')">Week</div>
-        <div class="ttab" onclick="switchResTab('targets')">Targets</div>
-        <div class="ttab" onclick="switchResTab('more')">More</div>
-      </div>
-      <div id="residency-content" style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
-    </div>
+    <div class="section" id="section-residency" style="padding:0;gap:0;display:none"></div>
   </div>
 </div>
   <div id="jarvis-modal">
@@ -1079,7 +1072,7 @@ async function launchApp(){
   setupNav();setupTopBar();setupSwipe();restoreSidebarState();
   await loadAll();migrateLocalToSupabase();checkMonthlyBillReset();renderHome();
   if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();
-  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();({home:renderHome,budget:renderBudget,chores:renderChores,health:renderHealth,schedule:renderSchedule,minutes:()=>{},residency:renderResidency,miami:typeof renderMiami==='function'?renderMiami:null,millionaire:typeof renderMillionaire==='function'?renderMillionaire:null})[S.currentSection]?.();});},30000);
+  setInterval(()=>{if(navigator.onLine)loadAll().then(()=>{checkMonthlyBillReset();if(typeof updateMiamiNavBadge==='function')updateMiamiNavBadge();({home:renderHome,budget:renderBudget,chores:renderChores,health:renderHealth,schedule:renderSchedule,minutes:()=>{},miami:typeof renderMiami==='function'?renderMiami:null,millionaire:typeof renderMillionaire==='function'?renderMillionaire:null})[S.currentSection]?.();});},30000);
 }
 function openActivityDetail(){
   const acts=S.data.activity||[];
@@ -1439,7 +1432,7 @@ function setupNav(){
     users:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
     residency:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
   };
-  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','War Room'],['schedule','Schedule'],['users','Users'],['residency','Residency']];
+  const DEFAULT_NAVS=[['home','Home'],['chores','Chores'],['budget','Budget'],['health','Health'],['business','Business'],['life','Life'],['minutes','War Room'],['schedule','Schedule'],['users','Users']];
   const savedOrder=JSON.parse(localStorage.getItem('bos_nav_order')||'[]');
   let navs=savedOrder.length?savedOrder.map(id=>DEFAULT_NAVS.find(([nid])=>nid===id)).filter(Boolean):DEFAULT_NAVS.slice();
   DEFAULT_NAVS.forEach(n=>{if(!navs.find(([id])=>id===n[0]))navs.push(n);});
@@ -1501,7 +1494,7 @@ function go(sec){
   const nel=document.getElementById('nav-'+sec);if(nel)nel.classList.add('active');
   document.getElementById('page-container').scrollTop=0;
   const ov=document.getElementById('wr-overlay');if(sec==='minutes'){document.body.classList.add('wr-mode');if(ov)ov.style.display='flex';}else{document.body.classList.remove('wr-mode');if(ov)ov.style.display='none';}
-  ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,users:renderUsers,residency:renderResidency})[sec]?.();
+  ({home:renderHome,chores:renderChores,budget:renderBudget,health:renderHealth,business:renderBusiness,life:renderLife,minutes:renderMinutes,schedule:renderSchedule,users:renderUsers})[sec]?.();
 }
 async function loadAll(){
   if(!S.household)return;const hid=S.household.id,uid=S.profile.id;
@@ -1811,6 +1804,8 @@ function renderHome(){
   const goal=lsGet('bos_main_goal')||'';
   const goalEl=document.getElementById('home-goal-strip');
   if(goalEl){goalEl.style.display='block';if(goal){goalEl.innerHTML='<div onclick="editMainGoal()" style="background:linear-gradient(135deg,rgba(232,188,80,.09) 0%,rgba(232,188,80,.03) 100%);border:0.5px solid rgba(232,188,80,.3);border-left:3px solid var(--gold);border-radius:11px;padding:12px 14px;cursor:pointer"><div style="font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.13em;margin-bottom:5px">◆ My Goal</div><div style="font-size:13px;font-weight:600;color:var(--white);line-height:1.45">'+goal+'</div><div style="font-size:8.5px;color:rgba(255,255,255,.2);margin-top:5px">tap to edit</div></div>';}else{goalEl.innerHTML='<div onclick="editMainGoal()" style="background:rgba(232,188,80,.04);border:1.5px dashed rgba(232,188,80,.2);border-radius:11px;padding:12px 14px;cursor:pointer;text-align:center"><div style="font-size:12px;color:rgba(232,188,80,.35);font-weight:600">+ Set your main goal</div><div style="font-size:9px;color:rgba(255,255,255,.15);margin-top:3px">Tap to add what you are working toward</div></div>';}}
+  const rw=document.getElementById('routine-widget');
+  if(rw)rw.innerHTML=renderRoutineWidget();
 }
 // CHORES
 const CHORE_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -5097,6 +5092,385 @@ function resAskJarvisBoard(){
     const inp=document.getElementById('jarvis-input');
     if(inp){inp.value='Run my Sunday Board Meeting. Review Week '+resGetCurrentWeek()+' ratio, all 3 tracks, wins, blockers, and give me 3 priorities for next week.';inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,130)+'px';}
   },300);
+}
+// ROUTINES
+const RT_KEY='bos_routines';
+let _rtType=null,_rtStep=0,_rtLog={},_rtJarvis={};
+let _rtDragType=null,_rtDragIdx=null,_rtDragY=0;
+function initRoutines(){
+  const d={seeded:true,morning:{steps:[
+    {id:'mr1',label:'Wake up on time',duration:0,type:'check'},
+    {id:'mr2',label:'No phone \u2014 first 30 min',duration:0,type:'check'},
+    {id:'mr3',label:'Time with God \u2014 Read and Pray',duration:5,type:'regular'},
+    {id:'mr4',label:'Hydrate \u2014 water + supplements + creatine',duration:3,type:'regular'},
+    {id:'mr5',label:'Review schedule + priorities for today',duration:5,type:'jarvis'},
+    {id:'mr6',label:'What does wife need? Meal prep? Chores?',duration:5,type:'jarvis'},
+    {id:'mr7',label:'Set your #1 target for today',duration:2,type:'regular'}
+  ]},night:{steps:[
+    {id:'nr1',label:'In bed by 10pm',duration:0,type:'check'},
+    {id:'nr2',label:'Gratitude \u2014 one thing that went right',duration:2,type:'regular'},
+    {id:'nr3',label:'Plan for tomorrow \u2014 build the schedule',duration:5,type:'jarvis'},
+    {id:'nr4',label:'Follow up with wife about tomorrow',duration:3,type:'regular'},
+    {id:'nr5',label:'No phone by 9:45',duration:0,type:'check'},
+    {id:'nr6',label:"Lay out tomorrow's clothes / gear",duration:3,type:'regular'},
+    {id:'nr7',label:'What did I accomplish today?',duration:2,type:'regular'},
+    {id:'nr8',label:'Is Diana set for tomorrow?',duration:2,type:'regular'}
+  ]},logs:{morning:{},night:{}}};
+  saveRoutines(d);return d;
+}
+function getRoutines(){const raw=localStorage.getItem(RT_KEY);if(!raw)return null;try{return JSON.parse(raw);}catch(e){return null;}}
+function saveRoutines(d){localStorage.setItem(RT_KEY,JSON.stringify(d));}
+function getRoutineLog(type,date){const d=getRoutines()||initRoutines();if(!d.logs)d.logs={morning:{},night:{}};if(!d.logs[type])d.logs[type]={};return d.logs[type][date]||{steps:{},pct:0,lastTs:0};}
+function saveRoutineLog(type,date,log){const d=getRoutines()||initRoutines();if(!d.logs)d.logs={morning:{},night:{}};if(!d.logs[type])d.logs[type]={};d.logs[type][date]=log;saveRoutines(d);}
+function calcRoutinePct(log,steps){if(!steps||!steps.length)return 0;const done=steps.filter(s=>log.steps&&log.steps[s.id]===true).length;return Math.round(done/steps.length*100);}
+function renderRoutineWidget(){
+  const d=getRoutines()||initRoutines();
+  const today=getLocalDateStr();
+  const ml=getRoutineLog('morning',today),nl=getRoutineLog('night',today);
+  const mp=calcRoutinePct(ml,d.morning.steps),np=calcRoutinePct(nl,d.night.steps);
+  const mc=mp===100?'var(--green)':mp>0?'var(--gold)':'rgba(255,255,255,.3)';
+  const nc=np===100?'var(--green)':np>0?'var(--gold)':'rgba(255,255,255,.3)';
+  const ms=mp===100?'Complete \u2713':mp>0?'In progress \u00b7 '+mp+'%':'Not started';
+  const ns=np===100?'Complete \u2713':np>0?'In progress \u00b7 '+np+'%':'Not started';
+  const base='display:flex;flex-direction:column;gap:4px;background:var(--bg-dark);border-radius:12px;padding:12px 14px;cursor:pointer;flex:1';
+  return '<div style="display:flex;gap:8px;margin:8px 0 2px">'
+    +'<div onclick="showRoutineWalkthrough(\'morning\')" style="'+base+'">'
+    +'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">Morning Routine</div>'
+    +'<div style="font-size:12px;font-weight:600;color:'+mc+'">'+ms+'</div>'
+    +'</div>'
+    +'<div onclick="showRoutineWalkthrough(\'night\')" style="'+base+'">'
+    +'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">Night Routine</div>'
+    +'<div style="font-size:12px;font-weight:600;color:'+nc+'">'+ns+'</div>'
+    +'</div></div>';
+}
+function showRoutineWalkthrough(type){
+  const d=getRoutines()||initRoutines();
+  _rtType=type;_rtLog={};_rtJarvis={};
+  const today=getLocalDateStr();
+  const existing=getRoutineLog(type,today);
+  _rtLog=existing.steps?Object.assign({},existing.steps):{};
+  const steps=d[type].steps;
+  _rtStep=0;
+  for(let i=0;i<steps.length;i++){if(_rtLog[steps[i].id]===undefined){_rtStep=i;break;}if(i===steps.length-1)_rtStep=steps.length;}
+  if(_rtStep>=steps.length){routineShowComplete(type);return;}
+  routineRenderStep(type,_rtStep);
+}
+function routineRenderStep(type,idx){
+  const d=getRoutines()||initRoutines();
+  const steps=d[type].steps;
+  const step=steps[idx];
+  if(!step){routineShowComplete(type);return;}
+  const total=steps.length;
+  const pct=Math.round((idx/total)*100);
+  const label=type==='morning'?'Morning Routine':'Night Routine';
+  const prev=idx>0?'<button onclick="routineBackStep()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:0">\u2190 Back</button>':'<span></span>';
+  let actionHTML='';
+  if(step.type==='check'){
+    const isDone=_rtLog[step.id]===true;
+    const isNo=_rtLog[step.id]===false;
+    actionHTML='<div style="display:flex;gap:10px;margin-top:4px">'
+      +'<button onclick="routineSetCheck(\''+step.id+'\',true)" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:'+(isDone?'var(--green)':'rgba(255,255,255,.08)')+';color:white">\u2713 Yes</button>'
+      +'<button onclick="routineSetCheck(\''+step.id+'\',false)" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:'+(isNo?'rgba(220,80,80,.7)':'rgba(255,255,255,.08)')+';color:white">\u00d7 No</button>'
+      +'</div>';
+  } else if(step.type==='jarvis'){
+    const advice=_rtJarvis[step.id];
+    actionHTML='<div style="margin-top:4px">'
+      +(advice?'<div style="background:rgba(232,188,80,.08);border:0.5px solid rgba(232,188,80,.25);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:12px">'+advice+'</div>':'')
+      +'<button onclick="routineAskJarvisStep(\''+step.id+'\',\''+type+'\')" style="width:100%;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:var(--black);margin-bottom:10px">'+(advice?'\u21bb Ask Again':'Ask Jarvis')+'</button>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="routineSkipStep()" style="flex:1;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)">Skip</button>'
+      +'<button onclick="routineDoneStep()" style="flex:2;padding:12px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:white">Done</button>'
+      +'</div></div>';
+  } else {
+    actionHTML='<div style="display:flex;gap:10px;margin-top:4px">'
+      +'<button onclick="routineSkipStep()" style="flex:1;padding:14px;border-radius:12px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)">Skip</button>'
+      +'<button onclick="routineDoneStep()" style="flex:2;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:white">Done</button>'
+      +'</div>';
+  }
+  const durStr=step.duration>0?step.duration+' min':'';
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+prev
+    +'<span style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em">'+label+'</span>'
+    +'<span style="font-size:9px;color:rgba(255,255,255,.3)">'+(idx+1)+' / '+total+'</span></div>'
+    +'<div style="height:3px;background:rgba(255,255,255,.08);border-radius:3px;margin-bottom:16px"><div style="height:3px;background:var(--gold);border-radius:3px;width:'+pct+'%"></div></div>'
+    +'<div style="font-size:17px;font-weight:700;color:var(--white);line-height:1.35;margin-bottom:6px">'+step.label+'</div>'
+    +(durStr?'<div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:12px">\u23f1 '+durStr+'</div>':'<div style="margin-bottom:12px"></div>')
+    +actionHTML
+    +'<div style="margin-top:14px;display:flex;justify-content:space-between">'
+    +'<button onclick="showRoutineEdit(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">Edit routine</button>'
+    +'<button onclick="showRoutineHistory(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">History</button></div>');
+}
+function routineDoneStep(){
+  const d=getRoutines()||initRoutines();
+  const steps=d[_rtType].steps;
+  if(_rtStep<steps.length)_rtLog[steps[_rtStep].id]=true;
+  _rtSaveProgress();_rtStep++;
+  if(_rtStep>=steps.length){routineShowComplete(_rtType);return;}
+  routineRenderStep(_rtType,_rtStep);
+}
+function routineSkipStep(){
+  _rtStep++;
+  const d=getRoutines()||initRoutines();
+  const steps=d[_rtType].steps;
+  if(_rtStep>=steps.length){routineShowComplete(_rtType);return;}
+  routineRenderStep(_rtType,_rtStep);
+}
+function routineBackStep(){if(_rtStep>0)_rtStep--;routineRenderStep(_rtType,_rtStep);}
+function routineSetCheck(id,val){
+  _rtLog[id]=val;_rtSaveProgress();
+  setTimeout(function(){
+    _rtStep++;
+    const d=getRoutines()||initRoutines();
+    const steps=d[_rtType].steps;
+    if(_rtStep>=steps.length){routineShowComplete(_rtType);return;}
+    routineRenderStep(_rtType,_rtStep);
+  },400);
+}
+function _rtSaveProgress(){
+  const d=getRoutines()||initRoutines();
+  const today=getLocalDateStr();
+  const log=getRoutineLog(_rtType,today);
+  log.steps=Object.assign({},log.steps,_rtLog);
+  log.pct=calcRoutinePct(log,d[_rtType].steps);
+  log.lastTs=Date.now();
+  saveRoutineLog(_rtType,today,log);
+  const rw=document.getElementById('routine-widget');
+  if(rw)rw.innerHTML=renderRoutineWidget();
+}
+function routineShowComplete(type){
+  const label=type==='morning'?'Morning':'Night';
+  const d=getRoutines()||initRoutines();
+  const today=getLocalDateStr();
+  const log=getRoutineLog(type,today);
+  const pct=log.pct||calcRoutinePct(log,d[type].steps);
+  const streak=calcRoutineStreak(type);
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="text-align:center;padding:20px 0">'
+    +'<div style="font-size:40px;margin-bottom:8px">'+(pct===100?'\u2713':'\ud83d\udccd')+'</div>'
+    +'<div style="font-size:20px;font-weight:700;color:var(--white);margin-bottom:4px">'+label+' Routine '+(pct===100?'Complete!':'Done')+'</div>'
+    +'<div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:16px">'+pct+'% completed'+(streak>1?' \u00b7 '+streak+' day streak':'')+'</div>'
+    +'<button onclick="closeModal();var rw=document.getElementById(\'routine-widget\');if(rw)rw.innerHTML=renderRoutineWidget();" style="width:100%;padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:var(--black)">Done</button>'
+    +'<div style="margin-top:14px;display:flex;justify-content:center;gap:16px">'
+    +'<button onclick="showRoutineHistory(\''+type+'\')" style="background:none;border:none;color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">View History</button>'
+    +'</div></div>');
+}
+async function routineAskJarvisStep(id,type){
+  const d=getRoutines()||initRoutines();
+  const step=d[type].steps.find(function(s){return s.id===id;});
+  if(!step)return;
+  const now=getTZ();
+  const dayName=now.toLocaleDateString('en-US',{weekday:'long'});
+  const tom=new Date(now);tom.setDate(tom.getDate()+1);
+  const tomName=tom.toLocaleDateString('en-US',{weekday:'long'});
+  const wk=typeof resGetCurrentWeek==='function'?resGetCurrentWeek():1;
+  const sys='You are Jarvis \u2014 AJ Betancur\'s personal AI operating in his daily routine.\nAJ: 20s, married, baby daughter Diana, wife at home, based in Tallahassee FL.\nContext: HF0 Residency Season 1 (job hunt / Marines path / MTR housing business). Week '+wk+' of 11.\nNon-negotiables: Marine training, prayer, family time, creatine, consistent sleep.\nBe sharp, specific, brief. No filler. Speak directly to AJ like you know his full life.';
+  let prompt='';
+  if(id==='mr5')prompt='It\'s '+dayName+' morning. Based on my Residency targets, schedule, non-negotiables \u2014 what are my top 3 priorities for today? Be specific, direct, tactical.';
+  else if(id==='mr6')prompt='It\'s '+dayName+' morning before family wakes up. What should I handle for wife and family today? Meal prep, chores, anything specific she might need.';
+  else if(id==='nr3')prompt='It\'s '+dayName+' night. Help me plan '+tomName+'. Top priorities, structure my day. Pull from Residency targets and non-negotiables.';
+  else prompt='It\'s '+dayName+'. Step: '+step.label+'. Give me one sharp, specific insight or action for this step.';
+  const btn=document.querySelector('#modal-content button[onclick*="routineAskJarvis"]');
+  if(btn){btn.textContent='\u23f3 Thinking...';btn.disabled=true;}
+  try{
+    const res=await fetch('/api/jarvis.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],_system_override:sys})});
+    const data=await res.json();
+    _rtJarvis[id]=data.content?.[0]?.text||data.reply||'No response';
+  }catch(e){_rtJarvis[id]='Could not reach Jarvis. Try again.';}
+  routineRenderStep(type,_rtStep);
+}
+function showRoutineEdit(type){
+  const d=getRoutines()||initRoutines();
+  const steps=d[type].steps;
+  const label=type==='morning'?'Morning Routine':'Night Routine';
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<div style="font-size:16px;font-weight:700;color:var(--white)">Edit '+label+'</div>'
+    +'<button onclick="showRoutineAddStep(\''+type+'\')" style="background:rgba(232,188,80,.12);border:0.5px solid rgba(232,188,80,.3);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--gold);cursor:pointer">+ Add</button>'
+    +'</div>'
+    +'<div id="rt-edit-list">'+rtEditListHTML(type,steps)+'</div>');
+}
+function rtEditListHTML(type,steps){
+  return steps.map(function(s,i){
+    const typeLabel=s.type==='check'?'Yes/No':s.type==='jarvis'?'Jarvis':'Done';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,.06)">'
+      +'<span onpointerdown="rtDragStart(event,\''+type+'\','+i+')" style="font-size:18px;cursor:grab;color:rgba(255,255,255,.3);padding:0 4px;touch-action:none">&#8597;</span>'
+      +'<div style="flex:1" onclick="showRoutineEditStep(\''+type+'\','+i+')">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--white)">'+s.label+'</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">'+typeLabel+(s.duration?' \u00b7 '+s.duration+' min':'')+'</div>'
+      +'</div>'
+      +'<span onclick="rtConfirmDelete(\''+type+'\','+i+')" style="color:rgba(255,80,80,.5);font-size:18px;cursor:pointer;padding:0 4px">\u00d7</span>'
+      +'</div>';
+  }).join('');
+}
+function rtDragStart(e,type,idx){
+  _rtDragType=type;_rtDragIdx=idx;
+  _rtDragY=(e.touches&&e.touches[0]?e.touches[0]:e).clientY;
+  try{e.currentTarget.setPointerCapture(e.pointerId);}catch(err){}
+  document.addEventListener('pointermove',rtDragMove);
+  document.addEventListener('pointerup',rtDragEnd);
+}
+function rtDragMove(e){
+  if(_rtDragIdx===null)return;
+  const y=(e.touches&&e.touches[0]?e.touches[0]:e).clientY;
+  const delta=y-_rtDragY;
+  const d=getRoutines()||initRoutines();
+  const steps=d[_rtDragType].steps;
+  if(delta>48&&_rtDragIdx<steps.length-1){
+    const tmp=steps[_rtDragIdx];steps[_rtDragIdx]=steps[_rtDragIdx+1];steps[_rtDragIdx+1]=tmp;
+    _rtDragIdx++;_rtDragY=y;saveRoutines(d);
+    const el=document.getElementById('rt-edit-list');
+    if(el)el.innerHTML=rtEditListHTML(_rtDragType,steps);
+  } else if(delta<-48&&_rtDragIdx>0){
+    const tmp=steps[_rtDragIdx];steps[_rtDragIdx]=steps[_rtDragIdx-1];steps[_rtDragIdx-1]=tmp;
+    _rtDragIdx--;_rtDragY=y;saveRoutines(d);
+    const el=document.getElementById('rt-edit-list');
+    if(el)el.innerHTML=rtEditListHTML(_rtDragType,steps);
+  }
+}
+function rtDragEnd(){
+  _rtDragType=null;_rtDragIdx=null;_rtDragY=0;
+  document.removeEventListener('pointermove',rtDragMove);
+  document.removeEventListener('pointerup',rtDragEnd);
+}
+function rtConfirmDelete(type,idx){
+  const d=getRoutines()||initRoutines();
+  const step=d[type].steps[idx];
+  if(!step)return;
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--white);margin-bottom:8px">Delete Step?</div>'
+    +'<div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:20px">'+step.label+'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="closeModal()" style="flex:1;padding:13px;border-radius:11px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.08);color:white">Cancel</button>'
+    +'<button onclick="rtDeleteStep(\''+type+'\','+idx+')" style="flex:1;padding:13px;border-radius:11px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:rgba(220,60,60,.7);color:white">Delete</button>'
+    +'</div>');
+}
+function rtDeleteStep(type,idx){
+  const d=getRoutines()||initRoutines();
+  d[type].steps.splice(idx,1);
+  saveRoutines(d);showRoutineEdit(type);
+}
+function showRoutineEditStep(type,idx){
+  const d=getRoutines()||initRoutines();
+  const step=d[type].steps[idx];
+  if(!step)return;
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--white);margin-bottom:14px">Edit Step</div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px">'
+    +'<div class="field-group"><div class="field-label">Step Label</div><input class="field-input" id="rte-label" value="'+step.label.replace(/"/g,'&quot;')+'" placeholder="Step name"></div>'
+    +'<div class="field-group"><div class="field-label">Type</div><select class="field-input" id="rte-type"><option value="check"'+(step.type==='check'?' selected':'')+'>Yes/No (check)</option><option value="regular"'+(step.type==='regular'?' selected':'')+'>Done/Skip</option><option value="jarvis"'+(step.type==='jarvis'?' selected':'')+'>Jarvis</option></select></div>'
+    +'<div class="field-group"><div class="field-label">Duration (min)</div><input class="field-input" type="number" id="rte-dur" value="'+step.duration+'" min="0" max="60"></div>'
+    +'<button onclick="rtSaveStepEdit(\''+type+'\','+idx+')" class="btn-gold">Save</button>'
+    +'</div>');
+}
+function rtSaveStepEdit(type,idx){
+  const d=getRoutines()||initRoutines();
+  const lbl=document.getElementById('rte-label')?.value?.trim();
+  const typ=document.getElementById('rte-type')?.value;
+  const dur=parseInt(document.getElementById('rte-dur')?.value||'0',10);
+  if(!lbl)return;
+  d[type].steps[idx]=Object.assign({},d[type].steps[idx],{label:lbl,type:typ,duration:dur||0});
+  saveRoutines(d);showRoutineEdit(type);
+}
+function showRoutineAddStep(type){
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--white);margin-bottom:14px">Add Step</div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px">'
+    +'<div class="field-group"><div class="field-label">Step Label</div><input class="field-input" id="rtadd-label" placeholder="Step name"></div>'
+    +'<div class="field-group"><div class="field-label">Type</div><select class="field-input" id="rtadd-type"><option value="regular">Done/Skip</option><option value="check">Yes/No (check)</option><option value="jarvis">Jarvis</option></select></div>'
+    +'<div class="field-group"><div class="field-label">Duration (min)</div><input class="field-input" type="number" id="rtadd-dur" value="0" min="0" max="60"></div>'
+    +'<button onclick="rtSaveNewStep(\''+type+'\')" class="btn-gold">Add Step</button>'
+    +'</div>');
+}
+function rtSaveNewStep(type){
+  const lbl=document.getElementById('rtadd-label')?.value?.trim();
+  const typ=document.getElementById('rtadd-type')?.value||'regular';
+  const dur=parseInt(document.getElementById('rtadd-dur')?.value||'0',10);
+  if(!lbl)return;
+  const d=getRoutines()||initRoutines();
+  const id=type[0]+'r'+(Date.now()%1000000);
+  d[type].steps.push({id,label:lbl,type:typ,duration:dur||0});
+  saveRoutines(d);showRoutineEdit(type);
+}
+function calcRoutineStreak(type){
+  const d=getRoutines()||initRoutines();
+  if(!d.logs||!d.logs[type])return 0;
+  const entries=Object.entries(d.logs[type]).sort(function(a,b){return b[0].localeCompare(a[0]);});
+  let streak=0,prev=null;
+  for(const [date,log] of entries){
+    if((log.pct||0)<1)continue;
+    if(prev===null){
+      const today=getLocalDateStr();
+      const yest=new Date(getTZ());yest.setDate(yest.getDate()-1);
+      const yestStr=getLocalDateStr(yest);
+      if(date===today||date===yestStr){streak++;prev=date;}
+      else break;
+    } else {
+      const a=new Date(prev+'T12:00:00'),b=new Date(date+'T12:00:00');
+      if(Math.round((a-b)/86400000)===1){streak++;prev=date;}
+      else break;
+    }
+  }
+  return streak;
+}
+function showRoutineHistory(type){
+  const d=getRoutines()||initRoutines();
+  if(!d.logs||!d.logs[type]){showModal('<div class="sheet-handle"></div><div style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">No history yet.</div>');return;}
+  const entries=Object.entries(d.logs[type]).filter(function(e){return e[1].steps&&Object.keys(e[1].steps).length>0;}).sort(function(a,b){return b[0].localeCompare(a[0]);}).slice(0,14);
+  const label=type==='morning'?'Morning':'Night';
+  const streak=calcRoutineStreak(type);
+  let rows='';
+  for(const [date,log] of entries){
+    const pct=log.pct||0;
+    const c=pct===100?'var(--green)':pct>50?'var(--gold)':'rgba(255,255,255,.3)';
+    const dateD=new Date(date+'T12:00:00');
+    const dateStr=dateD.toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'});
+    rows+='<div onclick="showRoutineHistoryDay(\''+type+'\',\''+date+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,.06);cursor:pointer">'
+      +'<div style="font-size:13px;color:var(--white)">'+dateStr+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px"><div style="font-size:12px;font-weight:700;color:'+c+'">'+pct+'%</div><span style="color:rgba(255,255,255,.2);font-size:12px">\u203a</span></div>'
+      +'</div>';
+  }
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+    +'<div style="font-size:16px;font-weight:700;color:var(--white)">'+label+' History</div>'
+    +(streak>0?'<div style="font-size:11px;color:var(--gold);font-weight:700">'+streak+' day streak</div>':'')
+    +'</div>'
+    +(entries.length?'<div>'+rows+'</div>':'<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4)">No history yet.</div>')
+    +'<button onclick="showRoutineWalkthrough(\''+type+'\')" style="width:100%;margin-top:14px;padding:12px;border-radius:11px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold),#c8960c);color:var(--black)">Start Routine</button>');
+}
+function showRoutineHistoryDay(type,date){
+  const d=getRoutines()||initRoutines();
+  const log=getRoutineLog(type,date);
+  const steps=d[type].steps;
+  const dateD=new Date(date+'T12:00:00');
+  const dateStr=dateD.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const label=type==='morning'?'Morning':'Night';
+  let rows='';
+  for(const s of steps){
+    const val=log.steps?log.steps[s.id]:undefined;
+    const icon=val===true?'\u2713':val===false?'\u00d7':'\u2014';
+    const c=val===true?'var(--green)':val===false?'rgba(220,80,80,.7)':'rgba(255,255,255,.25)';
+    rows+='<div onclick="rtToggleHistoryStep(\''+type+'\',\''+date+'\',\''+s.id+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,.06);cursor:pointer">'
+      +'<span style="font-size:16px;font-weight:700;color:'+c+';width:20px;text-align:center">'+icon+'</span>'
+      +'<span style="font-size:13px;color:var(--white)">'+s.label+'</span>'
+      +'</div>';
+  }
+  const pct=log.pct||calcRoutinePct(log,steps);
+  showModal('<div class="sheet-handle"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--white)">'+label+' \u00b7 '+dateStr+'</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--gold)">'+pct+'%</div></div>'
+    +'<div>'+rows+'</div>'
+    +'<button onclick="showRoutineHistory(\''+type+'\')" style="width:100%;margin-top:14px;padding:11px;border-radius:11px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.07);color:white">\u2190 Back to History</button>');
+}
+function rtToggleHistoryStep(type,date,stepId){
+  const d=getRoutines()||initRoutines();
+  const log=getRoutineLog(type,date);
+  if(!log.steps)log.steps={};
+  const cur=log.steps[stepId];
+  log.steps[stepId]=(cur===true)?false:true;
+  log.pct=calcRoutinePct(log,d[type].steps);
+  saveRoutineLog(type,date,log);
+  showRoutineHistoryDay(type,date);
 }
 </script>
 </body>
