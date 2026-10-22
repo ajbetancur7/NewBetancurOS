@@ -5178,7 +5178,8 @@ function routineRenderStep(type,idx){
   }).join('');
   const backBtn=idx>0
     ?'<button onclick="routineBackStep()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:13px;font-weight:600;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px">\u2190 Back</button>'
-    :'<span></span>';
+    :'<span style="width:48px"></span>';
+  const closeBtn='<button onclick="closeModal()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:24px;font-weight:300;cursor:pointer;padding:0;line-height:1;width:48px;text-align:right">\u00d7</button>';
   let actionHTML='';
   if(step.type==='check'){
     const isDone=_rtLog[step.id]===true;
@@ -5204,7 +5205,8 @@ function routineRenderStep(type,idx){
   showModal(
     '<div style="display:flex;flex-direction:column;min-height:calc(100dvh - 64px)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">'+backBtn
-    +'<span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.22)">'+(idx+1)+'<span style="color:rgba(255,255,255,.12)"> / '+total+'</span></span></div>'
+    +'<span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.22)">'+(idx+1)+'<span style="color:rgba(255,255,255,.12)"> / '+total+'</span></span>'
+    +closeBtn+'</div>'
     +'<div style="display:flex;gap:4px;margin-bottom:36px">'+dots+'</div>'
     +'<div style="flex:1">'
     +'<div style="font-size:9px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin-bottom:16px">'+label+'</div>'
