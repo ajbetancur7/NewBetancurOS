@@ -863,6 +863,8 @@ async function doSignIn(){
     S.user={id:profile.id};S.profile=profile;
     const hhs=await sb.from('households').select('*').eq('id',profile.household_id);
     S.household=hhs?.[0]||null;
+    localStorage.setItem('bos_profile_cache',JSON.stringify(profile));
+    if(S.household)localStorage.setItem('bos_household_cache',JSON.stringify(S.household));
     document.getElementById('auth-screen').style.display='none';
     if(profile.role==='babysitter'){launchSitter();}
     else if(!localStorage.getItem('bos_setup_done')&&profile.role==='admin'){
@@ -900,6 +902,8 @@ async function doSignUp(){
     localStorage.setItem('bos_household',hh.id);
     localStorage.removeItem('bos_su_tmp');
     S.user={id:uid};S.profile=profile;S.household=hh;
+    localStorage.setItem('bos_profile_cache',JSON.stringify(profile));
+    localStorage.setItem('bos_household_cache',JSON.stringify(hh));
     // If joining existing household, skip setup wizard (already seeded)
     if(joinedExisting){
       localStorage.setItem('bos_setup_done','1');
@@ -930,24 +934,45 @@ async function createProfile(name,role){
   await loadProfile();
 }
 async function loadProfile(){
-  const uid=localStorage.getItem('bos_uid');
-  if(!uid){showAuth('signin');return;}
+  let uid=localStorage.getItem('bos_uid');
+  function _launchFromCache(cp,hh){
+    S.profile=cp;S.user={id:cp.id};S.household=hh||null;
+    ['auth-screen','setup-screen','splash'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    launchApp();
+    sb.from('user_profiles').select('*').eq('id',cp.id).then(rows=>{if(rows?.length){S.profile=rows[0];localStorage.setItem('bos_profile_cache',JSON.stringify(rows[0]));}}).catch(()=>{});
+  }
+  function _getCachedProfile(){try{return JSON.parse(localStorage.getItem('bos_profile_cache')||'null');}catch(e){return null;}}
+  function _getCachedHH(){try{return JSON.parse(localStorage.getItem('bos_household_cache')||'null');}catch(e){return null;}}
+  if(!uid){
+    const cp=_getCachedProfile();
+    if(cp?.id){localStorage.setItem('bos_uid',cp.id);_launchFromCache(cp,_getCachedHH());return;}
+    showAuth('signin');return;
+  }
   try{
     const profiles=await sb.from('user_profiles').select('*').eq('id',uid);
-    if(!profiles?.length){localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');showAuth('signin');return;}
+    if(!profiles?.length){
+      const cp=_getCachedProfile();
+      if(cp?.id){_launchFromCache(cp,_getCachedHH());return;}
+      localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');showAuth('signin');return;
+    }
     S.profile=profiles[0];S.user={id:uid};
+    localStorage.setItem('bos_profile_cache',JSON.stringify(profiles[0]));
     const hh=await sb.from('households').select('*').eq('id',S.profile.household_id).catch(()=>[]);
     S.household=hh?.[0]||null;
+    if(S.household)localStorage.setItem('bos_household_cache',JSON.stringify(S.household));
     document.getElementById('auth-screen').style.display='none';document.getElementById('setup-screen').style.display='none';
     if(S.profile.role==='babysitter'){launchSitter();}
     else if(!localStorage.getItem('bos_setup_done')&&S.profile.role==='admin'){
-      // Auto-skip setup if household already seeded (joining from new device)
       const eb=await sb.from('bills').select('id').eq('household_id',S.household.id).catch(()=>[]);
       if(eb&&eb.length>0){localStorage.setItem('bos_setup_done','1');launchApp();}
       else{launchSetup();}
     }
     else{launchApp();}
-  }catch(e){showAuth('signin');}
+  }catch(e){
+    const cp=_getCachedProfile();
+    if(cp?.id){_launchFromCache(cp,_getCachedHH());return;}
+    showAuth('signin');
+  }
 }
 async function logout(){localStorage.removeItem('bos_token');localStorage.removeItem('bos_uid');localStorage.removeItem('bos_household');S.user=null;S.profile=null;S.household=null;['main-app','babysitter-app','setup-screen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('splash').style.display='flex';}
 
@@ -4245,7 +4270,9 @@ function showMiamiHistory(){
 // INIT
 window.addEventListener('load',async()=>{
   S.offlineQueue=JSON.parse(localStorage.getItem('bos_queue')||'[]');
-  if(localStorage.getItem('bos_uid')){
+  const hasUid=localStorage.getItem('bos_uid');
+  const hasCache=localStorage.getItem('bos_profile_cache');
+  if(hasUid||hasCache){
     try{await loadProfile();}
     catch(e){localStorage.removeItem('bos_uid');document.getElementById('splash').style.display='flex';}
   }else{
